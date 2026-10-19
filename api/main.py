@@ -1,58 +1,63 @@
+"""Voxora API — FastAPI application entry point.
+
+Owns the real-time voice WebSocket, provider selection and latency metrics.
+No model code lives here: every stage is an adapter behind
+``src.voice.providers``.
+"""
+
+from __future__ import annotations
+
+import logging
 import sys
 from contextlib import asynccontextmanager
-from os import getenv
 from pathlib import Path
 
-from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.auth.controller import router as auth_router
-from src.config.db import (
-    close_database_connection,
-    connect_to_database,
-    db_manager,
+from src.voice.config import settings
+from src.voice.router import ProviderBundle, router as voice_router, shutdown_providers
+
+logging.basicConfig(
+    level=getattr(logging, settings.log_level, logging.INFO),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
 )
-from src.workspace.controller import router as workspace_router
-
-load_dotenv()
-
-
-def _get_cors_origins() -> list[str]:
-    origins = getenv("CORS_ORIGINS", "http://localhost:3000")
-    return [origin.strip() for origin in origins.split(",") if origin.strip()]
+logger = logging.getLogger("voxora")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    app.state.db_manager = db_manager
-    await connect_to_database()
+    app.state.voice_providers = ProviderBundle.build(settings)
+    bundle: ProviderBundle = app.state.voice_providers
+    logger.info(
+        "providers stt=%s (%s) llm=%s (%s) tts=%s (%s)",
+        bundle.stt.name,
+        bundle.reasons.get("stt"),
+        bundle.llm.name,
+        bundle.reasons.get("llm"),
+        bundle.tts.name,
+        bundle.reasons.get("tts"),
+    )
     yield
-    await close_database_connection()
-
-    from src.ragify_client import client as ragify_client
-
-    ragify_client.close()
+    await shutdown_providers(app)
 
 
-app = FastAPI(title="Ragify", lifespan=lifespan)
-
+app = FastAPI(title=settings.app_name, version=settings.version, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_get_cors_origins(),
+    allow_origins=list(settings.cors_origins),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
-# Exception handlers
 @app.exception_handler(HTTPException)
-async def global_http_exception_handler(_: Request, exception: HTTPException):
+async def http_exception_handler(_: Request, exception: HTTPException):
     return JSONResponse(
         status_code=exception.status_code,
         content={"detail": exception.detail},
@@ -61,19 +66,24 @@ async def global_http_exception_handler(_: Request, exception: HTTPException):
 
 
 @app.exception_handler(Exception)
-async def global_exception_handler(_: Request, exception: Exception):
+async def unhandled_exception_handler(_: Request, exception: Exception):
+    logger.exception("Unhandled request error")
     return JSONResponse(status_code=500, content={"detail": str(exception)})
 
 
 @app.get("/")
-async def read_root():
+async def read_root() -> dict:
     return {
-        "name": "ragify",
-        "version": "0.1",
-        "project": "https://github.com/ishu-codes/ragify",
-        "author": "Ishu Kumar",
+        "name": settings.app_name.lower(),
+        "version": settings.version,
+        "tagline": "From speech to intelligence and back, in real time.",
+        "websocket": "/api/v1/voice/ws",
     }
 
 
-app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
-app.include_router(workspace_router, prefix="/api/v1/workspaces", tags=["Workspace"])
+@app.get("/healthz")
+async def healthz() -> dict:
+    return {"status": "ok"}
+
+
+app.include_router(voice_router, prefix="/api/v1/voice", tags=["Voice"])
