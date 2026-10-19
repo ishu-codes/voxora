@@ -115,6 +115,24 @@ the generation counter advances, so no stale audio is played.
 timings, which is the number that matters: server metrics alone miss transport
 and playback scheduling.
 
+## Benchmarking
+
+`scripts/benchmark.py` drives a real WebSocket session and reports
+end-of-speech to first-audio latency (client monotonic clock) plus interruption
+latency, in the p50/p95/p99 form the PRD asks for:
+
+```bash
+./run.sh bench --url ws://127.0.0.1:8000/api/v1/voice/ws --turns 10 --barge-in
+python -m scripts.benchmark --turns 5 --wav sample_16k_mono.wav   # replay real speech
+python -m scripts.benchmark --turns 10 --server-metrics           # compare with stage metrics
+```
+
+Without `--wav` the script sends synthetic tone frames and supplies the
+transcript itself, which measures the generation and synthesis path in
+browser-STT mode. Pass a 16 kHz mono WAV to exercise a server-side STT adapter.
+Report results together with the model configuration, network conditions and
+whether the run was warm or cold — the numbers only mean something in context.
+
 ## Tests
 
 ```bash
@@ -139,4 +157,6 @@ src/voice/
   pipeline.py        # cancellable VAD -> STT -> LLM -> TTS orchestration
   router.py          # FastAPI routes and socket loop
   providers/         # base protocols + STT/LLM/TTS adapters
+scripts/
+  benchmark.py       # reproducible latency + interruption benchmark
 ```

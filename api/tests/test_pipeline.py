@@ -85,6 +85,25 @@ class FakeAudioTTS:
         return None
 
 
+class SlowAudioTTS:
+    """Emits audio over time so a turn can be interrupted mid-synthesis."""
+
+    name = "slow-tts"
+    kind = "audio"
+    sample_rate = 24_000
+
+    async def _stream(self, text: str) -> AsyncIterator[bytes]:
+        for _ in range(6):
+            yield b"\x00\x01" * 128
+            await asyncio.sleep(0.05)
+
+    def synthesize(self, text: str) -> AsyncIterator[bytes]:
+        return self._stream(text)
+
+    async def close(self) -> None:
+        return None
+
+
 def _settings(**overrides) -> Settings:
     base = dict(
         vad_threshold=0.02,
@@ -248,6 +267,41 @@ async def test_client_metrics_are_merged_for_turn():
     await pipeline.handle_client_metrics(turn_id, {"first_playback_ms": 512.5, "ignored": "x"})
     summary = metrics.summary()
     assert summary["stages"]["first_playback_ms"]["p50"] == 512.5
+    await pipeline.close()
+
+
+async def test_no_stale_audio_after_barge_in():
+    """A cancelled turn must never emit more audio after cancellation."""
+    llm = FakeLLM(["First sentence to speak. ", "Second sentence continues. "])
+    pipeline, transport = _pipeline(FakeSTT(), llm, SlowAudioTTS())
+
+    await _speak(pipeline)
+    await _silence(pipeline, 3)
+
+    for _ in range(300):
+        if transport.of_type("audio.chunk"):
+            break
+        await asyncio.sleep(0.01)
+
+    chunks = transport.of_type("audio.chunk")
+    assert chunks, "expected the turn to start streaming audio"
+    cancelled_turn = chunks[0]["turn_id"]
+    before = len(chunks)
+
+    # Barge in while the first turn is still synthesising.
+    await _speak(pipeline)
+    await asyncio.sleep(0.5)
+
+    assert transport.of_type("turn.cancelled"), "barge-in should cancel the turn"
+    stale = [
+        event
+        for event in transport.of_type("audio.chunk")
+        if event["turn_id"] == cancelled_turn
+    ]
+    assert len(stale) == before, "no stale audio chunks may follow cancellation"
+
+    await _silence(pipeline, 3)
+    await _await_turn(pipeline)
     await pipeline.close()
 
 
