@@ -6,17 +6,14 @@ import App from "./App.tsx";
 
 import { ThemeProvider } from "@/components/theme-provider.tsx";
 import { Toaster } from "@/components/ui/sonner.tsx";
-import { QueryProvider } from "@/components/query-provider.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
-      <QueryProvider>
-        <ThemeProvider>
-          <Toaster richColors />
-          <App />
-        </ThemeProvider>
-      </QueryProvider>
+      <ThemeProvider defaultTheme="dark">
+        <Toaster richColors />
+        <App />
+      </ThemeProvider>
     </BrowserRouter>
   </StrictMode>,
 );

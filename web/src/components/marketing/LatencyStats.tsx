@@ -1,15 +1,15 @@
 import { Section, SectionHeader } from "./Section";
 import { Reveal } from "./Reveal";
 import { DashedPanel } from "./DashedPanel";
-import { VALUE_PROPS, VALUE_STACK_COPY } from "./sections";
+import { LATENCY_COPY, LATENCY_PROPS } from "./sections";
 
-export function ValueStack() {
+export function LatencyStats() {
   return (
-    <Section className="bg-background">
-      <SectionHeader heading={VALUE_STACK_COPY.heading} />
+    <Section id="latency" className="bg-background">
+      <SectionHeader heading={LATENCY_COPY.heading} subhead={LATENCY_COPY.subhead} />
 
       <div className="mt-14 grid gap-6 sm:grid-cols-3">
-        {VALUE_PROPS.map((stat, index) => (
+        {LATENCY_PROPS.map((stat, index) => (
           <Reveal key={stat.label} delay={index * 80}>
             <DashedPanel className="flex flex-col items-center bg-card p-8 text-center">
               <span className="font-mono text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">

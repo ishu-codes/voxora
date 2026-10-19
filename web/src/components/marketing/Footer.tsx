@@ -55,9 +55,9 @@ export function Footer() {
               <ul className="space-y-2.5 text-sm text-muted-foreground">
                 {col.links.map((link) => (
                   <li key={link.label}>
-                    <Link to={link.href} className="transition-colors hover:text-foreground">
+                    <a href={link.href} className="transition-colors hover:text-foreground">
                       {link.label}
-                    </Link>
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -66,7 +66,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 text-xs text-muted-foreground sm:flex-row">
-          <p>© {new Date().getFullYear()} Ragify. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Voxora. Built as an open reference implementation.</p>
           <div className="flex items-center gap-4">
             {FOOTER_LEGAL.map((link) => (
               <Link key={link.label} to={link.href} className="transition-colors hover:text-foreground">

@@ -22,7 +22,7 @@ export function SecondaryCTA() {
               <Pill asLink to={SECONDARY_CTA.primary.to}>
                 {SECONDARY_CTA.primary.label}
               </Pill>
-              <OutlinePill asLink to={SECONDARY_CTA.secondary.to}>
+              <OutlinePill asLink href={SECONDARY_CTA.secondary.href}>
                 {SECONDARY_CTA.secondary.label}
               </OutlinePill>
             </div>

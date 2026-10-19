@@ -1,12 +1,12 @@
 import { Navbar } from "@/components/navbar";
 import { Hero } from "@/components/marketing/Hero";
-import { FrontierSection } from "@/components/marketing/FrontierSection";
-import { SlopSection } from "@/components/marketing/SlopSection";
-import { RagifyExplainer } from "@/components/marketing/RagifyExplainer";
-import { PlansPricing } from "@/components/marketing/PlansPricing";
-import { ValueStack } from "@/components/marketing/ValueStack";
+import { PipelineSection } from "@/components/marketing/PipelineSection";
+import { StreamingSection } from "@/components/marketing/StreamingSection";
+import { Capabilities } from "@/components/marketing/Capabilities";
+import { Deployment } from "@/components/marketing/Deployment";
+import { LatencyStats } from "@/components/marketing/LatencyStats";
 import { FAQSection } from "@/components/marketing/FAQSection";
-import { LatestFeed } from "@/components/marketing/LatestFeed";
+import { StackSection } from "@/components/marketing/StackSection";
 import { SecondaryCTA } from "@/components/marketing/SecondaryCTA";
 import { Footer } from "@/components/marketing/Footer";
 
@@ -16,13 +16,13 @@ export default function LandingPage() {
       <Navbar />
       <main className="flex-1">
         <Hero />
-        <FrontierSection />
-        <SlopSection />
-        <RagifyExplainer />
-        <PlansPricing />
-        <ValueStack />
+        <PipelineSection />
+        <StreamingSection />
+        <Capabilities />
+        <Deployment />
+        <LatencyStats />
         <FAQSection />
-        <LatestFeed />
+        <StackSection />
         <SecondaryCTA />
       </main>
       <Footer />

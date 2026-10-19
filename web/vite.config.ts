@@ -10,6 +10,15 @@ export default defineConfig({
 	server: {
 		host: "::",
 		port: 3000,
+		proxy: {
+			// Optional convenience: point VITE_API_URL at the dev server origin
+			// and let Vite forward REST + WebSocket traffic to FastAPI.
+			"/api": {
+				target: "http://localhost:8000",
+				changeOrigin: true,
+				ws: true,
+			},
+		},
 	},
 	resolve: {
 		alias: {

@@ -20,60 +20,53 @@ export default function TermsPage() {
 
         <DashedPanel className="bg-card p-8 sm:p-12">
           <div className="space-y-10">
-          <header className="space-y-3">
-            <h1 className="text-3xl font-semibold tracking-tight">Terms of service</h1>
-            <p className="font-mono text-xs text-muted-foreground">Effective date: August 18, 2026</p>
-          </header>
+            <header className="space-y-3">
+              <h1 className="text-3xl font-semibold tracking-tight">Terms of service</h1>
+              <p className="font-mono text-xs text-muted-foreground">Effective date: October 19, 2026</p>
+            </header>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">1. The service</h2>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Ragify provides hosted workspaces that index your documents and answer questions with source citations.
-              By creating an account or using the service, you agree to these terms.
-            </p>
-          </section>
-
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">2. Accounts and acceptable use</h2>
-            <div className="space-y-2 border border-border bg-muted/20 p-4">
-              <p className="text-sm font-semibold text-foreground">You agree to:</p>
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold tracking-tight">1. The service</h2>
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Keep your credentials secure, upload only content you have the right to index, and not use the service
-                to store or generate unlawful material. We may suspend accounts that violate these terms.
+                Voxora is a reference implementation of a streaming voice pipeline. It streams microphone
+                audio through speech recognition, a language model and speech synthesis. By using the
+                demo you agree to these terms.
               </p>
-            </div>
-          </section>
+            </section>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">3. Plans and billing</h2>
-            <ul className="list-disc space-y-3 pl-5 text-sm leading-relaxed text-muted-foreground">
-              <li>The Free plan is available without a credit card and may be used subject to published limits.</li>
-              <li>Paid plans are billed in advance on a monthly basis and can be cancelled at any time.</li>
-              <li>Features, limits, and pricing are described on the pricing page and may change with notice.</li>
-            </ul>
-          </section>
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold tracking-tight">2. Acceptable use</h2>
+              <div className="space-y-2 border border-border bg-muted/20 p-4">
+                <p className="text-sm font-semibold text-foreground">You agree to:</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Use your own provider credentials where required, avoid sending audio you have no right
+                  to process, and not use the service for unlawful material. Model output is generated
+                  automatically and may be inaccurate.
+                </p>
+              </div>
+            </section>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">4. Intellectual property</h2>
-            <p className="text-sm leading-relaxed text-muted-foreground italic">
-              You retain ownership of the documents you upload. Ragify grants you a limited license to use the service
-              for its intended purpose, and you may not resell or reverse-engineer it without permission.
-            </p>
-          </section>
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold tracking-tight">3. Self-hosted deployments</h2>
+              <ul className="list-disc space-y-3 pl-5 text-sm leading-relaxed text-muted-foreground">
+                <li>You are responsible for the models and providers you configure.</li>
+                <li>Provider usage is billed by that provider, not by Voxora.</li>
+                <li>Resource limits, authentication and rate limiting are yours to add before public use.</li>
+              </ul>
+            </section>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">5. Availability and liability</h2>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              The service is provided "as is" without warranties of any kind. Ragify is not liable for indirect or
-              consequential damages, and our total liability is limited to the amount you paid in the three months
-              before the claim. Answers generated by the service are informational and should be verified against your
-              sources.
-            </p>
-          </section>
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold tracking-tight">4. Availability</h2>
+              <p className="text-sm leading-relaxed text-muted-foreground italic">
+                The software is provided "as is" without warranties. Latency targets are engineering
+                goals, not guarantees: actual first-audio latency depends on your network, hardware and
+                chosen models.
+              </p>
+            </section>
 
-          <footer className="border-t pt-6">
-            <p className="text-center text-xs text-muted-foreground">Ragify terms of service v1.0</p>
-          </footer>
+            <footer className="border-t pt-6">
+              <p className="text-center text-xs text-muted-foreground">Voxora terms of service v1.0</p>
+            </footer>
           </div>
         </DashedPanel>
       </div>

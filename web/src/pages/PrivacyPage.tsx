@@ -20,68 +20,69 @@ export default function PrivacyPage() {
 
         <DashedPanel className="bg-card p-8 sm:p-12">
           <div className="space-y-10">
-          <header className="space-y-3">
-            <h1 className="text-3xl font-semibold tracking-tight">Privacy policy</h1>
-            <p className="font-mono text-xs text-muted-foreground">Last updated: August 18, 2026</p>
-          </header>
+            <header className="space-y-3">
+              <h1 className="text-3xl font-semibold tracking-tight">Privacy policy</h1>
+              <p className="font-mono text-xs text-muted-foreground">Last updated: October 19, 2026</p>
+            </header>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">1. Overview</h2>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Ragify provides grounded answers from your documents through isolated workspaces. This policy explains
-              what data we process, how it is stored, and the choices you have over it.
-            </p>
-          </section>
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold tracking-tight">1. Overview</h2>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Voxora is a real-time voice agent. This policy describes what happens to your
+                microphone audio, transcripts and conversation history when you use the studio.
+              </p>
+            </section>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">2. Information we collect</h2>
-            <ul className="list-disc space-y-3 pl-5 text-sm leading-relaxed text-muted-foreground">
-              <li>
-                <span className="font-semibold text-foreground">Account data:</span> Email, name, and authentication
-                credentials required to sign in.
-              </li>
-              <li>
-                <span className="font-semibold text-foreground">Workspace content:</span> Documents, code, and metadata
-                you upload into your workspaces.
-              </li>
-              <li>
-                <span className="font-semibold text-foreground">Usage data:</span> Queries, chat sessions, and
-                performance metrics used to operate and improve the service.
-              </li>
-            </ul>
-          </section>
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold tracking-tight">2. Microphone audio</h2>
+              <ul className="list-disc space-y-3 pl-5 text-sm leading-relaxed text-muted-foreground">
+                <li>
+                  <span className="font-semibold text-foreground">Access:</span> the microphone is only
+                  requested after you start a session, and it stops when you end it.
+                </li>
+                <li>
+                  <span className="font-semibold text-foreground">Streaming:</span> 20 ms PCM frames are
+                  sent to your configured backend so it can detect your turn and transcribe it.
+                </li>
+                <li>
+                  <span className="font-semibold text-foreground">Retention:</span> raw audio is held in
+                  memory only for the duration of the current utterance and is discarded once the turn is
+                  transcribed. It is not written to disk by default.
+                </li>
+              </ul>
+            </section>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">3. How workspace content is processed</h2>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              Uploaded documents are chunked and embedded into vector indexes scoped to your workspace namespace. They
-              are used to retrieve relevant context and produce cited answers. Your content is not used to train public
-              models, and it is never shared with other workspaces or customers.
-            </p>
-          </section>
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold tracking-tight">3. Transcripts and history</h2>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Conversation history lives in memory for the lifetime of the connection and is used to
+                answer follow-up questions. The browser keeps its own copy for display. Deleting the
+                session or ending the conversation clears both.
+              </p>
+            </section>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">4. Retention and deletion</h2>
-            <p className="text-sm leading-relaxed text-muted-foreground">
-              You can delete a workspace at any time, which removes its documents, vector indexes, and chat history.
-              Account data is retained while your account is active and deleted on request. Chat sessions created in
-              your browser remain local to your device.
-            </p>
-          </section>
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold tracking-tight">4. Third-party models</h2>
+              <p className="border-l-2 border-brand pl-4 text-sm leading-relaxed text-muted-foreground italic">
+                If you configure hosted speech recognition, a hosted language model or hosted speech
+                synthesis, the relevant audio or text is sent to that provider under your own account.
+                Provider credentials are stored only on the server and are never exposed to the browser.
+              </p>
+            </section>
 
-          <section className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">5. Third parties</h2>
-            <p className="border-l-2 border-brand pl-4 text-sm leading-relaxed text-muted-foreground italic">
-              Model providers and infrastructure vendors process data only to the extent required to deliver the
-              service. Enterprise customers with dedicated clusters control their own embedding and model configuration.
-            </p>
-          </section>
+            <section className="space-y-3">
+              <h2 className="text-lg font-semibold tracking-tight">5. Metrics and logs</h2>
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Per-stage timings and error counts are recorded to measure latency. Metric records contain
+                turn identifiers and durations, not transcript text or audio.
+              </p>
+            </section>
 
-          <footer className="border-t pt-6">
-            <p className="text-center text-xs text-muted-foreground">
-              Questions? Contact privacy@ragify.ai.
-            </p>
-          </footer>
+            <footer className="border-t pt-6">
+              <p className="text-center text-xs text-muted-foreground">
+                Questions about this policy? Open an issue in the project repository.
+              </p>
+            </footer>
           </div>
         </DashedPanel>
       </div>

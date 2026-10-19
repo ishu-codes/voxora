@@ -1,191 +1,213 @@
-export type ChangelogEntry = {
-  version: string;
-  title: string;
-  date: string;
-  type: "feature" | "fix" | "breaking";
-};
+/**
+ * Single source of truth for Voxora marketing copy.
+ * No JSX file should contain literal marketing text.
+ */
 
 export const ANNOUNCEMENT_STRIP = {
-  left: "Ragify is in private beta — request access.",
+  left: "Voxora is live — no sign-up, just talk.",
   right: [
-    { label: "Citations per answer", value: "5–10" },
-    { label: "Hybrid retrieval", value: "BM25 + dense" },
-    { label: "Local-first chat", value: "browser-persisted" },
+    { label: "First audio p50", value: "≤ 700 ms" },
+    { label: "Barge-in p95", value: "≤ 200 ms" },
+    { label: "Pipeline", value: "STT → LLM → TTS" },
   ],
 };
 
 export const HERO_COPY = {
-  kicker: "//the frontier RAG agent.",
-  headline1: "Grounded answers,",
-  headline2: "not hallucinations.",
+  kicker: "//from speech to intelligence, in real time.",
+  headline1: "Talk to AI.",
+  headline2: "Hear it think.",
   subhead:
-    "Upload PDFs, Markdown, code, and JSON into isolated workspaces. Ragify retrieves the right context and answers with exact source citations.",
-  primary: { label: "npm i @ragify/cli", to: "/sign-up" },
-  secondary: { label: "Read the docs", href: "#features" },
+    "Voxora streams your microphone through speech recognition, a language model and speech synthesis — overlapping every stage so the answer starts playing before it has finished being written.",
+  primary: { label: "Start a conversation", to: "/app" },
+  secondary: { label: "See how it works", href: "#pipeline" },
 };
 
-export const FRONTIER_COPY = {
-  heading: "//the frontier RAG agent.",
+export const PIPELINE_COPY = {
+  heading: "//a pipeline you can cancel.",
   subhead:
-    "Stop uploading documents to a model that forgets them. Ragify indexes your workspace once, retrieves the right context every time, and cites every claim.",
+    "Audio is never uploaded as a finished recording. The browser sends 20 ms PCM frames, the server endpoints your turn with VAD, and each stage hands off incrementally so latency compounds only once.",
 };
 
-export const SLOP_COPY = {
-  heading: "//stop patching AI hallucinations.",
+export const PIPELINE_TERMINAL = {
+  command: "wscat -c ws://localhost:8000/api/v1/voice/ws",
+  body: `{"type":"ready","stt":"whisper","llm":"llama3.2","tts":"pcm24k"}`,
+  stream: [
+    `{"type":"speech.start","turn_id":"a1f3-1"}`,
+    `{"type":"transcript.final","text":"How does a database index work?"}`,
+    `{"type":"assistant.delta","text":"A database index is "}`,
+    `{"type":"assistant.delta","text":"a data structure that "}`,
+    `{"type":"audio.chunk","turn_id":"a1f3-1","sample_rate":24000}`,
+    `{"type":"turn.metrics","e2e_first_audio_ms":612}`,
+  ],
+};
+
+export const STREAMING_COPY = {
+  heading: "//stop waiting for whole recordings.",
+  subhead:
+    "A blocking voice UI records, uploads, transcribes and synthesises before you hear anything. Voxora starts speaking from the first generated sentence.",
   without: {
-    label: "Without Ragify",
+    label: "Blocking pipeline",
     answer:
-      "Based on the documents provided, the policy applies to all employees. Specific eligibility criteria may vary by role.",
-    badges: ["no citations", "no source", "no trace"],
+      "Records the entire utterance · uploads it · transcribes the whole file · waits for the full LLM answer · synthesises every word · then plays. You listen to silence for seconds.",
+    badges: ["full upload", "no overlap", "no barge-in"],
   },
   with: {
-    label: "With Ragify",
+    label: "Voxora streaming",
     answer:
-      "The remote-work policy applies to full-time employees [policy.pdf:page 3]. Contractors follow a separate schedule [handbook.md:section 2.1].",
-    badges: ["3 citations", "2 sources", "verified"],
+      "Frames stream while you speak · VAD endpoints the turn · tokens flow into sentence chunks · speech starts on the first clause · a new utterance cancels everything in flight.",
+    badges: ["streaming", "cancelable", "0 stale chunks"],
   },
 };
 
-export const EXPLAINER_COPY = {
-  heading: "Hello, Ragify.",
-  subhead: "The retrieval engine that grounds every LLM answer in your workspace.",
+export const CAPABILITIES_COPY = {
+  heading: "Hello, Voxora.",
+  subhead: "Every stage is a small interface, so you can swap models without touching the pipeline.",
   items: [
     {
       num: "01",
-      title: "Isolated workspaces",
-      command: "npx ragify workspace create",
-      description: "Partition documents into dedicated namespaces with their own index and metadata.",
+      title: "Streaming speech recognition",
+      command: "STT_PROVIDER=openai|faster-whisper|browser",
+      description:
+        "Audio frames flow continuously. Partial transcripts update the UI while the turn is still open.",
     },
     {
       num: "02",
-      title: "Multi-format ingestion",
-      command: "ragify upload docs/",
-      description: "PDFs, Markdown, TypeScript, Python, JSON, CSV — chunked and embedded automatically.",
+      title: "VAD endpointing",
+      command: "VAD_END_SILENCE_MS=650",
+      description:
+        "An adaptive energy detector with pre-roll decides when you have finished speaking.",
     },
     {
       num: "03",
-      title: "Hybrid dense + sparse retrieval",
-      command: "ragify search --hybrid",
-      description: "BM25 + vector recall, re-ranked for precision.",
+      title: "Token-level LLM streaming",
+      command: "LLM_PROVIDER=ollama",
+      description:
+        "Any OpenAI-compatible endpoint works: hosted APIs, Ollama, vLLM or llama.cpp.",
     },
     {
       num: "04",
-      title: "Exact source citations",
-      command: "ragify query --cite",
-      description: "Every claim links back to file, page, or line range.",
+      title: "Sentence-buffered TTS",
+      command: "TTS_PROVIDER=openai",
+      description:
+        "Tokens are grouped into speakable clauses and synthesised while generation continues.",
     },
     {
       num: "05",
-      title: "Streaming chat, local-first",
-      command: "ragify chat",
-      description: "Sessions persist in your browser. Cancel mid-stream with one click.",
+      title: "Barge-in cancellation",
+      command: "reason: barge_in",
+      description:
+        "Speaking mid-answer cancels the LLM and TTS tasks instantly. No stale audio is ever played.",
     },
     {
       num: "06",
-      title: "REST + Python / Java / TypeScript SDKs",
-      command: "npm i @ragify/sdk",
-      description: "Query your workspaces programmatically from any stack.",
+      title: "Browser playback queue",
+      command: "Web Audio + 20 ms frames",
+      description:
+        "PCM chunks are scheduled on the audio clock so speech joins gaplessly and stops on one frame.",
     },
     {
       num: "07",
-      title: "Private by default",
-      command: "ragify --offline",
-      description: "Your documents are never used to train public models.",
+      title: "Latency you can see",
+      command: "GET /api/v1/voice/metrics",
+      description:
+        "Per-stage timings, p50/p95/p99 summaries, and client-measured first-audio and barge-in latency.",
     },
   ],
 };
 
-export const PRICING = [
+export const DEPLOYMENT_COPY = {
+  heading: "Run it your way.",
+  subhead: "Every provider is configuration, not code. Mix hosted and local stages per deployment.",
+};
+
+export const DEPLOYMENTS = [
   {
-    name: "Free",
-    price: "$0",
+    name: "Local",
+    price: "Self-hosted",
     period: "",
-    description: "For individuals exploring grounded AI.",
+    description: "Nothing leaves your machine.",
     features: [
-      "Up to 3 workspaces",
-      "50 MB total document storage",
-      "Standard neural search",
-      "Local browser chat persistence",
+      "faster-whisper speech recognition",
+      "Ollama or llama.cpp for generation",
+      "Piper or browser speech synthesis",
+      "Metrics endpoint on localhost",
     ],
-    cta: "Start free",
-    to: "/sign-up",
+    cta: "Start talking",
+    to: "/app",
     highlight: false,
   },
   {
-    name: "Pro",
-    price: "$29",
-    period: "/ mo",
-    description: "For professionals managing deep knowledge bases.",
+    name: "Hosted",
+    price: "API keys",
+    period: "",
+    description: "Lowest setup, fastest first audio.",
     features: [
-      "Unlimited workspaces",
-      "10 GB storage with hybrid search",
-      "Code and PDF citation highlights",
-      "Export sessions and history API",
+      "Hosted Whisper transcription",
+      "Streaming chat completions",
+      "Hosted PCM text-to-speech",
+      "Keys stay on the server",
     ],
-    cta: "Start with Pro",
-    to: "/sign-up?plan=pro",
+    cta: "Start talking",
+    to: "/app",
     highlight: true,
   },
   {
-    name: "Enterprise",
-    price: "Custom",
+    name: "Hybrid",
+    price: "Mix & match",
     period: "",
-    description: "For organizations with dedicated vector clusters.",
+    description: "Local where it matters, hosted where it is fast.",
     features: [
-      "Dedicated vector database cluster",
-      "Custom embedding models",
-      "VPC and air-gapped deployments",
-      "24/7 support with SLA",
+      "Local STT, hosted LLM",
+      "Hosted STT, local TTS",
+      "Per-stage provider selection",
+      "Same WebSocket protocol",
     ],
-    cta: "Contact sales",
-    to: "/sign-up?plan=enterprise",
+    cta: "Start talking",
+    to: "/app",
     highlight: false,
   },
 ];
 
-export const PRICING_COPY = {
-  heading: "Plans for every team.",
-  subhead: "Start free. Upgrade when your team needs more. Every plan includes grounded citations.",
-};
-
-export const VALUE_PROPS = [
-  { label: "Citations per answer", value: "5–10" },
-  { label: "Sources per workspace", value: "1k+" },
-  { label: "Latency p50", value: "<1.2s" },
+export const LATENCY_PROPS = [
+  { label: "First audio p50 target", value: "≤ 700 ms" },
+  { label: "Barge-in p95 target", value: "≤ 200 ms" },
+  { label: "Stale chunks after cancel", value: "0" },
 ];
 
-export const VALUE_STACK_COPY = {
-  heading: "//take command of your knowledge.",
+export const LATENCY_COPY = {
+  heading: "//latency is the product.",
+  subhead:
+    "Every turn is timed from the end-of-speech decision to the first audible chunk, then aggregated. Warm-up, cold starts and concurrency are part of the report, not excuses.",
 };
 
 export const FAQ_ITEMS = [
   {
-    q: "How is Ragify different from uploading PDFs to ChatGPT?",
-    a: "Ragify indexes your documents once into isolated workspaces and retrieves the exact passages needed for each answer. You get persistent workspaces, exact citations, and the ability to query thousands of pages without re-uploading.",
+    q: "Does Voxora upload my whole recording?",
+    a: "No. The browser streams 20 ms PCM frames over a WebSocket. The server detects the end of your turn with VAD and transcribes on the fly, so nothing waits for a completed file.",
   },
   {
-    q: "What does 'grounded' actually mean?",
-    a: "Every claim in a Ragify answer is linked back to the exact file, page, or line range it came from. If the retrieval step finds no relevant context, Ragify says so instead of inventing an answer.",
+    q: "What does 'streaming' actually mean here?",
+    a: "Each stage hands off partial work: transcript segments feed the language model, generated tokens are grouped into sentences, and the first sentence starts synthesising while later ones are still being written.",
   },
   {
-    q: "Which file formats are supported?",
-    a: "PDFs, Markdown, plain text, JSON, TypeScript, Python, CSV, and code repositories out of the box.",
+    q: "How does interruption work?",
+    a: "The first voiced frames of a new utterance cancel the running turn. The server cancels outstanding generation and the browser stops its playback queue immediately, so you never hear a stale answer.",
   },
   {
-    q: "Is my data private? Is it used for training?",
-    a: "Your documents are stored as private vector embeddings inside your workspace namespace. They are never used to train public models.",
+    q: "Which models can I use?",
+    a: "Any OpenAI-compatible chat endpoint (OpenAI, Groq, vLLM, llama.cpp, Ollama), Whisper-family speech recognition (hosted or faster-whisper locally), and PCM or browser speech synthesis. Set it all through environment variables.",
   },
   {
-    q: "How do citations work?",
-    a: "Ragify retrieves the most relevant chunks before generating an answer, then links each sentence back to its source chunk. You can click any citation to open the original file at the exact location.",
+    q: "Where do API keys live?",
+    a: "Only on the server. The React app talks to your backend over one WebSocket and never sees provider credentials.",
   },
   {
-    q: "Do I need my own LLM API key?",
-    a: "Ragify ships with built-in model access. Bring-your-own-key is supported for enterprise deployments.",
+    q: "Do I need a GPU?",
+    a: "No. The zero-key defaults use the browser recogniser and speech synthesis with a built-in demo responder. Add a GPU only if you want local open-weight STT or a local LLM.",
   },
   {
-    q: "Can I query multiple workspaces at once?",
-    a: "Yes. A query can fan out across any workspaces you have access to, and the answer merges citations from all of them.",
+    q: "How do I measure the latency myself?",
+    a: "Open the Latency panel during a session. It shows per-turn server timings plus client-measured first-audio and barge-in latency, and the backend exposes p50/p95/p99 at /api/v1/voice/metrics.",
   },
 ];
 
@@ -193,79 +215,75 @@ export const FAQ_COPY = {
   heading: "Questions, answered.",
 };
 
-export const LATEST_FEED: ChangelogEntry[] = [
+export const STACK_COPY = {
+  heading: "Built from open pieces.",
+  subhead: "Replace any slot independently; the orchestrator only knows the interface.",
+};
+
+export const STACK_ITEMS = [
   {
-    version: "v0.9",
-    title: "Hybrid BM25 + dense retrieval",
-    date: "2026-08-12",
-    type: "feature",
+    slot: "VAD",
+    options: "Silero VAD · energy detector",
+    detail: "Frame-level speech detection with adaptive noise floor",
   },
   {
-    version: "v0.8",
-    title: "Workspace templates",
-    date: "2026-08-05",
-    type: "feature",
+    slot: "STT",
+    options: "faster-whisper · Kyutai · Parakeet · hosted Whisper",
+    detail: "Partial or final transcript events per provider capability",
   },
   {
-    version: "v0.7",
-    title: "Java SDK alpha",
-    date: "2026-07-28",
-    type: "feature",
+    slot: "LLM",
+    options: "Qwen · Llama · Gemma · hosted streaming API",
+    detail: "Token stream over an OpenAI-compatible endpoint",
   },
   {
-    version: "v0.6",
-    title: "Per-workspace citation export",
-    date: "2026-07-20",
-    type: "feature",
+    slot: "TTS",
+    options: "Pocket TTS · Kokoro · hosted streaming TTS",
+    detail: "Sentence chunks in, raw PCM out",
   },
 ];
 
-export const LATEST_FEED_COPY = {
-  heading: "Latest from Ragify.",
-  subhead: "Recent releases and improvements.",
-};
-
 export const SECONDARY_CTA = {
-  heading: "Ready to ground your answers?",
-  subhead: "Start your first workspace in under a minute. No credit card required.",
-  primary: { label: "Get started", to: "/sign-up" },
-  secondary: { label: "Sign in", to: "/sign-in" },
+  heading: "Ready to talk to your machine?",
+  subhead: "Open the studio, allow the microphone, and speak. Nothing to install, nothing to sign up for.",
+  primary: { label: "Start a conversation", to: "/app" },
+  secondary: { label: "Read the protocol", href: "#pipeline" },
 };
 
 export const FOOTER_COPY = {
   tagline:
-    "Grounded AI answers for your documents, code, and data. Every response cites its source.",
+    "A low-latency, real-time voice AI agent: streaming STT, LLM and TTS in one cancellable pipeline.",
 };
 
 export const FOOTER_COLUMNS = [
   {
     title: "Product",
     links: [
-      { label: "Demo", href: "/#demo" },
-      { label: "Features", href: "/#features" },
-      { label: "Pricing", href: "/#pricing" },
-      { label: "Changelog", href: "/#changelog" },
-      { label: "Status", href: "#" },
+      { label: "How it works", href: "/#pipeline" },
+      { label: "Capabilities", href: "/#capabilities" },
+      { label: "Latency", href: "/#latency" },
+      { label: "FAQ", href: "/#faq" },
+      { label: "Studio", href: "/app" },
     ],
   },
   {
     title: "Developers",
     links: [
-      { label: "Docs", href: "#" },
-      { label: "Python SDK", href: "#" },
-      { label: "Java SDK", href: "#" },
-      { label: "TypeScript SDK", href: "#" },
-      { label: "API Reference", href: "#" },
+      { label: "Protocol", href: "/#pipeline" },
+      { label: "Deployment", href: "/#deployment" },
+      { label: "Metrics", href: "/#latency" },
+      { label: "API README", href: "#stack" },
+      { label: "Providers", href: "/#stack" },
     ],
   },
   {
-    title: "Company",
+    title: "Architecture",
     links: [
-      { label: "About", href: "#" },
-      { label: "Blog", href: "#" },
-      { label: "Careers", href: "#" },
-      { label: "Brand", href: "#" },
-      { label: "Security", href: "#" },
+      { label: "STT adapters", href: "/#stack" },
+      { label: "LLM adapters", href: "/#stack" },
+      { label: "TTS adapters", href: "/#stack" },
+      { label: "VAD", href: "/#stack" },
+      { label: "Cancellation", href: "/#pipeline" },
     ],
   },
 ];
@@ -274,15 +292,3 @@ export const FOOTER_LEGAL = [
   { label: "Privacy", href: "/privacy" },
   { label: "Terms", href: "/terms" },
 ];
-
-export const TERMINAL_DEMO = {
-  command: "curl -X POST https://api.ragify.ai/v1/workspaces/demo/query",
-  body: `{ "query": "What changed in the remote-work policy?", "top_k": 5 }`,
-  response: `{
-  "answer": "Full-time employees may work remotely up to 3 days/week [policy.pdf:page 3]. Contractors follow a separate schedule [handbook.md:section 2.1].",
-  "citations": [
-    { "source": "policy.pdf", "page": 3 },
-    { "source": "handbook.md", "section": "2.1" }
-  ]
-}`,
-};

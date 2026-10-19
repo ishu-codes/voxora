@@ -3,18 +3,32 @@ import { Reveal } from "./Reveal";
 import { NoiseOverlay } from "./NoiseOverlay";
 import { HERO_COPY, ANNOUNCEMENT_STRIP } from "./sections";
 
+const GRID_COLUMNS = 10;
+
+function DashedGrid({ position }: { position: "top" | "bottom" }) {
+  return (
+    <div className={position === "top" ? "grid grid-cols-10 gap-0" : "mt-16 grid grid-cols-10 gap-0"}>
+      {Array.from({ length: GRID_COLUMNS }).map((_, index) => (
+        <div
+          key={index}
+          className={index < GRID_COLUMNS - 1 ? "col-span-1 dash-right hidden sm:block" : "col-span-1"}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function Hero() {
   return (
     <section className="relative mt-[84px] border border-border border-b-0 bg-background">
       <NoiseOverlay />
 
-      {/* Announcement strip */}
       <div className="relative z-10 flex items-center justify-between border-b border-border px-4 py-3 text-xs sm:px-6 sm:text-sm">
         <a
-          href="#pricing"
+          href="#pipeline"
           className="flex items-center gap-2 text-foreground/80 transition-colors hover:text-foreground"
         >
-          <span className="size-2 rounded-full bg-brand" aria-hidden="true" />
+          <span className="size-2 animate-pulse rounded-full bg-brand" aria-hidden="true" />
           <span className="underline decoration-foreground/40 underline-offset-2 hover:decoration-foreground">
             {ANNOUNCEMENT_STRIP.left}
           </span>
@@ -29,20 +43,8 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Dashed grid panel */}
       <div className="relative z-10 grid grid-cols-1 gap-0 px-4 py-16 sm:px-6 sm:py-24 lg:py-32">
-        <div className="grid grid-cols-10 gap-0">
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1" />
-        </div>
+        <DashedGrid position="top" />
 
         <Reveal direction="up">
           <div className="mx-auto max-w-4xl text-center">
@@ -60,7 +62,7 @@ export function Hero() {
 
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Pill asLink to={HERO_COPY.primary.to}>
-                <span className="font-mono text-sm sm:text-base">{HERO_COPY.primary.label}</span>
+                {HERO_COPY.primary.label}
                 <svg
                   className="size-4"
                   viewBox="0 0 24 24"
@@ -69,7 +71,7 @@ export function Hero() {
                   strokeWidth={2}
                   aria-hidden="true"
                 >
-                  <path d="M8 8V4h12v12h-4M16 8v12H4V8h12z" strokeLinecap="round" />
+                  <path d="M12 3a3 3 0 0 1 3 3v6a3 3 0 0 1-6 0V6a3 3 0 0 1 3-3zM5 11a7 7 0 0 0 14 0M12 18v3" strokeLinecap="round" />
                 </svg>
               </Pill>
               <OutlinePill asLink href={HERO_COPY.secondary.href}>
@@ -79,18 +81,7 @@ export function Hero() {
           </div>
         </Reveal>
 
-        <div className="mt-16 grid grid-cols-10 gap-0">
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1 dash-right hidden sm:block" />
-          <div className="col-span-1" />
-        </div>
+        <DashedGrid position="bottom" />
       </div>
     </section>
   );

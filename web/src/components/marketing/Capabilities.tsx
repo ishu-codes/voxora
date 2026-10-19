@@ -1,15 +1,15 @@
 import { Section, SectionHeader } from "./Section";
 import { Reveal } from "./Reveal";
 import { DashedPanel } from "./DashedPanel";
-import { EXPLAINER_COPY } from "./sections";
+import { CAPABILITIES_COPY } from "./sections";
 
-export function RagifyExplainer() {
+export function Capabilities() {
   return (
-    <Section id="features" className="bg-background">
-      <SectionHeader heading={EXPLAINER_COPY.heading} subhead={EXPLAINER_COPY.subhead} />
+    <Section id="capabilities" className="bg-background">
+      <SectionHeader heading={CAPABILITIES_COPY.heading} subhead={CAPABILITIES_COPY.subhead} />
 
       <div className="mt-14 grid gap-0">
-        {EXPLAINER_COPY.items.map((item, index) => (
+        {CAPABILITIES_COPY.items.map((item, index) => (
           <Reveal key={item.num} delay={index * 60}>
             <DashedPanel className="group flex flex-col gap-4 bg-card p-6 transition-colors hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between sm:p-7">
               <div className="flex items-start gap-5 sm:items-center">
