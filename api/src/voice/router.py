@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
+import time
 from dataclasses import dataclass, field
 
 from fastapi import APIRouter, Request, WebSocket, WebSocketDisconnect
@@ -157,10 +157,13 @@ async def voice_socket(websocket: WebSocket) -> None:
     finally:
         await pipeline.close()
         await transport.close()
+        runtime_ms = round((time.time() - pipeline.session.created_at) * 1000)
         logger.info(
-            "voice session %s closed (dropped_events=%s)",
+            "voice session %s closed (turns=%s dropped_events=%s runtime_ms=%s)",
             pipeline.session.session_id[:8],
+            pipeline.session.turn_count,
             transport.dropped,
+            runtime_ms,
         )
 
 

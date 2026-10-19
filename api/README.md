@@ -106,6 +106,32 @@ the generation counter advances, so no stale audio is played.
 - **History.** The last `MAX_HISTORY_MESSAGES` messages of the session are sent
   with every request, so follow-ups work. History is in memory per connection.
 
+## Reliability, scaling and privacy
+
+- **Session isolation.** Provider failures are caught per turn (`ProviderError`)
+  and per connection, so one conversation's errors never surface in another.
+  The socket loop wraps every session in its own `try/finally` teardown.
+- **Bounded buffering.** The utterance buffer is capped by
+  `VAD_MAX_UTTERANCE_MS`, the sentence hand-off queue is capped at 16 items and
+  the socket writer at `MAX_OUTPUT_QUEUE`. Overflow drops audio rather than
+  growing memory.
+- **Inference off the event loop.** Hosted stages use async `httpx` streaming;
+  local `faster-whisper` runs through `asyncio.to_thread` behind a lock, so
+  transcription never blocks the API loop.
+- **Timeouts and cancellation.** Every stage is cancellable through the turn's
+  `asyncio` task; transcription has a hard timeout and each turn advances a
+  generation counter that drops late output.
+- **Per-session accounting.** Each session logs turn count, dropped events and
+  runtime on close; `GET /api/v1/voice/metrics` aggregates latency across turns.
+- **No raw audio logging.** Logs and metric records contain identifiers and
+  durations only — never audio or transcript text. Audio is held in memory for
+  the current utterance and discarded after transcription.
+- **Secrets stay server-side.** The browser sees provider names and public
+  settings from `/config`; API keys are read from the environment only.
+
+Before a public deployment, add authentication, per-user rate limits and TLS
+(WebSocket `wss://`); these are intentionally out of scope for this MVP.
+
 ## Latency metrics
 
 `GET /api/v1/voice/metrics` returns counts plus p50/p95/p99 for
