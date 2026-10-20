@@ -55,16 +55,13 @@ export function ConversationPanel({
 }: ConversationPanelProps) {
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const trackedTurns = diagnostics.length;
-  const thinking =
-    agentState === "thinking" && messages.at(-1)?.role === "user";
+  const thinking = agentState === "thinking" && messages.at(-1)?.role === "user";
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar">
       <SidebarHeader className="h-[85px] shrink-0 flex-row items-center justify-between gap-3 border-b border-border bg-sidebar px-4 py-0">
         <div className="min-w-0">
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-            Conversation
-          </p>
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Conversation</p>
           <h2 className="mt-1 truncate text-lg font-semibold tracking-tight">
             {status === "connected" ? "Live transcript" : "Session transcript"}
           </h2>
@@ -81,10 +78,7 @@ export function ConversationPanel({
           >
             <Trash2Icon />
           </Button>
-          <SidebarTrigger
-            className="size-8 text-muted-foreground"
-            aria-label="Toggle conversation sidebar"
-          >
+          <SidebarTrigger className="size-8 text-muted-foreground" aria-label="Toggle conversation sidebar">
             <XIcon className="size-4" />
             <span className="sr-only">Toggle conversation sidebar</span>
           </SidebarTrigger>
@@ -96,9 +90,8 @@ export function ConversationPanel({
           <AlertDialogHeader>
             <AlertDialogTitle>Clear conversation history?</AlertDialogTitle>
             <AlertDialogDescription>
-              This removes the transcript and latency summary from the current
-              session. Chat history is kept only in this browser tab and is
-              automatically deleted when you close the tab.
+              This removes the transcript and latency summary from the current session. Chat history is kept only in
+              this browser tab and is automatically deleted when you close the tab.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -131,18 +124,12 @@ export function ConversationPanel({
               const streaming = !message.final;
 
               return (
-                <Message
-                  key={message.id}
-                  from={message.role}
-                  className="py-2.5"
-                >
+                <Message key={message.id} from={message.role} className="py-2.5">
                   <MessageContent
                     variant="contained"
                     className={cn(
                       "max-w-[92%] whitespace-pre-wrap break-words",
-                      isUser
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-foreground",
+                      isUser ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground",
                       message.interrupted && "opacity-70",
                       message.failed && "ring-1 ring-destructive/40",
                     )}
@@ -150,9 +137,7 @@ export function ConversationPanel({
                     <span
                       className={cn(
                         "font-mono text-[10px] uppercase tracking-[0.2em]",
-                        isUser
-                          ? "text-primary-foreground/70"
-                          : "text-muted-foreground",
+                        isUser ? "text-primary-foreground/70" : "text-muted-foreground",
                       )}
                     >
                       {isUser ? "You" : "Voxora"}
@@ -182,7 +167,7 @@ export function ConversationPanel({
         </Conversation>
       )}
 
-      <footer className="border-t border-border px-4 py-3">
+      {/*<footer className="border-t border-border px-4 py-3">
         <div className="flex gap-2 justify-between text-center font-mono text-[10px] tracking-[0.15em] text-muted-foreground">
           <div>
             <div className="text-sm text-foreground tabular-nums">
@@ -204,13 +189,13 @@ export function ConversationPanel({
           </div>
         </div>
 
-        {/*{diagnostics.length > 0 ? (
+        {diagnostics.length > 0 ? (
           <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
             <span>Recent turns</span>
             <span className="font-mono tabular-nums">p95 {formatMs(summary.firstPlaybackP95)}</span>
           </div>
-        ) : null}*/}
-      </footer>
+        ) : null}
+      </footer>*/}
     </div>
   );
 }

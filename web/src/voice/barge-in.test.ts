@@ -148,11 +148,14 @@ test("playback text waits for the audio context to actually start", async () => 
     await new Promise((resolve) => setTimeout(resolve, 70));
     assert.equal(revealed, 0);
 
-    const context = (
-      player as unknown as {
-        context: FakeContext;
-      }
-    ).context;
+    const playerState = player as unknown as {
+      context: FakeContext;
+      sources: Set<{ onended: (() => void) | null }>;
+    };
+    // A short first audio chunk may finish before its audible timestamp. That
+    // must not discard the text reveal for the sentence it introduced.
+    for (const source of playerState.sources) source.onended?.();
+    const context = playerState.context;
     context.state = "running";
     context.currentTime = 0.03;
 

@@ -1,30 +1,18 @@
 "use client";
 
-import {
-  AlertTriangleIcon,
-  Loader2Icon,
-  MessageSquareIcon,
-  MicIcon,
-  MicOffIcon,
-  PhoneIcon,
-  XIcon,
-} from "lucide-react";
+import { AlertTriangleIcon, Loader2Icon, MessageSquareIcon, MicIcon, MicOffIcon, PhoneIcon, XIcon } from "lucide-react";
 import { Navbar } from "@/components/navbar/Navbar";
 import { BarVisualizer } from "@/components/ui/bar-visualizer";
 import { Button } from "@/components/ui/button";
 import { Orb } from "@/components/ui/orb";
-import {
-  Sidebar,
-  SidebarInset,
-  SidebarProvider,
-  useSidebar,
-} from "@/components/ui/sidebar";
+import { Sidebar, SidebarInset, SidebarProvider, useSidebar } from "@/components/ui/sidebar";
 import { VoicePicker } from "@/components/ui/voice-picker";
 import { ConversationPanel } from "@/components/voice/ConversationPanel";
 import { cn } from "@/lib/utils";
 import { useVoiceSessionContext } from "@/voice/voice-session-provider";
 
 type VisualizerState = React.ComponentProps<typeof BarVisualizer>["state"];
+type OrbVisualizerState = React.ComponentProps<typeof Orb>["agentState"];
 
 function ControlButton({
   label,
@@ -79,12 +67,10 @@ export default function VoiceStudioPage() {
   const session = useVoiceSessionContext();
 
   const connecting = session.status === "connecting";
-  const live =
-    session.status === "connected" || session.status === "reconnecting";
+  const live = session.status === "connected" || session.status === "reconnecting";
   const canHangUp = live || connecting;
 
-  const initializing =
-    live && (!session.ready || session.vadStatus === "loading");
+  const initializing = live && (!session.ready || session.vadStatus === "loading");
   const visualizerState: VisualizerState =
     session.status === "connecting" || session.status === "reconnecting"
       ? "connecting"
@@ -99,18 +85,14 @@ export default function VoiceStudioPage() {
               : undefined;
   const showBars = visualizerState != null;
 
-  const orbState: "thinking" | "listening" | "talking" | null =
-    connecting || session.status === "reconnecting"
+  const orbState: OrbVisualizerState =
+    visualizerState === "connecting" || visualizerState === "initializing" || visualizerState === "thinking"
       ? "thinking"
-      : session.agentState === "speaking"
+      : visualizerState === "speaking"
         ? "talking"
-        : session.agentState === "listening" ||
-            session.agentState === "capturing" ||
-            session.agentState === "interrupted"
+        : visualizerState === "listening"
           ? "listening"
-          : session.agentState === "thinking"
-            ? "thinking"
-            : null;
+          : null;
 
   const statusText =
     visualizerState === undefined
@@ -182,12 +164,7 @@ export default function VoiceStudioPage() {
 
               <div className="flex w-full max-w-xl flex-col items-center gap-5">
                 <div className="relative size-65 shrink-0 sm:size-60 lg:size-70 xl:size-80">
-                  <Orb
-                    agentState={orbState}
-                    colors={["#2E1B9C", "#A599E9"]}
-                    seed={7}
-                    className="absolute inset-0"
-                  />
+                  <Orb agentState={orbState} colors={["#2E1B9C", "#A599E9"]} seed={1234} className="absolute inset-0" />
                 </div>
 
                 <div
@@ -227,21 +204,11 @@ export default function VoiceStudioPage() {
                     variant={session.muted ? "destructive" : "outline"}
                     className="size-12"
                   >
-                    {session.muted ? (
-                      <MicOffIcon className="size-5" />
-                    ) : (
-                      <MicIcon className="size-5" />
-                    )}
+                    {session.muted ? <MicOffIcon className="size-5" /> : <MicIcon className="size-5" />}
                   </ControlButton>
 
                   <ControlButton
-                    label={
-                      connecting
-                        ? "Connecting"
-                        : live
-                          ? "End conversation"
-                          : "Start conversation"
-                    }
+                    label={connecting ? "Connecting" : live ? "End conversation" : "Start conversation"}
                     onClick={() => {
                       if (canHangUp) void session.stop();
                       else void session.start();

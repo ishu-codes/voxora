@@ -562,7 +562,6 @@ export class AudioPlayer {
       );
       this.schedulePlaybackStart(
         context,
-        source,
         startAt + outputLatency,
         onPlaybackStart,
       );
@@ -579,12 +578,10 @@ export class AudioPlayer {
 
   private schedulePlaybackStart(
     context: AudioContext,
-    source: AudioBufferSourceNode,
     startAt: number,
     onPlaybackStart: () => void,
   ): void {
     const scheduleCheck = () => {
-      if (!this.sources.has(source)) return;
       const remainingMs = (startAt - context.currentTime) * 1000;
       const delay =
         context.state === "running"
@@ -592,7 +589,6 @@ export class AudioPlayer {
           : 50;
       const timer = window.setTimeout(() => {
         this.startTimers.delete(timer);
-        if (!this.sources.has(source)) return;
         const remaining = (startAt - context.currentTime) * 1000;
         if (context.state === "running" && remaining <= 0) {
           onPlaybackStart();

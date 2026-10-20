@@ -45,10 +45,14 @@ export function Orb({
   }, []);
 
   return (
-    <div className={className ?? "relative h-full w-full"}>
+    <div
+      data-agent-state={agentState ?? "idle"}
+      className={className ?? "relative h-full w-full"}
+    >
       {mounted ? (
         <Canvas
           resize={{ debounce: resizeDebounce }}
+          camera={{ position: [0, 0, 6], fov: 75 }}
           gl={{
             alpha: true,
             antialias: true,
@@ -115,13 +119,10 @@ function Scene({
   const curInRef = useRef(0);
   const curOutRef = useRef(0);
 
-  useEffect(() => {
-    agentRef.current = agentState;
-  }, [agentState]);
-
-  useEffect(() => {
-    modeRef.current = volumeMode;
-  }, [volumeMode]);
+  // Keep the animation loop synchronized with the latest React props without
+  // waiting for a post-render effect.
+  agentRef.current = agentState;
+  modeRef.current = volumeMode;
 
   useEffect(() => {
     manualInRef.current = clamp01(
@@ -206,7 +207,7 @@ function Scene({
         const base = 0.38 + 0.07 * Math.sin(t * 0.7);
         const wander = 0.05 * Math.sin(t * 2.1) * Math.sin(t * 0.37 + 1.2);
         targetIn = clamp01(base + wander);
-        targetOut = clamp01(0.48 + 0.12 * Math.sin(t * 1.05 + 0.6));
+        targetOut = clamp01(0.48 + Math.sin(t * 1.05 + 0.6) * 0.12);
       }
     }
 
@@ -322,7 +323,7 @@ bool drawOval(vec2 polarUv, vec2 polarCenter, float a, float b, bool reverseGrad
     if (edge > 0.0) {
         float gradient = reverseGradient ? (1.0 - (p.x / a + 1.0) / 2.0) : ((p.x / a + 1.0) / 2.0);
         // Flatten gradient toward middle value for more uniform appearance
-        gradient = mix(0.5, gradient, 0.45);
+        gradient = mix(0.5, gradient, 0.1);
         color = vec4(vec3(gradient), 0.85 * edge);
         return true;
     }
@@ -425,14 +426,16 @@ void main() {
     float noise = flow(decomposed, radius * 0.03 - uAnimation * 0.2) - 0.5;
     theta += noise * mix(0.08, 0.25, uOutputVolume);
 
-    // Start from the darker tone so gaps read as shading, not holes.
-    vec4 color = vec4(uColor1, 1.0);
+    // Initialize the base color to white
+    vec4 color = vec4(1.0, 1.0, 1.0, 1.0);
 
-    // Seven ovals spread evenly around the circle form one round, soft mass.
+    // Original parameters for the ovals in polar coordinates
+    float originalCenters[7] = float[7](0.0, 0.5 * PI, 1.0 * PI, 1.5 * PI, 2.0 * PI, 2.5 * PI, 3.0 * PI);
+
+    // Parameters for the animated centers in polar coordinates
     float centers[7];
     for (int i = 0; i < 7; i++) {
-        centers[i] =
-            (float(i) / 7.0) * 2.0 * PI + 0.3 * sin(uTime / 20.0 + uOffsets[i]);
+        centers[i] = originalCenters[i] + 0.5 * sin(uTime / 20.0 + uOffsets[i]);
     }
 
     float a, b;
@@ -441,8 +444,8 @@ void main() {
     // Check if the pixel is inside any of the ovals
     for (int i = 0; i < 7; i++) {
         float noise = texture(uPerlinTexture, vec2(mod(centers[i] + uTime * 0.05, 1.0), 0.5)).r;
-        a = 0.98 + noise * 0.1; // Overlap neighbours so the silhouette stays round
-        b = (1.0 + noise * 0.3) * mix(3.5, 2.9, uInputVolume);
+        a = 0.5 + noise * 0.3; // Increased for more coverage
+        b = noise * mix(3.5, 2.5, uInputVolume); // Increased height for fuller appearance
         bool reverseGradient = (i % 2 == 1); // Reverse gradient for every second oval
 
         // Calculate the distance in polar coordinates
@@ -479,7 +482,7 @@ void main() {
     float ringAlpha1 = (inputRadius2 >= ringRadius1) ? opacity1 : 0.0;
     float ringAlpha2 = smoothstep(ringRadius2 - 0.05, ringRadius2 + 0.05, inputRadius1) * opacity2;
     
-    float totalRingAlpha = 0.0;
+    float totalRingAlpha = max(ringAlpha1, ringAlpha2);
     
     // Apply screen blend mode for combined rings
     vec3 ringColor = vec3(1.0); // White ring color
