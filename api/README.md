@@ -124,8 +124,7 @@ Server → client
 | `audio.level` | Mic RMS for the level meter (throttled to 10 Hz) |
 | `speech.start` | Server VAD detected the user speaking; fallback signal to stop playback when local VAD is unavailable |
 | `transcript.partial` / `transcript.final` | Partial and final Sarvam transcripts |
-| `assistant.delta` | Incremental response tokens |
-| `audio.chunk` | Base64 PCM16 audio from Sarvam TTS |
+| `audio.chunk` | Base64 PCM16 audio from Sarvam TTS; the first chunk of each sentence carries its spoken `text` |
 | `assistant.done` | Full response text |
 | `assistant.failed` / `turn.cancelled` / `turn.empty` | Turn outcomes |
 | `turn.metrics` | Stage timings for the turn |
@@ -154,7 +153,9 @@ generation counter and the targeted turn id, so no stale audio is played.
   or misses onset.
 - **Overlap.** LLM tokens flow into a bounded queue (16 sentences); a separate
   task synthesises each sentence as it arrives, so synthesis overlaps
-  generation. The Sarvam TTS socket is reused within a turn.
+  generation. The Sarvam TTS socket is prewarmed when speech starts, then reused
+  within a turn. Sentence text is attached to the first audio chunk so the
+  browser can reveal it when playback actually begins.
 - **Backpressure.** The socket writer is a bounded queue. Audio and level
   events are dropped when a slow client saturates it; control events wait
   briefly and are counted as dropped rather than blocking inference.

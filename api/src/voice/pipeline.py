@@ -12,16 +12,18 @@ import asyncio
 import base64
 import logging
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from .audio import pcm16_rms
 from .config import FRAME_BYTES, SAMPLE_RATE, Settings
-from .metrics import MetricsRegistry, registry as default_registry
+from .metrics import MetricsRegistry
+from .metrics import registry as default_registry
 from .providers.base import LLMProvider, ProviderError, STTProvider, TTSProvider
 from .sentence import SentenceChunker
 from .session import VoiceSession
 from .transport import Transport
-from .vad import EnergyVAD, VAD
+from .vad import VAD, EnergyVAD
 
 logger = logging.getLogger(__name__)
 
@@ -86,6 +88,7 @@ class VoicePipeline:
         self._state = "idle"
         self._last_level_at = 0.0
         self._closed = False
+        self._tts_prewarm_task: asyncio.Task[None] | None = None
 
     # ------------------------------------------------------------------ setup
 
@@ -142,6 +145,22 @@ class VoicePipeline:
         await self.transport.send(self.ready_event(reasons))
         await self._set_state("listening")
 
+    def _schedule_tts_prewarm(self) -> None:
+        if self._tts_prewarm_task is not None and not self._tts_prewarm_task.done():
+            return
+        self._tts_prewarm_task = asyncio.create_task(self.prewarm_tts())
+
+    async def prewarm_tts(self) -> None:
+        """Warm TTS without making ready delivery wait on the provider."""
+        try:
+            await self.tts.prepare(self._voice)
+        except ProviderError as exc:
+            # The first synthesis retries lazily and can surface the real error
+            # in the turn that needs it. A warmup failure must not end the call.
+            logger.info("%s tts prewarm skipped: %s", self._tag, exc.message)
+        except Exception:
+            logger.warning("%s tts prewarm failed", self._tag, exc_info=True)
+
     # ------------------------------------------------------------ audio input
 
     async def feed_audio(self, data: bytes) -> None:
@@ -191,8 +210,11 @@ class VoicePipeline:
             cancelled_turn or "-",
         )
 
-        await self.transport.send({"type": "speech.start", "turn_id": self._label(generation)})
+        await self.transport.send(
+            {"type": "speech.start", "turn_id": self._label(generation)}
+        )
         await self._set_state("listening")
+        self._schedule_tts_prewarm()
 
         async def on_partial(text: str) -> None:
             if generation == self._generation:
@@ -246,11 +268,17 @@ class VoicePipeline:
         try:
             text = await self._transcribe(generation, ts_end)
             if generation != self._generation:
-                logger.debug("%s dropping stale turn=%s", self._tag, self._label(generation))
+                logger.debug(
+                    "%s dropping stale turn=%s", self._tag, self._label(generation)
+                )
                 return
             if not text:
-                logger.info("%s turn=%s empty transcript", self._tag, self._label(generation))
-                await self.transport.send({"type": "turn.empty", "turn_id": self._label(generation)})
+                logger.info(
+                    "%s turn=%s empty transcript", self._tag, self._label(generation)
+                )
+                await self.transport.send(
+                    {"type": "turn.empty", "turn_id": self._label(generation)}
+                )
                 await self._set_state("listening", generation)
                 return
 
@@ -261,8 +289,13 @@ class VoicePipeline:
                 _clip(text),
             )
             await self.transport.send(
-                {"type": "transcript.final", "turn_id": self._label(generation), "text": text}
+                {
+                    "type": "transcript.final",
+                    "turn_id": self._label(generation),
+                    "text": text,
+                }
             )
+            self._schedule_tts_prewarm()
             if (
                 self.turn_limit is not None
                 and self.session.turn_count >= self.turn_limit
@@ -316,7 +349,9 @@ class VoicePipeline:
         )
         return (text or "").strip()
 
-    async def _run_assistant(self, generation: int, user_text: str, ts_end: float) -> None:
+    async def _run_assistant(
+        self, generation: int, user_text: str, ts_end: float
+    ) -> None:
         turn = self._turns[generation]
         messages = self.session.messages_for_llm(self.settings.system_prompt)
         queue: asyncio.Queue[str | None] = asyncio.Queue(maxsize=16)
@@ -347,9 +382,6 @@ class VoicePipeline:
                         first_token_at = self.clock()
                         turn["llm_first_token_ms"] = _ms(llm_started, first_token_at)
                     tokens.append(token)
-                    await self.transport.send(
-                        {"type": "assistant.delta", "turn_id": self._label(generation), "text": token}
-                    )
                     for sentence in chunker.feed(token):
                         await queue.put(sentence)
                 tail = chunker.flush()
@@ -376,6 +408,7 @@ class VoicePipeline:
                     sentence,
                 )
                 tts_started = self.clock()
+                sentence_text_sent = False
                 async for chunk in self.tts.synthesize(sentence, voice=self._voice):
                     if generation != self._generation:
                         logger.info(
@@ -398,20 +431,29 @@ class VoicePipeline:
                             turn["e2e_first_audio_ms"],
                         )
                         await self._set_state("speaking", generation)
-                    await self.transport.send(
-                        {
-                            "type": "audio.chunk",
-                            "turn_id": self._label(generation),
-                            "data": base64.b64encode(chunk).decode("ascii"),
-                            "sample_rate": self.tts.sample_rate,
-                            "format": "pcm16",
-                        }
-                    )
+                    event: dict[str, Any] = {
+                        "type": "audio.chunk",
+                        "turn_id": self._label(generation),
+                        "data": base64.b64encode(chunk).decode("ascii"),
+                        "sample_rate": self.tts.sample_rate,
+                        "format": "pcm16",
+                    }
+                    if not sentence_text_sent:
+                        # The browser reveals this sentence when this first
+                        # chunk reaches the speakers, keeping transcript and
+                        # voice on the same timeline even when TTS runs ahead.
+                        event["text"] = sentence
+                        sentence_text_sent = True
+                    await self.transport.send(event)
 
         await self._gather(produce(), consume())
 
         if generation != self._generation:
-            logger.info("%s turn=%s cancelled before completion", self._tag, self._label(generation))
+            logger.info(
+                "%s turn=%s cancelled before completion",
+                self._tag,
+                self._label(generation),
+            )
             return
 
         full_text = "".join(tokens).strip()
@@ -438,7 +480,11 @@ class VoicePipeline:
         )
 
         await self.transport.send(
-            {"type": "assistant.done", "turn_id": self._label(generation), "text": full_text}
+            {
+                "type": "assistant.done",
+                "turn_id": self._label(generation),
+                "text": full_text,
+            }
         )
         await self.transport.send(
             {
@@ -498,21 +544,28 @@ class VoicePipeline:
                 "recoverable": True,
             }
         )
-        await self.transport.send({"type": "assistant.failed", "turn_id": self._label(generation)})
+        await self.transport.send(
+            {"type": "assistant.failed", "turn_id": self._label(generation)}
+        )
         await self._set_state("listening", generation)
 
     # ------------------------------------------------------------ client input
 
-    async def handle_client_metrics(self, turn_id: str, payload: dict[str, Any]) -> None:
+    async def handle_client_metrics(
+        self, turn_id: str, payload: dict[str, Any]
+    ) -> None:
         allowed = {
             key: value
             for key, value in payload.items()
-            if key in {"first_playback_ms", "barge_in_ms", "playback_ms"} and isinstance(value, (int, float))
+            if key in {"first_playback_ms", "barge_in_ms", "playback_ms"}
+            and isinstance(value, (int, float))
         }
         if allowed:
             self.metrics.merge(turn_id, allowed)
 
-    async def interrupt(self, reason: str = "manual", turn_id: str | None = None) -> None:
+    async def interrupt(
+        self, reason: str = "manual", turn_id: str | None = None
+    ) -> None:
         """Cancel the active assistant response.
 
         When ``turn_id`` is supplied (the browser's barge-in path), the
@@ -614,7 +667,9 @@ class VoicePipeline:
             {
                 "type": "state",
                 "state": state,
-                "turn_id": self._label(generation if generation is not None else self._generation),
+                "turn_id": self._label(
+                    generation if generation is not None else self._generation
+                ),
             }
         )
 
@@ -633,6 +688,9 @@ class VoicePipeline:
             if not task.done():
                 task.cancel()
             tasks.append(task)
+        if self._tts_prewarm_task is not None and not self._tts_prewarm_task.done():
+            self._tts_prewarm_task.cancel()
+            tasks.append(self._tts_prewarm_task)
         if tasks:
             try:
                 await asyncio.gather(*tasks, return_exceptions=True)
@@ -640,6 +698,7 @@ class VoicePipeline:
                 raise
         self._turn_task = None
         self._task_turn_id = None
+        self._tts_prewarm_task = None
         self._orphan_tasks.clear()
         for provider in (self.stt, self.tts):
             try:

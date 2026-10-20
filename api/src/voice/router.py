@@ -475,6 +475,7 @@ async def _handle_text(pipeline: VoicePipeline, raw: str) -> None:
             )
         else:
             pipeline.set_voice(voice)
+            await pipeline.prewarm_tts()
     elif kind == "metrics":
         turn_id = str(payload.get("turn_id", ""))
         metrics = payload.get("metrics") or {}

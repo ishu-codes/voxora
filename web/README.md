@@ -39,7 +39,9 @@ client reacquires the device and restarts local VAD without dropping the
 WebSocket. If Silero misses speech, a sustained-energy fallback opens the audio
 gate so the utterance still reaches STT. The bar visualizer reflects
 connecting, initializing, listening, speaking and thinking states, and resumes
-its analyser after the page becomes visible again.
+its analyser after the page becomes visible again. Assistant text is revealed
+when the corresponding sentence's first audio chunk begins playback, rather
+than when the LLM token arrives.
 
 ```bash
 pnpm test        # interruption, PCM conversion and transcript persistence

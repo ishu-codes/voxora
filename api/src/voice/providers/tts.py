@@ -35,6 +35,7 @@ class SarvamTTS:
         self._ws: websockets.ClientConnection | None = None
         self._speaker: str | None = None
         self._dirty = False
+        self._connect_lock = asyncio.Lock()
 
     def _url(self) -> str:
         query = urlencode(
@@ -46,6 +47,11 @@ class SarvamTTS:
         return f"{self._settings.sarvam_ws_url}/text-to-speech/ws?{query}"
 
     async def _connect(self, speaker: str) -> None:
+        """Open and configure the socket once, even if prewarm races synthesis."""
+        async with self._connect_lock:
+            await self._connect_once(speaker)
+
+    async def _connect_once(self, speaker: str) -> None:
         if (
             self._ws is not None
             and self._ws.close_code is None
@@ -99,6 +105,15 @@ class SarvamTTS:
         self._speaker = speaker
         logger.info("%s tts connected", self._tag)
 
+    async def prepare(self, voice: str | None = None) -> None:
+        """Open the synthesis socket before the first sentence is available."""
+        speaker = (voice or self._settings.tts_voice).strip()
+        async with self._connect_lock:
+            if self._dirty:
+                await self._close_socket()
+                self._dirty = False
+            await self._connect_once(speaker)
+
     async def _send(self, payload: dict) -> None:
         if self._ws is None or self._ws.close_code is not None:
             raise ProviderError("tts", "Sarvam speech synthesis is not connected.")
@@ -106,10 +121,11 @@ class SarvamTTS:
 
     async def _stream(self, text: str, voice: str | None = None) -> AsyncIterator[bytes]:
         speaker = (voice or self._settings.tts_voice).strip()
-        if self._dirty:
-            await self._close_socket()
-            self._dirty = False
-        await self._connect(speaker)
+        async with self._connect_lock:
+            if self._dirty:
+                await self._close_socket()
+                self._dirty = False
+            await self._connect_once(speaker)
 
         self._dirty = True
         chunks = 0

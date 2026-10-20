@@ -178,6 +178,22 @@ async def test_sarvam_tts_configures_and_streams_pcm(monkeypatch):
     await tts.close()
 
 
+async def test_sarvam_tts_prewarms_connection_without_sending_text(monkeypatch):
+    socket = FakeTTSSocket()
+
+    async def connect(*_args, **_kwargs):
+        return socket
+
+    monkeypatch.setattr("websockets.connect", connect)
+    tts = SarvamTTS(Settings(sarvam_api_key="test-key"))
+
+    await tts.prepare(voice="ritu")
+
+    assert [message["type"] for message in socket.sent] == ["config"]
+    assert socket.sent[0]["data"]["speaker"] == "ritu"
+    await tts.close()
+
+
 async def test_sarvam_stt_requires_a_key_before_connecting():
     stt = SarvamSTT(Settings(sarvam_api_key=""))
     with pytest.raises(ProviderError, match="API key"):

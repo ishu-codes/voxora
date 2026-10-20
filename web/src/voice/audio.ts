@@ -497,6 +497,7 @@ export class AudioPlayer {
   private context: AudioContext | null = null;
   private gain: GainNode | null = null;
   private sources = new Set<AudioBufferSourceNode>();
+  private startTimers = new Set<number>();
   private nextTime = 0;
 
   private readonly handlers: PlayerHandlers;
@@ -525,7 +526,11 @@ export class AudioPlayer {
     return this.sources.size > 0;
   }
 
-  enqueue(pcm: Int16Array, sampleRate: number): void {
+  enqueue(
+    pcm: Int16Array,
+    sampleRate: number,
+    onPlaybackStart?: () => void,
+  ): void {
     if (!pcm.length || sampleRate <= 0) return;
     const context = this.ensureContext();
     if (context.state === "suspended") {
@@ -550,6 +555,14 @@ export class AudioPlayer {
       this.handlers.onSpeakingChange?.(true);
       this.handlers.onFirstAudio?.();
     }
+    if (onPlaybackStart) {
+      const delay = Math.max(0, (startAt - context.currentTime) * 1000);
+      const timer = window.setTimeout(() => {
+        this.startTimers.delete(timer);
+        if (this.sources.has(source)) onPlaybackStart();
+      }, delay);
+      this.startTimers.add(timer);
+    }
 
     source.onended = () => {
       this.sources.delete(source);
@@ -561,6 +574,8 @@ export class AudioPlayer {
   }
 
   stop(): void {
+    for (const timer of this.startTimers) window.clearTimeout(timer);
+    this.startTimers.clear();
     for (const source of this.sources) {
       source.onended = null;
       try {

@@ -82,6 +82,10 @@ class FakeAudioTTS:
     def __init__(self, chunks: int = 2) -> None:
         self.chunks = chunks
         self.voices: list[str | None] = []
+        self.prepared: list[str | None] = []
+
+    async def prepare(self, voice: str | None = None) -> None:
+        self.prepared.append(voice)
 
     async def _stream(self, text: str, voice: str | None = None) -> AsyncIterator[bytes]:
         self.voices.append(voice)
@@ -172,8 +176,11 @@ async def test_full_turn_streams_partials_and_audio():
     assert [event["text"] for event in partials] == ["what is", "what is latency"]
     final = transport.of_type("transcript.final")
     assert final and final[0]["text"] == "what is latency"
-    assert transport.of_type("assistant.delta")
-    assert len(transport.of_type("audio.chunk")) == 2
+    assert transport.of_type("assistant.delta") == []
+    chunks = transport.of_type("audio.chunk")
+    assert len(chunks) == 2
+    assert chunks[0]["text"] == "Latency is the delay between events."
+    assert "text" not in chunks[1]
     assert transport.of_type("assistant.done")[0]["text"].strip() == (
         "Latency is the delay between events."
     )
@@ -253,7 +260,7 @@ async def test_barge_in_cancels_generation_and_marks_latest_turn():
         for event in transport.of_type("assistant.delta")
         if event["turn_id"] == first_turn_id
     ]
-    assert deltas, "the partial answer should have streamed before cancellation"
+    assert deltas == [], "unspoken text must not appear before audio starts"
     await pipeline.close()
 
 
@@ -467,4 +474,16 @@ async def test_platform_turn_limit_blocks_extra_turns():
     quota = [event for event in transport.of_type("error") if event["stage"] == "quota"]
     assert quota and quota[0]["recoverable"] is False
     assert pipeline.session.turn_count == 1
+    await pipeline.close()
+
+
+async def test_speech_start_prewarms_tts_before_generation():
+    tts = FakeAudioTTS(1)
+    pipeline, transport = _pipeline(FakeSTT(), FakeLLM(["hello."]), tts)
+    pipeline.set_voice("ritu")
+
+    await _speak(pipeline)
+    await asyncio.sleep(0)
+
+    assert tts.prepared == ["ritu"]
     await pipeline.close()

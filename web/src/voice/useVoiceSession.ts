@@ -148,6 +148,7 @@ export function useVoiceSession() {
   const currentUserMessageIdRef = useRef<string | null>(null);
   const currentAssistantTurnRef = useRef<string | null>(null);
   const activeTurnRef = useRef<string | null>(null);
+  const completedTurnsRef = useRef<Set<string>>(new Set());
   const speechEndAtRef = useRef<number | null>(null);
   const voicedAtRef = useRef<number | null>(null);
   const turnDiagRef = useRef<Map<string, TurnDiagnostics>>(new Map());
@@ -350,10 +351,18 @@ export function useVoiceSession() {
         );
         if (index >= 0) {
           const copy = [...previous];
+          const current = copy[index].text;
+          const separator =
+            current.length > 0 &&
+            text.length > 0 &&
+            !/\s$/.test(current) &&
+            !/^\s/.test(text)
+              ? " "
+              : "";
           copy[index] = {
             ...copy[index],
-            text: copy[index].text + text,
-            final: false,
+            text: current + separator + text,
+            final: copy[index].final || completedTurnsRef.current.has(turnId),
           };
           return copy;
         }
@@ -363,7 +372,44 @@ export function useVoiceSession() {
             id: `assistant-${turnId}`,
             role: "assistant",
             text,
-            final: false,
+            final: completedTurnsRef.current.has(turnId),
+            turnId,
+            at: Date.now(),
+          },
+        ];
+      });
+    },
+    [setMessages],
+  );
+
+  const completeAssistantMessage = useCallback(
+    (turnId: string, text: string, allowTextFallback: boolean) => {
+      const completed = completedTurnsRef.current;
+      completed.add(turnId);
+      while (completed.size > 32) {
+        const oldest = completed.values().next().value;
+        if (oldest === undefined) break;
+        completed.delete(oldest);
+      }
+
+      setMessages((previous) => {
+        const index = previous.findIndex(
+          (message) =>
+            message.role === "assistant" && message.turnId === turnId,
+        );
+        if (index >= 0) {
+          const copy = [...previous];
+          copy[index] = { ...copy[index], final: true };
+          return copy;
+        }
+        if (!allowTextFallback || !text.trim()) return previous;
+        return [
+          ...previous,
+          {
+            id: `assistant-${turnId}`,
+            role: "assistant",
+            text,
+            final: true,
             turnId,
             at: Date.now(),
           },
@@ -816,7 +862,23 @@ export function useVoiceSession() {
           }
           currentAssistantTurnRef.current = event.turn_id;
           const player = ensurePlayer();
-          player.enqueue(decodePcm16(event.data), event.sample_rate);
+          const spokenText = event.text;
+          player.enqueue(
+            decodePcm16(event.data),
+            event.sample_rate,
+            spokenText
+              ? () => {
+                  if (turnsRef.current.isCancelled(event.turn_id)) return;
+                  if (
+                    activeTurnRef.current !== null &&
+                    activeTurnRef.current !== event.turn_id
+                  ) {
+                    return;
+                  }
+                  appendAssistantMessage(event.turn_id, spokenText);
+                }
+              : undefined,
+          );
           break;
         }
         case "assistant.done": {
@@ -830,9 +892,11 @@ export function useVoiceSession() {
             });
             break;
           }
-          settleAssistantMessage(event.turn_id, {
-            text: event.text || undefined,
-          });
+          completeAssistantMessage(
+            event.turn_id,
+            event.text,
+            !playerRef.current?.isSpeaking && !speakerRef.current?.isSpeaking,
+          );
           turnsRef.current.settle(event.turn_id);
           if (activeTurnRef.current === event.turn_id) {
             activeTurnRef.current = null;
@@ -980,6 +1044,7 @@ export function useVoiceSession() {
       appendAssistantMessage,
       armTurnWatchdog,
       clearTurnWatchdog,
+      completeAssistantMessage,
       ensurePlayer,
       ensureTurnDiagnostics,
       handleBargeIn,
@@ -1335,6 +1400,7 @@ export function useVoiceSession() {
     clearTurnWatchdog();
     clearVadTailTimer();
     turnsRef.current.reset();
+    completedTurnsRef.current.clear();
     activeTurnRef.current = null;
     currentAssistantTurnRef.current = null;
     currentUserMessageIdRef.current = null;
@@ -1537,6 +1603,7 @@ export function useVoiceSession() {
   const clearConversation = useCallback(() => {
     clearMessages();
     currentUserMessageIdRef.current = null;
+    completedTurnsRef.current.clear();
     turnDiagRef.current.clear();
     setDiagnostics([]);
   }, [clearMessages]);

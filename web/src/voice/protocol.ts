@@ -46,6 +46,8 @@ export type ServerEvent =
       data: string;
       sample_rate: number;
       format: "pcm16";
+      /** Spoken sentence that begins at this first chunk of audio. */
+      text?: string;
     }
   | {
       type: "turn.cancelled";
