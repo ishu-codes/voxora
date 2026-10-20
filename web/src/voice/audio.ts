@@ -518,7 +518,7 @@ export class AudioPlayer {
   async resume(): Promise<void> {
     const context = this.ensureContext();
     if (context.state === "suspended") {
-      void context.resume().catch(() => undefined);
+      await context.resume().catch(() => undefined);
     }
   }
 
@@ -556,12 +556,16 @@ export class AudioPlayer {
       this.handlers.onFirstAudio?.();
     }
     if (onPlaybackStart) {
-      const delay = Math.max(0, (startAt - context.currentTime) * 1000);
-      const timer = window.setTimeout(() => {
-        this.startTimers.delete(timer);
-        if (this.sources.has(source)) onPlaybackStart();
-      }, delay);
-      this.startTimers.add(timer);
+      const outputLatency = Math.max(
+        0,
+        context.outputLatency ?? context.baseLatency ?? 0,
+      );
+      this.schedulePlaybackStart(
+        context,
+        source,
+        startAt + outputLatency,
+        onPlaybackStart,
+      );
     }
 
     source.onended = () => {
@@ -571,6 +575,35 @@ export class AudioPlayer {
         this.handlers.onSpeakingChange?.(false);
       }
     };
+  }
+
+  private schedulePlaybackStart(
+    context: AudioContext,
+    source: AudioBufferSourceNode,
+    startAt: number,
+    onPlaybackStart: () => void,
+  ): void {
+    const scheduleCheck = () => {
+      if (!this.sources.has(source)) return;
+      const remainingMs = (startAt - context.currentTime) * 1000;
+      const delay =
+        context.state === "running"
+          ? Math.max(0, Math.min(remainingMs, 25))
+          : 50;
+      const timer = window.setTimeout(() => {
+        this.startTimers.delete(timer);
+        if (!this.sources.has(source)) return;
+        const remaining = (startAt - context.currentTime) * 1000;
+        if (context.state === "running" && remaining <= 0) {
+          onPlaybackStart();
+          return;
+        }
+        scheduleCheck();
+      }, delay);
+      this.startTimers.add(timer);
+    };
+
+    scheduleCheck();
   }
 
   stop(): void {

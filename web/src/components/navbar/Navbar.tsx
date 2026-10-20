@@ -20,6 +20,7 @@ export function Navbar() {
             variant="ghost"
             size="icon"
             render={<Link href="/settings" />}
+            nativeButton={false}
             aria-label="Provider settings"
             title="Provider settings"
             className="rounded-full text-muted-foreground hover:text-foreground"

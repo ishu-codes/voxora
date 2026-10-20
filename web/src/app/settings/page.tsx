@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  ArrowLeftIcon,
-  CheckIcon,
-  KeyRoundIcon,
-  ShieldCheckIcon,
-  SparklesIcon,
-  Trash2Icon,
-} from "lucide-react";
+import { ArrowLeftIcon, CheckIcon, KeyRoundIcon, ShieldCheckIcon, SparklesIcon, Trash2Icon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Navbar } from "@/components/navbar/Navbar";
@@ -34,22 +27,16 @@ export default function SettingsPage() {
     setForm(loadVoiceSettings());
   }, []);
 
-  const update =
-    (key: FieldKey) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      setSaved(false);
-      setError(null);
-      setForm((previous) => ({ ...previous, [key]: event.target.value }));
-    };
+  const update = (key: FieldKey) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSaved(false);
+    setError(null);
+    setForm((previous) => ({ ...previous, [key]: event.target.value }));
+  };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (
-      form.openaiBaseUrl &&
-      !/^https?:\/\//i.test(form.openaiBaseUrl.trim())
-    ) {
-      setError(
-        "The OpenAI-compatible base URL must start with http:// or https://.",
-      );
+    if (form.openaiBaseUrl && !/^https?:\/\//i.test(form.openaiBaseUrl.trim())) {
+      setError("The OpenAI-compatible base URL must start with http:// or https://.");
       return;
     }
     setForm(saveVoiceSettings(form));
@@ -85,12 +72,10 @@ export default function SettingsPage() {
             <KeyRoundIcon className="size-5" />
           </div>
           <div>
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-              Voice settings
-            </h1>
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Voice settings</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-              Use the shared Voxora platform for a limited trial, or bring your
-              own Sarvam and OpenAI-compatible keys for unlimited use.
+              Use the shared Voxora platform for a limited trial, or bring your own Sarvam and OpenAI-compatible keys
+              for unlimited use.
             </p>
           </div>
         </div>
@@ -98,9 +83,7 @@ export default function SettingsPage() {
         <div className="mt-8 grid gap-3 sm:grid-cols-2">
           <div
             className={`rounded-2xl border p-4 ${
-              unlimited
-                ? "border-border bg-muted/20"
-                : "border-brand/40 bg-brand/5"
+              unlimited ? "border-border bg-muted/20" : "border-brand/40 bg-brand/5"
             }`}
           >
             <div className="flex items-center gap-2 text-sm font-medium">
@@ -108,16 +91,13 @@ export default function SettingsPage() {
               Platform trial
             </div>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              No setup. Uses Voxora&apos;s shared keys and is limited to a small
-              number of turns per session.
+              No setup. Uses Voxora&apos;s shared keys and is limited to a small number of turns per session.
             </p>
           </div>
 
           <div
             className={`rounded-2xl border p-4 ${
-              unlimited
-                ? "border-brand/40 bg-brand/5"
-                : "border-border bg-muted/20"
+              unlimited ? "border-brand/40 bg-brand/5" : "border-border bg-muted/20"
             }`}
           >
             <div className="flex items-center gap-2 text-sm font-medium">
@@ -125,8 +105,8 @@ export default function SettingsPage() {
               Your own keys
             </div>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Unlimited voice sessions using your provider accounts. Add both a
-              Sarvam key and an OpenAI-compatible endpoint.
+              Unlimited voice sessions using your provider accounts. Add both a Sarvam key and an OpenAI-compatible
+              endpoint.
             </p>
           </div>
         </div>
@@ -137,14 +117,13 @@ export default function SettingsPage() {
               <div>
                 <h2 className="text-lg font-semibold">Sarvam AI</h2>
                 <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                  Powers realtime speech recognition and Bulbul speech
-                  synthesis.
+                  Powers realtime speech recognition and Bulbul speech synthesis.
                 </p>
               </div>
               <a
-                href="https://dashboard.sarvam.ai"
+                href="https://indus.sarvam.ai/key-management"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener"
                 className="text-sm font-medium text-brand hover:underline"
               >
                 Get a key
@@ -152,10 +131,7 @@ export default function SettingsPage() {
             </div>
 
             <div className="mt-5">
-              <label
-                htmlFor="sarvam-api-key"
-                className="mb-2 block text-sm font-medium"
-              >
+              <label htmlFor="sarvam-api-key" className="mb-2 block text-sm font-medium">
                 Sarvam API key
               </label>
               <Input
@@ -169,8 +145,7 @@ export default function SettingsPage() {
                 className="rounded-xl"
               />
               <p className="mt-2 text-xs text-muted-foreground">
-                Required to use your own speech providers. Without it, the
-                platform trial covers speech.
+                Required to use your own speech providers. Without it, the platform trial covers speech.
               </p>
             </div>
           </section>
@@ -179,17 +154,14 @@ export default function SettingsPage() {
             <div>
               <h2 className="text-lg font-semibold">OpenAI-compatible model</h2>
               <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                Any endpoint that implements the chat-completions API: OpenAI,
-                DeepSeek, Groq, Ollama, vLLM, and similar servers.
+                Any endpoint that implements the chat-completions API: OpenAI, DeepSeek, Groq, Ollama, vLLM, and similar
+                servers.
               </p>
             </div>
 
             <div className="mt-5 grid gap-4">
               <div>
-                <label
-                  htmlFor="openai-api-key"
-                  className="mb-2 block text-sm font-medium"
-                >
+                <label htmlFor="openai-api-key" className="mb-2 block text-sm font-medium">
                   API key
                 </label>
                 <Input
@@ -203,16 +175,12 @@ export default function SettingsPage() {
                   className="rounded-xl"
                 />
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Leave empty for a local endpoint that does not require
-                  authentication.
+                  Leave empty for a local endpoint that does not require authentication.
                 </p>
               </div>
 
               <div>
-                <label
-                  htmlFor="openai-base-url"
-                  className="mb-2 block text-sm font-medium"
-                >
+                <label htmlFor="openai-base-url" className="mb-2 block text-sm font-medium">
                   Base URL
                 </label>
                 <Input
@@ -228,10 +196,7 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label
-                  htmlFor="openai-model"
-                  className="mb-2 block text-sm font-medium"
-                >
+                <label htmlFor="openai-model" className="mb-2 block text-sm font-medium">
                   Model
                 </label>
                 <Input
@@ -259,13 +224,7 @@ export default function SettingsPage() {
               Save settings
             </Button>
             {custom ? (
-              <Button
-                type="button"
-                variant="outline"
-                size="lg"
-                onClick={clear}
-                className="rounded-full px-5"
-              >
+              <Button type="button" variant="outline" size="lg" onClick={clear} className="rounded-full px-5">
                 <Trash2Icon className="size-4" />
                 Clear saved keys
               </Button>
@@ -280,9 +239,8 @@ export default function SettingsPage() {
         </form>
 
         <p className="mt-6 text-xs leading-5 text-muted-foreground">
-          Keys are saved in this browser&apos;s local storage and sent to the
-          Voxora server only as part of your voice session. The server does not
-          save them. Anyone with access to this browser profile can read them.
+          Keys are saved in this browser&apos;s local storage and sent to the Voxora server only as part of your voice
+          session. The server does not save them. Anyone with access to this browser profile can read them.
         </p>
       </main>
     </div>

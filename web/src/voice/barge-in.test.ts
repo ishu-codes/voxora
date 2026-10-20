@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { PcmFrameResampler } from "./audio.ts";
+import { AudioPlayer, PcmFrameResampler } from "./audio.ts";
 import { InterruptedTurns } from "./interrupted-turns.ts";
 import { float32ToPcm16 } from "./vad.ts";
 
@@ -65,5 +65,110 @@ test("capture resampler keeps producing 20 ms frames across input blocks", () =>
   for (const frame of frames) {
     assert.equal(frame.length, 320);
     assert.ok(frame.some((sample) => sample !== 0));
+  }
+});
+
+test("playback text waits for the audio context to actually start", async () => {
+  const originalWindow = Object.getOwnPropertyDescriptor(globalThis, "window");
+  const originalAudioContext = Object.getOwnPropertyDescriptor(
+    globalThis,
+    "AudioContext",
+  );
+  const timers = new Map<number, ReturnType<typeof setTimeout>>();
+  let nextTimer = 0;
+
+  class FakeContext {
+    state: AudioContextState = "suspended";
+    currentTime = 0;
+    destination = {};
+
+    resume() {
+      return Promise.resolve();
+    }
+
+    createGain() {
+      return { gain: { value: 0 }, connect() {} };
+    }
+
+    createBuffer(_channels: number, length: number, rate: number) {
+      return {
+        duration: length / rate,
+        getChannelData: () => new Float32Array(length),
+      };
+    }
+
+    createBufferSource() {
+      return {
+        buffer: null,
+        onended: null,
+        connect() {},
+        start() {},
+        stop() {},
+      };
+    }
+
+    close() {
+      return Promise.resolve();
+    }
+  }
+
+  Object.defineProperty(globalThis, "window", {
+    configurable: true,
+    value: {
+      setTimeout: (callback: () => void, delay: number) => {
+        const timer = ++nextTimer;
+        timers.set(
+          timer,
+          setTimeout(() => {
+            timers.delete(timer);
+            callback();
+          }, delay),
+        );
+        return timer;
+      },
+      clearTimeout: (timer: number) => {
+        const handle = timers.get(timer);
+        if (handle) clearTimeout(handle);
+        timers.delete(timer);
+      },
+    },
+  });
+  Object.defineProperty(globalThis, "AudioContext", {
+    configurable: true,
+    value: FakeContext,
+  });
+
+  try {
+    const player = new AudioPlayer();
+    let revealed = 0;
+    player.enqueue(new Int16Array(320), 16_000, () => {
+      revealed += 1;
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 70));
+    assert.equal(revealed, 0);
+
+    const context = (
+      player as unknown as {
+        context: FakeContext;
+      }
+    ).context;
+    context.state = "running";
+    context.currentTime = 0.03;
+
+    await new Promise((resolve) => setTimeout(resolve, 70));
+    assert.equal(revealed, 1);
+    player.stop();
+  } finally {
+    if (originalWindow) {
+      Object.defineProperty(globalThis, "window", originalWindow);
+    } else {
+      Reflect.deleteProperty(globalThis, "window");
+    }
+    if (originalAudioContext) {
+      Object.defineProperty(globalThis, "AudioContext", originalAudioContext);
+    } else {
+      Reflect.deleteProperty(globalThis, "AudioContext");
+    }
   }
 });
