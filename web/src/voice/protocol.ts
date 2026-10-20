@@ -66,6 +66,7 @@ export type ServerEvent =
       stage: string;
       message: string;
       recoverable: boolean;
+      retry_after_s?: number;
     }
   | { type: "pong" };
 
@@ -93,6 +94,22 @@ export type ClientEvent =
         openai_api_key: string;
         openai_base_url: string;
         openai_model: string;
+      };
+      client?: {
+        installation_id: string;
+        screen_width: number;
+        screen_height: number;
+        viewport_width: number;
+        viewport_height: number;
+        pixel_ratio: number;
+        color_depth: number;
+        timezone: string;
+        language: string;
+        platform: string;
+        hardware_concurrency: number;
+        device_memory: number;
+        touch_points: number;
+        webdriver: boolean;
       };
     }
   | { type: "transcript"; text: string; final: boolean }

@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.voice.config import settings
+from src.voice.rate_limit import StrictRateLimiter
 from src.voice.router import ProviderBundle, shutdown_providers
 from src.voice.router import router as voice_router
 
@@ -32,6 +33,7 @@ logger = logging.getLogger("voxora")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.voice_providers = ProviderBundle.build(settings)
+    app.state.rate_limiter = StrictRateLimiter(settings)
     bundle: ProviderBundle = app.state.voice_providers
     logger.info(
         "providers stt=sarvam:%s tts=sarvam:%s llm=%s (%s)",

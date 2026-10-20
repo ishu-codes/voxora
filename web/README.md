@@ -43,6 +43,13 @@ its analyser after the page becomes visible again. Assistant text is revealed
 when the corresponding sentence's first audio chunk begins playback, rather
 than when the LLM token arrives.
 
+When both a Sarvam key and an OpenAI-compatible endpoint are configured, the
+browser uses the direct BYOK path: Sarvam STT/TTS and the LLM are requested
+without opening the Voxora backend voice socket. Provider keys therefore remain
+in the browser, but direct LLM endpoints must include the web origin in their
+CORS policy. Platform-trial sessions continue through the backend and are
+subject to cross-session rate and usage limits.
+
 ```bash
 pnpm test        # interruption, PCM conversion and transcript persistence
 pnpm typecheck

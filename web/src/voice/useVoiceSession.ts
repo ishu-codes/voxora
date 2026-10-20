@@ -1,9 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { VoiceOption } from "@/components/ui/voice-picker";
+import { collectClientFingerprint } from "@/lib/device-fingerprint";
 import { API_URL } from "@/lib/voice-catalog";
-import { loadVoiceSettings, toConfigurePayload } from "@/lib/voice-settings";
+import {
+  hasUnlimitedVoiceSettings,
+  loadVoiceSettings,
+  toConfigurePayload,
+  type VoiceSettings,
+} from "@/lib/voice-settings";
 import { AudioCapture, AudioPlayer, decodePcm16 } from "./audio";
+import {
+  BYOK_SYSTEM_PROMPT,
+  BYOK_TTS_SAMPLE_RATE,
+  DirectSentenceChunker,
+  streamByokLlm,
+  synthesizeWithSarvam,
+  transcribeWithSarvam,
+} from "./byok";
 import { useConversationStore } from "./conversation-store";
 import { InterruptedTurns } from "./interrupted-turns";
 import {
@@ -21,7 +35,7 @@ import {
   supportsBrowserStt,
 } from "./speech";
 import { useVoiceCatalog } from "./useVoiceCatalog";
-import { LocalVad, MIN_SPEECH_MS } from "./vad";
+import { float32ToPcm16, LocalVad, MIN_SPEECH_MS } from "./vad";
 
 export type VoiceMessage = {
   id: string;
@@ -133,7 +147,17 @@ export function useVoiceSession() {
   const recognitionRef = useRef<Recognition | null>(null);
 
   const activeRef = useRef(false);
+  const byokRef = useRef(false);
+  const byokSettingsRef = useRef<VoiceSettings | null>(null);
+  const directAbortRef = useRef<AbortController | null>(null);
+  const directGenerationRef = useRef(0);
+  const directUtteranceRef = useRef<Int16Array[]>([]);
+  const directTurnInFlightRef = useRef(false);
+  const finishDirectTurnRef = useRef<(audio?: Float32Array) => void>(
+    () => undefined,
+  );
   const intentionalCloseRef = useRef(false);
+  const fatalConnectionRef = useRef(false);
   const readyRef = useRef<ReadyEvent | null>(null);
   const mutedRef = useRef(false);
   const voiceRef = useRef<string | undefined>(undefined);
@@ -143,6 +167,7 @@ export function useVoiceSession() {
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<number | null>(null);
   const turnsRef = useRef(new InterruptedTurns());
+  const stopRef = useRef<(() => Promise<void>) | null>(null);
 
   const connectSocketRef = useRef<() => void>(() => undefined);
   const currentUserMessageIdRef = useRef<string | null>(null);
@@ -443,6 +468,10 @@ export function useVoiceSession() {
 
   const sendPcm = useCallback((pcm: Int16Array): boolean => {
     if (mutedRef.current) return false;
+    if (byokRef.current) {
+      directUtteranceRef.current.push(new Int16Array(pcm));
+      return true;
+    }
     const ws = wsRef.current;
     if (!ws || ws.readyState !== WebSocket.OPEN) return false;
     // Copy because AudioWorklet buffers are transferred/detached.
@@ -490,6 +519,11 @@ export function useVoiceSession() {
       clearTurnWatchdog();
       turnWatchdogRef.current = window.setTimeout(() => {
         turnWatchdogRef.current = null;
+        if (byokRef.current) {
+          directGenerationRef.current += 1;
+          directAbortRef.current?.abort();
+          directAbortRef.current = null;
+        }
         turnsRef.current.interrupt(turnId);
         if (activeTurnRef.current === turnId) activeTurnRef.current = null;
         stopPlayback();
@@ -510,6 +544,11 @@ export function useVoiceSession() {
    */
   const handleBargeIn = useCallback(
     (source: "vad" | "rms" | "server"): boolean => {
+      if (byokRef.current && source !== "server") {
+        directGenerationRef.current += 1;
+        directAbortRef.current?.abort();
+        directAbortRef.current = null;
+      }
       const now = performance.now();
       const turnId =
         activeTurnRef.current ?? currentAssistantTurnRef.current ?? null;
@@ -603,6 +642,7 @@ export function useVoiceSession() {
             if (!activeRef.current || mutedRef.current) return;
             vadSpeakingRef.current = true;
             vadConfirmedRef.current = true;
+            if (byokRef.current) directUtteranceRef.current = [];
             if (vadStartedAtRef.current == null) {
               vadStartedAtRef.current = performance.now() - MIN_SPEECH_MS;
             }
@@ -610,13 +650,14 @@ export function useVoiceSession() {
             handleBargeIn("vad");
             openSpeechGate();
           },
-          onSpeechEnd: () => {
+          onSpeechEnd: (audio) => {
             const wasConfirmed = vadConfirmedRef.current;
             vadSpeakingRef.current = false;
             vadConfirmedRef.current = false;
             vadStartedAtRef.current = null;
             speechEndAtRef.current = performance.now();
             scheduleSpeechGateClose();
+            if (byokRef.current) finishDirectTurnRef.current(audio);
             if (
               wasConfirmed &&
               !playerRef.current?.isSpeaking &&
@@ -633,6 +674,7 @@ export function useVoiceSession() {
             vadSpeakingRef.current = false;
             vadConfirmedRef.current = false;
             vadStartedAtRef.current = null;
+            directUtteranceRef.current = [];
             scheduleSpeechGateClose();
           },
         },
@@ -731,6 +773,186 @@ export function useVoiceSession() {
     }
     return playerRef.current;
   }, [recordFirstPlayback]);
+
+  const runDirectTurn = useCallback(
+    async (vadAudio?: Float32Array) => {
+      const settings = byokSettingsRef.current;
+      const collectedFrames = directUtteranceRef.current;
+      directUtteranceRef.current = [];
+      const frames =
+        vadAudio?.length
+          ? [float32ToPcm16(vadAudio)]
+          : collectedFrames;
+      if (
+        !activeRef.current ||
+        !byokRef.current ||
+        !settings ||
+        !frames.length
+      ) {
+        return;
+      }
+      if (directTurnInFlightRef.current) return;
+      directTurnInFlightRef.current = true;
+
+      const generation = ++directGenerationRef.current;
+      const controller = new AbortController();
+      directAbortRef.current = controller;
+      let turnId: string | null = null;
+
+      try {
+        setAgentState("thinking");
+        const text = await transcribeWithSarvam(
+          settings,
+          frames,
+          controller.signal,
+        );
+        if (!activeRef.current || generation !== directGenerationRef.current) {
+          return;
+        }
+        if (!text) {
+          setAgentState("listening");
+          pushError("No speech detected. Try speaking a little longer.");
+          return;
+        }
+
+        turnId = `local-${Date.now()}-${generation}`;
+        const activeTurnId = turnId;
+        upsertUserMessage(text, true, activeTurnId);
+        turnsRef.current.begin(activeTurnId);
+        activeTurnRef.current = activeTurnId;
+        currentAssistantTurnRef.current = activeTurnId;
+        ensureTurnDiagnostics(activeTurnId);
+        publishDiagnostics();
+        armTurnWatchdog(activeTurnId);
+
+        const history = useConversationStore
+          .getState()
+          .messages.filter((message) => message.text.trim())
+          .slice(-24)
+          .map((message) => ({
+            role: message.role,
+            content: message.text,
+          }));
+        const messages = [
+          { role: "system" as const, content: BYOK_SYSTEM_PROMPT },
+          ...history,
+        ];
+
+        const player = ensurePlayer();
+        const chunker = new DirectSentenceChunker();
+        let ttsError: unknown = null;
+        let speechQueue = Promise.resolve();
+        const enqueueSpeech = (sentence: string) => {
+          speechQueue = speechQueue
+            .then(async () => {
+              if (
+                ttsError ||
+                generation !== directGenerationRef.current ||
+                turnsRef.current.isCancelled(activeTurnId)
+              ) {
+                return;
+              }
+              const pcm = await synthesizeWithSarvam(
+                settings,
+                sentence,
+                voiceRef.current ?? null,
+                controller.signal,
+                catalogRef.current?.model ?? "bulbul:v3",
+              );
+              if (
+                generation !== directGenerationRef.current ||
+                turnsRef.current.isCancelled(activeTurnId)
+              ) {
+                return;
+              }
+              player.enqueue(pcm, BYOK_TTS_SAMPLE_RATE, () => {
+                if (
+                  generation !== directGenerationRef.current ||
+                  turnsRef.current.isCancelled(activeTurnId)
+                ) {
+                  return;
+                }
+                appendAssistantMessage(activeTurnId, sentence);
+              });
+            })
+            .catch((cause) => {
+              ttsError = cause;
+            });
+        };
+
+        const fullText = await streamByokLlm(
+          settings,
+          messages,
+          controller.signal,
+          (token) => {
+            for (const sentence of chunker.feed(token)) {
+              enqueueSpeech(sentence);
+            }
+          },
+        );
+        const tail = chunker.flush();
+        if (tail) enqueueSpeech(tail);
+        await speechQueue;
+        if (ttsError) throw ttsError;
+        if (
+          !activeRef.current ||
+          generation !== directGenerationRef.current ||
+          turnsRef.current.isCancelled(activeTurnId)
+        ) {
+          return;
+        }
+
+        completeAssistantMessage(
+          activeTurnId,
+          fullText,
+          !player.isSpeaking && !speakerRef.current?.isSpeaking,
+        );
+        turnsRef.current.settle(activeTurnId);
+        activeTurnRef.current = null;
+        currentAssistantTurnRef.current = null;
+        clearTurnWatchdog();
+        if (!player.isSpeaking) setAgentState("listening");
+      } catch (cause) {
+        if (controller.signal.aborted) return;
+        const message =
+          cause instanceof Error
+            ? cause.message
+            : "Direct voice request failed.";
+        pushError(message);
+        if (turnId) {
+          settleAssistantMessage(turnId, { failed: true });
+          turnsRef.current.settle(turnId);
+        }
+        activeTurnRef.current = null;
+        currentAssistantTurnRef.current = null;
+        clearTurnWatchdog();
+        setAgentState("listening");
+      } finally {
+        directTurnInFlightRef.current = false;
+        if (directAbortRef.current === controller) {
+          directAbortRef.current = null;
+        }
+      }
+    },
+    [
+      appendAssistantMessage,
+      armTurnWatchdog,
+      clearTurnWatchdog,
+      completeAssistantMessage,
+      ensurePlayer,
+      ensureTurnDiagnostics,
+      publishDiagnostics,
+      pushError,
+      settleAssistantMessage,
+      upsertUserMessage,
+    ],
+  );
+
+  useEffect(() => {
+    finishDirectTurnRef.current = (audio) => {
+      void runDirectTurn(audio);
+    };
+  }, [runDirectTurn]);
 
   const handleServerEvent = useCallback(
     (event: ServerEvent) => {
@@ -982,6 +1204,20 @@ export function useVoiceSession() {
         }
         case "error":
           if (
+            !event.recoverable &&
+            (event.stage === "rate_limit" ||
+              event.stage === "client_validation")
+          ) {
+            fatalConnectionRef.current = true;
+            const retry =
+              typeof event.retry_after_s === "number"
+                ? ` Try again in ${Math.max(1, Math.ceil(event.retry_after_s))} seconds.`
+                : "";
+            pushError(`${event.message}${retry}`);
+            void stopRef.current?.();
+            break;
+          }
+          if (
             event.turn_id &&
             (turnsRef.current.isCancelled(event.turn_id) ||
               (activeTurnRef.current !== null &&
@@ -1135,6 +1371,7 @@ export function useVoiceSession() {
           vad.silenceMs = 0;
           speechEndAtRef.current = now;
           scheduleSpeechGateClose();
+          if (byokRef.current) finishDirectTurnRef.current();
           setAgentState((previous) =>
             previous === "speaking" ? previous : "thinking",
           );
@@ -1364,7 +1601,11 @@ export function useVoiceSession() {
     wsRef.current = ws;
     ws.onopen = () => {
       if (wsRef.current !== ws) return;
-      ws.send(JSON.stringify(toConfigurePayload(loadVoiceSettings())));
+      ws.send(
+        JSON.stringify(
+          toConfigurePayload(loadVoiceSettings(), collectClientFingerprint()),
+        ),
+      );
     };
     ws.onmessage = (message: MessageEvent<string>) => {
       if (typeof message.data !== "string") return;
@@ -1409,6 +1650,11 @@ export function useVoiceSession() {
 
   const start = useCallback(async () => {
     if (activeRef.current) return;
+    const settings = loadVoiceSettings();
+    const direct = hasUnlimitedVoiceSettings(settings);
+    byokSettingsRef.current = direct ? settings : null;
+    byokRef.current = direct;
+    fatalConnectionRef.current = false;
     setError(null);
     setStatus("connecting");
     activeRef.current = true;
@@ -1470,6 +1716,10 @@ export function useVoiceSession() {
     } catch (cause) {
       const wasActive = activeRef.current;
       activeRef.current = false;
+      byokRef.current = false;
+      byokSettingsRef.current = null;
+      directAbortRef.current?.abort();
+      directAbortRef.current = null;
       stopCaptureWatchdog();
       await captureRef.current?.stop();
       captureRef.current = null;
@@ -1494,6 +1744,45 @@ export function useVoiceSession() {
 
     await playerRef.current?.resume();
     if (!activeRef.current) return;
+    if (direct) {
+      const directVoice = voiceRef.current ?? "shubh";
+      const readyEvent: ReadyEvent = {
+        type: "ready",
+        session_id: `local-${crypto.randomUUID()}`,
+        audio: { format: "pcm16", input_sample_rate: 16_000, frame_ms: 20 },
+        stt: {
+          name: "sarvam-direct",
+          partials: false,
+          mode: "server-stt",
+        },
+        llm: { name: "browser-direct" },
+        tts: {
+          name: "sarvam-direct",
+          kind: "audio",
+          sample_rate: BYOK_TTS_SAMPLE_RATE,
+          voice: directVoice,
+        },
+        vad: {
+          name: "local",
+          threshold: 0.014,
+          end_silence_ms: 650,
+        },
+        platform: { limited: false, turn_limit: null },
+        targets: {
+          first_audio_p50_ms: 700,
+          first_audio_p95_ms: 1_000,
+          barge_in_p95_ms: 200,
+        },
+      };
+      readyRef.current = readyEvent;
+      setReady(readyEvent);
+      voiceRef.current = directVoice;
+      voiceKindRef.current = "audio";
+      setVoiceState(directVoice);
+      setStatus("connected");
+      setAgentState("listening");
+      return;
+    }
     connectSocket();
   }, [
     clearTurnWatchdog,
@@ -1510,6 +1799,13 @@ export function useVoiceSession() {
 
   const stop = useCallback(async () => {
     activeRef.current = false;
+    byokRef.current = false;
+    byokSettingsRef.current = null;
+    directGenerationRef.current += 1;
+    directAbortRef.current?.abort();
+    directAbortRef.current = null;
+    directUtteranceRef.current = [];
+    directTurnInFlightRef.current = false;
     sessionTokenRef.current += 1;
     intentionalCloseRef.current = true;
     stopCaptureWatchdog();
@@ -1553,7 +1849,7 @@ export function useVoiceSession() {
     wsRef.current = null;
     readyRef.current = null;
     setReady(null);
-    setStatus("idle");
+    setStatus(fatalConnectionRef.current ? "error" : "idle");
     setAgentState("idle");
     setLevel(IDLE_LEVEL);
     setMuted(false);
@@ -1561,6 +1857,10 @@ export function useVoiceSession() {
     currentAssistantTurnRef.current = null;
     currentUserMessageIdRef.current = null;
   }, [clearTurnWatchdog, clearVadTailTimer, stopCaptureWatchdog, stopPlayback]);
+
+  useEffect(() => {
+    stopRef.current = stop;
+  }, [stop]);
 
   const interrupt = useCallback(() => {
     const turnId =
@@ -1595,6 +1895,9 @@ export function useVoiceSession() {
   useEffect(() => {
     return () => {
       activeRef.current = false;
+      directGenerationRef.current += 1;
+      directAbortRef.current?.abort();
+      directAbortRef.current = null;
       sessionTokenRef.current += 1;
       intentionalCloseRef.current = true;
       if (reconnectTimerRef.current)

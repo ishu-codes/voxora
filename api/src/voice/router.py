@@ -15,6 +15,14 @@ from .metrics import registry
 from .pipeline import VoicePipeline
 from .providers import SarvamSTT, SarvamTTS, build_llm
 from .providers.base import LLMProvider
+from .rate_limit import (
+    ClientSignals,
+    RateLimitDecision,
+    StrictRateLimiter,
+    browser_client_issue,
+    browser_transport_issue,
+    client_ip,
+)
 from .session import VoiceSession
 from .transport import QueueTransport
 from .vad import EnergyVAD
@@ -138,6 +146,14 @@ def _bundle(websocket: WebSocket) -> ProviderBundle:
     return bundle
 
 
+def _limiter(websocket: WebSocket) -> StrictRateLimiter:
+    limiter = getattr(websocket.app.state, "rate_limiter", None)
+    if limiter is None:
+        limiter = StrictRateLimiter(_bundle(websocket).settings)
+        websocket.app.state.rate_limiter = limiter
+    return limiter
+
+
 @router.get("/config")
 async def voice_config(request: Request) -> dict:
     """Non-secret provider configuration for the diagnostics panel."""
@@ -213,13 +229,14 @@ MAX_EARLY_AUDIO_CHUNKS = 64
 
 async def _read_initial_config(
     websocket: WebSocket,
-) -> tuple[VoiceCredentials, list[bytes], bool]:
+) -> tuple[VoiceCredentials, dict[str, Any], list[bytes], bool]:
     """Read the optional ``configure`` frame before starting the pipeline.
 
     Audio sent immediately after the socket opens is buffered so the browser can
     start capturing while the first round trip is still in flight.
     """
     credentials = VoiceCredentials()
+    client_payload: dict[str, Any] = {}
     buffered: list[bytes] = []
     loop = asyncio.get_running_loop()
     deadline = loop.time() + CONFIG_WAIT_S
@@ -235,7 +252,7 @@ async def _read_initial_config(
         except asyncio.TimeoutError:
             break
         if message.get("type") == "websocket.disconnect":
-            return credentials, buffered, True
+            return credentials, client_payload, buffered, True
         if (data := message.get("bytes")) is not None:
             buffered.append(data)
             continue
@@ -249,6 +266,9 @@ async def _read_initial_config(
         if not isinstance(payload, dict) or payload.get("type") != "configure":
             break
         raw = payload.get("byok", payload.get("settings", {}))
+        raw_client = payload.get("client", {})
+        if isinstance(raw_client, dict):
+            client_payload = raw_client
         try:
             credentials = VoiceCredentials.from_payload(raw)
         except ValueError as exc:
@@ -270,12 +290,41 @@ async def _read_initial_config(
                 credentials.openai_model or "-",
             )
         break
-    return credentials, buffered, False
+    return credentials, client_payload, buffered, False
+
+
+async def _reject_rate_limit(
+    websocket: WebSocket,
+    decision: RateLimitDecision,
+) -> None:
+    await websocket.send_json(
+        {
+            "type": "error",
+            "stage": "rate_limit",
+            "message": decision.message,
+            "retry_after_s": decision.retry_after_s,
+            "recoverable": False,
+        }
+    )
+    await websocket.close(code=1008, reason="Rate limit exceeded")
+
+
+async def _reject_client(websocket: WebSocket, message: str) -> None:
+    await websocket.send_json(
+        {
+            "type": "error",
+            "stage": "client_validation",
+            "message": message,
+            "recoverable": False,
+        }
+    )
+    await websocket.close(code=1008, reason="Browser client required")
 
 
 @router.websocket("/ws")
 async def voice_socket(websocket: WebSocket) -> None:
     platform_bundle = _bundle(websocket)
+    limiter = _limiter(websocket)
     origin = websocket.headers.get("origin")
     client = websocket.client
     client_label = f"{client.host}:{client.port}" if client else "unknown"
@@ -292,35 +341,114 @@ async def voice_socket(websocket: WebSocket) -> None:
     await websocket.accept()
     logger.info("voice socket accepted client=%s", client_label)
 
-    credentials, early_audio, disconnected = await _read_initial_config(websocket)
+    caller_ip = client_ip(
+        client.host if client else None,
+        websocket.headers,
+        trust_proxy_headers=platform_bundle.settings.trust_proxy_headers,
+    )
+    provisional = limiter.identity(
+        ip=caller_ip,
+        user_agent=websocket.headers.get("user-agent", ""),
+        origin=origin or "",
+        signals=ClientSignals(),
+    )
+    ip_decision = await limiter.record_ip_attempt(provisional.ip_key)
+    if not ip_decision.allowed:
+        await _reject_rate_limit(websocket, ip_decision)
+        return
+
+    if platform_bundle.settings.require_browser_client:
+        issue = browser_transport_issue(
+            origin,
+            websocket.headers.get("user-agent", ""),
+        )
+        if issue:
+            await _reject_client(websocket, issue)
+            return
+
+    credentials, client_payload, early_audio, disconnected = (
+        await _read_initial_config(websocket)
+    )
     if disconnected:
         logger.info("voice socket disconnected client=%s before configure", client_label)
         return
 
-    session_settings = credentials.apply(platform_bundle.settings)
-    bundle = ProviderBundle.build(session_settings)
-    transport = QueueTransport(
-        websocket, max_queue=session_settings.max_output_queue
+    client_signals = ClientSignals.from_payload(client_payload)
+    if platform_bundle.settings.require_browser_client:
+        issue = browser_client_issue(
+            origin=origin,
+            user_agent=websocket.headers.get("user-agent", ""),
+            signals=client_signals,
+        )
+        if issue:
+            await _reject_client(websocket, issue)
+            return
+
+    identity = limiter.identity(
+        ip=caller_ip,
+        user_agent=websocket.headers.get("user-agent", ""),
+        origin=origin or "",
+        signals=client_signals,
     )
-    session = VoiceSession()
-    pipeline = VoicePipeline(
-        transport=transport,
-        settings=session_settings,
-        stt=bundle.new_stt(session.session_id),
-        llm=bundle.llm,
-        tts=bundle.new_tts(session.session_id),
-        vad=EnergyVAD(
-            threshold=session_settings.vad_threshold,
-            start_frames=session_settings.vad_start_frames,
-            end_silence_ms=session_settings.vad_end_silence_ms,
-            pre_roll_ms=session_settings.vad_pre_roll_ms,
-            max_utterance_ms=session_settings.vad_max_utterance_ms,
-        ),
-        session=session,
-        turn_limit=None
-        if credentials.full_byok
-        else session_settings.platform_max_turns,
-    )
+    identity_decision = await limiter.acquire(identity)
+    if not identity_decision.allowed:
+        await _reject_rate_limit(websocket, identity_decision)
+        return
+
+    transport: QueueTransport | None = None
+    try:
+        session_settings = credentials.apply(platform_bundle.settings)
+        bundle = ProviderBundle.build(session_settings)
+        transport = QueueTransport(
+            websocket, max_queue=session_settings.max_output_queue
+        )
+        session = VoiceSession()
+
+        async def allow_turn() -> str | None:
+            decision = await limiter.allow_turn(
+                identity,
+                byok=credentials.full_byok,
+            )
+            if decision.allowed:
+                return None
+            return decision.message
+
+        async def guard_usage(kind: str, chars: int, tokens: int) -> str | None:
+            decision = await limiter.consume_usage(
+                identity,
+                kind=kind,
+                chars=chars,
+                tokens=tokens,
+            )
+            if decision.allowed:
+                return None
+            return decision.message
+
+        pipeline = VoicePipeline(
+            transport=transport,
+            settings=session_settings,
+            stt=bundle.new_stt(session.session_id),
+            llm=bundle.llm,
+            tts=bundle.new_tts(session.session_id),
+            vad=EnergyVAD(
+                threshold=session_settings.vad_threshold,
+                start_frames=session_settings.vad_start_frames,
+                end_silence_ms=session_settings.vad_end_silence_ms,
+                pre_roll_ms=session_settings.vad_pre_roll_ms,
+                max_utterance_ms=session_settings.vad_max_utterance_ms,
+            ),
+            session=session,
+            turn_limit=None
+            if credentials.full_byok
+            else session_settings.platform_max_turns,
+            turn_guard=allow_turn,
+            usage_guard=guard_usage,
+        )
+    except Exception:
+        if transport is not None:
+            await transport.close()
+        await limiter.release(identity)
+        raise
     logger.info(
         "voice session %s started (stt=%s llm=%s tts=%s byok=%s early_audio_bytes=%d)",
         session.session_id[:8],
@@ -340,8 +468,40 @@ async def voice_socket(websocket: WebSocket) -> None:
                 len(chunk),
             )
             await pipeline.feed_audio(chunk)
+        deadline = (
+            time.monotonic() + session_settings.rate_limit_max_session_seconds
+            if session_settings.rate_limit_max_session_seconds > 0
+            else float("inf")
+        )
         while True:
-            message = await websocket.receive()
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "stage": "rate_limit",
+                        "message": "The maximum voice session duration was reached.",
+                        "recoverable": False,
+                    }
+                )
+                await websocket.close(code=1008, reason="Session duration limit reached")
+                break
+            try:
+                message = await asyncio.wait_for(
+                    websocket.receive(),
+                    timeout=remaining,
+                )
+            except asyncio.TimeoutError:
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "stage": "rate_limit",
+                        "message": "The maximum voice session duration was reached.",
+                        "recoverable": False,
+                    }
+                )
+                await websocket.close(code=1008, reason="Session duration limit reached")
+                break
             if message.get("type") == "websocket.disconnect":
                 logger.info(
                     "voice session %s received disconnect code=%s",
@@ -370,6 +530,7 @@ async def voice_socket(websocket: WebSocket) -> None:
     except Exception:  # pragma: no cover - connection level guard
         logger.exception("Voice session failed")
     finally:
+        await limiter.release(identity)
         await pipeline.close()
         await transport.close()
         await bundle.close()

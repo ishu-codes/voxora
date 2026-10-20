@@ -59,7 +59,7 @@ export function ConversationPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-sidebar">
-      <SidebarHeader className="h-[85px] shrink-0 flex-row items-center justify-between gap-3 border-b border-border bg-sidebar px-4 py-0">
+      <SidebarHeader className="h-21.25 shrink-0 flex-row items-center justify-between gap-3 border-b border-border bg-sidebar px-4 py-0">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Conversation</p>
           <h2 className="mt-1 truncate text-lg font-semibold tracking-tight">

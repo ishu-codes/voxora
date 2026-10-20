@@ -4,6 +4,8 @@
  * They are sent to the API only as the first frame of a voice session.
  */
 
+import type { ClientFingerprint } from "./device-fingerprint";
+
 export type VoiceSettings = {
   sarvamApiKey: string;
   openaiApiKey: string;
@@ -80,7 +82,10 @@ export function hasUnlimitedVoiceSettings(settings: VoiceSettings): boolean {
   );
 }
 
-export function toConfigurePayload(settings: VoiceSettings) {
+export function toConfigurePayload(
+  settings: VoiceSettings,
+  client?: ClientFingerprint,
+) {
   return {
     type: "configure" as const,
     byok: {
@@ -89,5 +94,6 @@ export function toConfigurePayload(settings: VoiceSettings) {
       openai_base_url: settings.openaiBaseUrl,
       openai_model: settings.openaiModel,
     },
+    ...(client ? { client } : {}),
   };
 }

@@ -477,6 +477,50 @@ async def test_platform_turn_limit_blocks_extra_turns():
     await pipeline.close()
 
 
+async def test_cross_session_turn_guard_blocks_generation():
+    pipeline, transport = _pipeline(FakeSTT(), FakeLLM(["unused"]), FakeAudioTTS(1))
+
+    async def guard() -> str:
+        return "Voice usage limit reached for this device."
+
+    pipeline.turn_guard = guard
+    await _speak(pipeline)
+    await _silence(pipeline, 3)
+    await _await_turn(pipeline)
+
+    errors = transport.of_type("error")
+    assert errors and errors[0]["stage"] == "rate_limit"
+    assert transport.of_type("assistant.done") == []
+    assert pipeline.session.turn_count == 0
+    await pipeline.close()
+
+
+async def test_usage_guard_stops_llm_stream_when_budget_is_exhausted():
+    pipeline, transport = _pipeline(
+        FakeSTT(),
+        FakeLLM(["A fairly long generated response."]),
+        FakeAudioTTS(1),
+    )
+
+    async def usage_guard(kind: str, chars: int, tokens: int) -> str | None:
+        if kind != "llm":
+            return None
+        assert kind == "llm"
+        assert chars > 0
+        assert tokens > 0
+        return "Response generation usage limit reached."
+
+    pipeline.usage_guard = usage_guard
+    await _speak(pipeline)
+    await _silence(pipeline, 3)
+    await _await_turn(pipeline)
+
+    errors = transport.of_type("error")
+    assert errors and errors[0]["stage"] == "rate_limit"
+    assert transport.of_type("audio.chunk") == []
+    await pipeline.close()
+
+
 async def test_speech_start_prewarms_tts_before_generation():
     tts = FakeAudioTTS(1)
     pipeline, transport = _pipeline(FakeSTT(), FakeLLM(["hello."]), tts)

@@ -12,7 +12,7 @@ import asyncio
 import base64
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from .audio import pcm16_rms
@@ -31,6 +31,10 @@ logger = logging.getLogger(__name__)
 # Provider sockets may not cancel instantly, so stale output is still gated by
 # the generation counter rather than by this timeout.
 _CANCEL_GRACE_S = 0.5
+
+
+class UsageLimitExceeded(RuntimeError):
+    pass
 
 
 def _ms(start: float, end: float) -> float:
@@ -55,6 +59,8 @@ class VoicePipeline:
         metrics: MetricsRegistry | None = None,
         session: VoiceSession | None = None,
         turn_limit: int | None = None,
+        turn_guard: Callable[[], Awaitable[str | None]] | None = None,
+        usage_guard: Callable[[str, int, int], Awaitable[str | None]] | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.transport = transport
@@ -64,6 +70,8 @@ class VoicePipeline:
         self.tts = tts
         self._voice: str | None = None
         self.turn_limit = turn_limit
+        self.turn_guard = turn_guard
+        self.usage_guard = usage_guard
         self.session = session or VoiceSession()
         self._tag = f"session={self.session.session_id[:8]}"
         self.metrics = metrics or default_registry
@@ -315,6 +323,21 @@ class VoicePipeline:
                 )
                 await self._set_state("listening", generation)
                 return
+            if self.turn_guard is not None:
+                denied = await self.turn_guard()
+                if denied:
+                    await self.transport.send(
+                        {
+                            "type": "error",
+                            "turn_id": self._label(generation),
+                            "stage": "rate_limit",
+                            "message": denied,
+                            "recoverable": False,
+                        }
+                    )
+                    await self._set_state("listening", generation)
+                    return
+            await self._consume_usage("stt", chars=len(text))
             self.session.add("user", text)
             self.session.turn_count += 1
             await self._run_assistant(generation, text, ts_end)
@@ -322,6 +345,8 @@ class VoicePipeline:
             raise
         except ProviderError as exc:
             await self._fail(generation, exc.stage, exc.message)
+        except UsageLimitExceeded as exc:
+            await self._fail(generation, "rate_limit", str(exc))
         except asyncio.TimeoutError:
             await self._fail(generation, "pipeline", "The pipeline stage timed out.")
         except Exception as exc:  # pragma: no cover - defensive
@@ -378,6 +403,11 @@ class VoicePipeline:
                 async for token in self.llm.stream(messages):
                     if generation != self._generation:
                         break
+                    await self._consume_usage(
+                        "llm",
+                        chars=len(token),
+                        tokens=(len(token) + 3) // 4,
+                    )
                     if first_token_at is None:
                         first_token_at = self.clock()
                         turn["llm_first_token_ms"] = _ms(llm_started, first_token_at)
@@ -407,6 +437,7 @@ class VoicePipeline:
                     self._label(generation),
                     sentence,
                 )
+                await self._consume_usage("tts", chars=len(sentence))
                 tts_started = self.clock()
                 sentence_text_sent = False
                 async for chunk in self.tts.synthesize(sentence, voice=self._voice):
@@ -514,6 +545,19 @@ class VoicePipeline:
                 task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
             raise
+
+    async def _consume_usage(
+        self,
+        kind: str,
+        *,
+        chars: int = 0,
+        tokens: int = 0,
+    ) -> None:
+        if self.usage_guard is None:
+            return
+        denied = await self.usage_guard(kind, chars, tokens)
+        if denied:
+            raise UsageLimitExceeded(denied)
 
     async def _fail(self, generation: int, stage: str, message: str) -> None:
         if generation != self._generation:

@@ -39,6 +39,11 @@ def _env_int(name: str, default: int) -> int:
         return default
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    raw = _env(name, "true" if default else "false").lower()
+    return raw in {"1", "true", "yes", "on"}
+
+
 DEFAULT_SYSTEM_PROMPT = (
     "You are Voxora, a friendly real-time voice assistant. Your replies are "
     "spoken aloud, so answer in plain conversational language. Never use "
@@ -99,6 +104,30 @@ class Settings:
     # not use this limit.
     platform_max_turns: int = 20
 
+    # Strict abuse controls. These are evaluated across WebSocket sessions,
+    # unlike platform_max_turns which applies to one connection.
+    rate_limit_enabled: bool = True
+    require_browser_client: bool = True
+    rate_limit_secret: str = ""
+    trust_proxy_headers: bool = False
+    rate_limit_ip_attempts_10m: int = 30
+    rate_limit_ip_attempts_day: int = 200
+    rate_limit_identity_attempts_10m: int = 5
+    rate_limit_identity_sessions_hour: int = 10
+    rate_limit_identity_sessions_day: int = 20
+    rate_limit_platform_turns_hour: int = 30
+    rate_limit_platform_turns_day: int = 100
+    rate_limit_stt_chars_hour: int = 30_000
+    rate_limit_stt_chars_day: int = 120_000
+    rate_limit_llm_chars_hour: int = 30_000
+    rate_limit_llm_chars_day: int = 120_000
+    rate_limit_llm_tokens_hour: int = 8_000
+    rate_limit_llm_tokens_day: int = 32_000
+    rate_limit_tts_chars_hour: int = 30_000
+    rate_limit_tts_chars_day: int = 120_000
+    rate_limit_max_concurrent_identity: int = 1
+    rate_limit_max_session_seconds: int = 900
+
     # Diagnostics
     log_level: str = "INFO"
     store_recent_turns: int = 500
@@ -143,6 +172,57 @@ class Settings:
             max_history_messages=_env_int("MAX_HISTORY_MESSAGES", 24),
             max_output_queue=_env_int("MAX_OUTPUT_QUEUE", 256),
             platform_max_turns=_env_int("PLATFORM_MAX_TURNS", 20),
+            rate_limit_enabled=_env_bool("RATE_LIMIT_ENABLED", True),
+            require_browser_client=_env_bool("REQUIRE_BROWSER_CLIENT", True),
+            rate_limit_secret=_env("RATE_LIMIT_SECRET"),
+            trust_proxy_headers=_env_bool("TRUST_PROXY_HEADERS", False),
+            rate_limit_ip_attempts_10m=_env_int("RATE_LIMIT_IP_ATTEMPTS_10M", 30),
+            rate_limit_ip_attempts_day=_env_int("RATE_LIMIT_IP_ATTEMPTS_DAY", 200),
+            rate_limit_identity_attempts_10m=_env_int(
+                "RATE_LIMIT_IDENTITY_ATTEMPTS_10M", 5
+            ),
+            rate_limit_identity_sessions_hour=_env_int(
+                "RATE_LIMIT_IDENTITY_SESSIONS_HOUR", 10
+            ),
+            rate_limit_identity_sessions_day=_env_int(
+                "RATE_LIMIT_IDENTITY_SESSIONS_DAY", 20
+            ),
+            rate_limit_platform_turns_hour=_env_int(
+                "RATE_LIMIT_PLATFORM_TURNS_HOUR", 30
+            ),
+            rate_limit_platform_turns_day=_env_int(
+                "RATE_LIMIT_PLATFORM_TURNS_DAY", 100
+            ),
+            rate_limit_stt_chars_hour=_env_int(
+                "RATE_LIMIT_STT_CHARS_HOUR", 30_000
+            ),
+            rate_limit_stt_chars_day=_env_int(
+                "RATE_LIMIT_STT_CHARS_DAY", 120_000
+            ),
+            rate_limit_llm_chars_hour=_env_int(
+                "RATE_LIMIT_LLM_CHARS_HOUR", 30_000
+            ),
+            rate_limit_llm_chars_day=_env_int(
+                "RATE_LIMIT_LLM_CHARS_DAY", 120_000
+            ),
+            rate_limit_llm_tokens_hour=_env_int(
+                "RATE_LIMIT_LLM_TOKENS_HOUR", 8_000
+            ),
+            rate_limit_llm_tokens_day=_env_int(
+                "RATE_LIMIT_LLM_TOKENS_DAY", 32_000
+            ),
+            rate_limit_tts_chars_hour=_env_int(
+                "RATE_LIMIT_TTS_CHARS_HOUR", 30_000
+            ),
+            rate_limit_tts_chars_day=_env_int(
+                "RATE_LIMIT_TTS_CHARS_DAY", 120_000
+            ),
+            rate_limit_max_concurrent_identity=_env_int(
+                "RATE_LIMIT_MAX_CONCURRENT_IDENTITY", 1
+            ),
+            rate_limit_max_session_seconds=_env_int(
+                "RATE_LIMIT_MAX_SESSION_SECONDS", 900
+            ),
             log_level=_env("LOG_LEVEL", "INFO").upper(),
             store_recent_turns=_env_int("STORE_RECENT_TURNS", 500),
         )

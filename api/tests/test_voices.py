@@ -129,7 +129,16 @@ def test_voice_catalog_endpoint_is_cacheable():
 
 def test_websocket_accepts_byok_before_ready():
     with TestClient(app) as client:
-        with client.websocket_connect("/api/v1/voice/ws") as websocket:
+        with client.websocket_connect(
+            "/api/v1/voice/ws",
+            headers={
+                "origin": "http://localhost:3000",
+                "user-agent": (
+                    "Mozilla/5.0 (X11; Linux x86_64) "
+                    "AppleWebKit/537.36 Chrome/130.0.0.0 Safari/537.36"
+                ),
+            },
+        ) as websocket:
             websocket.send_json(
                 {
                     "type": "configure",
@@ -138,6 +147,22 @@ def test_websocket_accepts_byok_before_ready():
                         "openai_api_key": "user-llm",
                         "openai_base_url": "https://example.test/v1",
                         "openai_model": "custom-model",
+                    },
+                    "client": {
+                        "installation_id": "12345678-1234-1234-1234-123456789abc",
+                        "screen_width": 1440,
+                        "screen_height": 900,
+                        "viewport_width": 1280,
+                        "viewport_height": 800,
+                        "pixel_ratio": 1,
+                        "color_depth": 24,
+                        "timezone": "Asia/Kolkata",
+                        "language": "en-US",
+                        "platform": "Linux x86_64",
+                        "hardware_concurrency": 8,
+                        "device_memory": 8,
+                        "touch_points": 0,
+                        "webdriver": False,
                     },
                 }
             )

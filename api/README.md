@@ -62,6 +62,43 @@ Sarvam STT accepts PCM16 mono at 16 kHz, which is also the format the browser
 sends. Sarvam TTS is configured for `linear16` output, so audio chunks go
 straight to the browser without a decode step.
 
+## Abuse controls
+
+Rate limits apply across WebSocket reconnects. The server HMACs the caller IP,
+user agent and coarse browser signals into pseudonymous bucket keys; raw device
+signals are not retained in logs. The defaults allow one concurrent session per
+device, five connection attempts per ten minutes, ten sessions per hour, thirty
+shared-key turns per hour and one hundred per day. BYOK sessions still obey
+connection, concurrency and session-duration limits.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `RATE_LIMIT_ENABLED` | `true` | Enable cross-session abuse controls |
+| `REQUIRE_BROWSER_CLIENT` | `true` | Reject curl, WebDriver and incomplete browser handshakes |
+| `RATE_LIMIT_SECRET` | generated | HMAC key for device/IP fingerprints |
+| `TRUST_PROXY_HEADERS` | `false` | Trust proxy-supplied client IP headers |
+| `RATE_LIMIT_IDENTITY_ATTEMPTS_10M` | `5` | Connection attempts per identity |
+| `RATE_LIMIT_IDENTITY_SESSIONS_HOUR` | `10` | Sessions per identity per hour |
+| `RATE_LIMIT_PLATFORM_TURNS_HOUR` | `30` | Shared-key turns per identity per hour |
+| `RATE_LIMIT_PLATFORM_TURNS_DAY` | `100` | Shared-key turns per identity per day |
+| `RATE_LIMIT_STT_CHARS_HOUR` / `_DAY` | `30000` / `120000` | Final transcript characters |
+| `RATE_LIMIT_LLM_CHARS_HOUR` / `_DAY` | `30000` / `120000` | Generated response characters |
+| `RATE_LIMIT_LLM_TOKENS_HOUR` / `_DAY` | `8000` / `32000` | Approximate generated tokens |
+| `RATE_LIMIT_TTS_CHARS_HOUR` / `_DAY` | `30000` / `120000` | Characters submitted to TTS |
+| `RATE_LIMIT_MAX_CONCURRENT_IDENTITY` | `1` | Active sessions per identity |
+| `RATE_LIMIT_MAX_SESSION_SECONDS` | `900` | Maximum WebSocket session duration |
+
+The limiter is process-local. Multi-worker deployments should replace its
+in-memory windows with Redis-backed atomic counters so limits are shared across
+workers and survive restarts.
+
+`REQUIRE_BROWSER_CLIENT=true` rejects missing origins, common command-line user
+agents, WebDriver sessions and fingerprints without viewport/environment data.
+This is an abuse deterrent, not cryptographic browser attestation: headers and
+client signals can be spoofed. High-value deployments should add a Cloudflare
+Turnstile or signed-attestation check during session bootstrap and retain the
+server-derived IP quotas as a second layer.
+
 ## Endpoints
 
 | Method | Path | Description |
@@ -90,6 +127,11 @@ frame as the first WebSocket message:
   }
 }
 ```
+
+The bundled web client does not use this backend WebSocket for complete BYOK
+settings. It calls Sarvam STT/TTS and the LLM directly from the browser. The
+configure-frame path remains available to API clients; platform-trial browser
+sessions always use the rate-limited backend pipeline.
 
 Keys are held in memory for that socket only and are never logged. Supplying
 both a Sarvam key and an OpenAI-compatible endpoint removes the trial limit.
@@ -161,6 +203,8 @@ generation counter and the targeted turn id, so no stale audio is played.
   briefly and are counted as dropped rather than blocking inference.
 - **History.** The last `MAX_HISTORY_MESSAGES` messages of the session are sent
   with every request, so follow-ups work. History is in memory per connection.
+- **Abuse controls.** IP and device windows span reconnects, and the server
+  blocks additional concurrent sessions before providers are initialized.
 
 ## Logging
 
