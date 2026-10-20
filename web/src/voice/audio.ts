@@ -10,7 +10,7 @@
 const TARGET_RATE = 16_000;
 export const FRAME_SAMPLES = 320; // 20 ms @ 16 kHz
 
-const WORKLET_SOURCE = String.raw`
+const WORKLET_SOURCE = `
 class VoxoraCapture extends AudioWorkletProcessor {
   constructor(options) {
     super();
@@ -63,7 +63,9 @@ registerProcessor("voxora-capture", VoxoraCapture);
 let workletUrl: string | null = null;
 function getWorkletUrl(): string {
   if (!workletUrl) {
-    workletUrl = URL.createObjectURL(new Blob([WORKLET_SOURCE], { type: "text/javascript" }));
+    workletUrl = URL.createObjectURL(
+      new Blob([WORKLET_SOURCE], { type: "text/javascript" }),
+    );
   }
   return workletUrl;
 }
@@ -106,7 +108,9 @@ export class AudioCapture {
     const muted = context.createGain();
     muted.gain.value = 0;
 
-    node.port.onmessage = (message: MessageEvent<{ pcm: ArrayBuffer; rms: number }>) => {
+    node.port.onmessage = (
+      message: MessageEvent<{ pcm: ArrayBuffer; rms: number }>,
+    ) => {
       const pcm = new Int16Array(message.data.pcm);
       handlers.onFrame(pcm);
       handlers.onLevel?.(message.data.rms);
@@ -128,6 +132,11 @@ export class AudioCapture {
     return this.context !== null;
   }
 
+  /** The live microphone stream, shared with the bar visualizer. */
+  get mediaStream(): MediaStream | null {
+    return this.stream;
+  }
+
   async stop(): Promise<void> {
     try {
       this.node?.port.close();
@@ -137,7 +146,9 @@ export class AudioCapture {
     } catch {
       /* ignore teardown races */
     }
-    this.stream?.getTracks().forEach((track) => track.stop());
+    this.stream?.getTracks().forEach((track) => {
+      track.stop();
+    });
     if (this.context) await this.context.close().catch(() => undefined);
     this.context = null;
     this.stream = null;
@@ -151,7 +162,11 @@ export function decodePcm16(base64: string): Int16Array {
   const binary = atob(base64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-  return new Int16Array(bytes.buffer, bytes.byteOffset, Math.floor(bytes.byteLength / 2));
+  return new Int16Array(
+    bytes.buffer,
+    bytes.byteOffset,
+    Math.floor(bytes.byteLength / 2),
+  );
 }
 
 export type PlayerHandlers = {
@@ -200,7 +215,8 @@ export class AudioPlayer {
 
     const source = context.createBufferSource();
     source.buffer = buffer;
-    source.connect(this.gain!);
+    if (!this.gain) return;
+    source.connect(this.gain);
 
     const idle = this.sources.size === 0;
     const startAt = Math.max(context.currentTime + 0.02, this.nextTime);

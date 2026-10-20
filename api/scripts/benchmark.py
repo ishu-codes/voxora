@@ -7,17 +7,14 @@ to measure the full user-perceived path rather than summing stage p95s.
 
 Usage
 -----
-    # zero-key stack (browser STT semantics, demo LLM, browser TTS)
-    python -m scripts.benchmark --turns 10
-
-    # replay a 16 kHz mono WAV through a server-side STT provider
+    # replay a 16 kHz mono WAV through Sarvam streaming STT
     python -m scripts.benchmark --turns 5 --wav sample.wav
 
-    # also measure barge-in -> first cancelled audio
-    python -m scripts.benchmark --turns 5 --barge-in
+    # the same replay, also measuring barge-in -> cancelled audio latency
+    python -m scripts.benchmark --turns 5 --wav sample.wav --barge-in
 
     # compare against the server's own per-stage summary
-    python -m scripts.benchmark --turns 10 --server-metrics
+    python -m scripts.benchmark --turns 10 --wav sample.wav --server-metrics
 """
 
 from __future__ import annotations
@@ -39,14 +36,6 @@ FRAME_MS = 20
 FRAME_SAMPLES = SAMPLE_RATE * FRAME_MS // 1000
 FRAME_BYTES = FRAME_SAMPLES * 2
 SILENCE_FRAMES = 40  # 800 ms, comfortably past the 650 ms default endpoint
-
-PROMPTS = [
-    "Explain what a database index does in two sentences.",
-    "Give me one reason streaming speech synthesis reduces latency.",
-    "What is voice activity detection used for?",
-    "How does barge-in cancellation work?",
-    "Summarise the pipeline in one short sentence.",
-]
 
 
 def tone_frame(amplitude: float = 0.35) -> bytes:
@@ -136,18 +125,14 @@ class BenchSession:
             if event.get("type") == event_type:
                 return event
 
-    async def _send_speech(self, socket: Any, prompt: str, turn_index: int) -> None:
-        frames = self.use_wav if self.use_wav else [tone_frame()] * 25
-        for frame in frames:
+    async def _send_speech(self, socket: Any) -> None:
+        assert self.use_wav is not None
+        for frame in self.use_wav:
             await socket.send(frame)
-        if not self.use_wav:
-            await socket.send(
-                json.dumps({"type": "transcript", "text": PROMPTS[turn_index % len(PROMPTS)], "final": True})
-            )
 
     async def _normal_turn(self, socket: Any, index: int) -> None:
         result = TurnResult(index=index)
-        await self._send_speech(socket, PROMPTS[index % len(PROMPTS)], index)
+        await self._send_speech(socket)
 
         loop = asyncio.get_running_loop()
         for _ in range(SILENCE_FRAMES):
@@ -157,7 +142,7 @@ class BenchSession:
         while True:
             event = await self._next(timeout=30.0)
             kind = event.get("type")
-            if kind in {"speak.chunk", "audio.chunk"} and result.first_audio_ms is None:
+            if kind == "audio.chunk" and result.first_audio_ms is None:
                 result.first_audio_ms = round((loop.time() - speech_end) * 1000, 1)
             elif kind == "turn.metrics":
                 # The backend emits assistant.done and then turn.metrics, so the
@@ -184,14 +169,14 @@ class BenchSession:
     async def _barge_in_turn(self, socket: Any, index: int) -> None:
         """Start a turn, then interrupt it once audio begins."""
         result = TurnResult(index=index)
-        await self._send_speech(socket, PROMPTS[index % len(PROMPTS)], index + 1)
+        await self._send_speech(socket)
         loop = asyncio.get_running_loop()
         for _ in range(SILENCE_FRAMES):
             await socket.send(silence_frame())
 
         while True:
             event = await self._next(timeout=30.0)
-            if event.get("type") in {"speak.chunk", "audio.chunk", "assistant.delta"}:
+            if event.get("type") in {"audio.chunk", "assistant.delta"}:
                 break
             if event.get("type") in {"assistant.done", "assistant.failed"}:
                 result.error = "turn finished before barge-in"
@@ -250,7 +235,9 @@ async def main() -> None:
     parser.add_argument("--server-metrics", action="store_true", help="fetch /api/v1/voice/metrics after the run")
     args = parser.parse_args()
 
-    use_wav = wav_frames(args.wav) if args.wav else None
+    if not args.wav:
+        parser.error("--wav is required because transcription runs on the server")
+    use_wav = wav_frames(args.wav)
     session = BenchSession(args.url, use_wav)
     await session.run(args.turns, args.barge_in)
 

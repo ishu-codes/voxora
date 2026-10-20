@@ -1,52 +1,55 @@
-import { useEffect, useState } from "react";
-import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
+"use client";
 
+import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { useTheme } from "@/components/theme-provider";
 
 export function ThemeToggle() {
-	const { theme, setTheme } = useTheme();
-	const [mounted, setMounted] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-	useEffect(() => {
-		setMounted(true);
-	}, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-	const toggleTheme = () => {
-		switch (theme) {
-			case "light":
-				setTheme("dark");
-				break;
+  const toggleTheme = () => {
+    switch (theme) {
+      case "light":
+        setTheme("dark");
+        break;
+      case "dark":
+        setTheme("system");
+        break;
+      default:
+        setTheme("light");
+        break;
+    }
+  };
 
-			case "dark":
-				setTheme("system");
-				break;
+  if (!mounted) {
+    return (
+      <Button variant="ghost" size="icon" disabled>
+        <span className="size-[1.2rem]" />
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    );
+  }
 
-			case "system":
-				setTheme("light");
-				break;
-		}
-	};
-
-	if (!mounted) {
-		return (
-			<Button variant="ghost" size="lg" disabled>
-				<div className="h-[1.2rem] w-[1.2rem]" />
-				<span className="sr-only">Toggle theme</span>
-			</Button>
-		);
-	}
-
-	return (
-		<Button variant="ghost" size="lg" onClick={toggleTheme}>
-			<SunIcon className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
-			{theme === "dark" ? (
-				<MoonIcon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-			) : (
-				<MonitorIcon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
-			)}
-
-			<span className="sr-only">Toggle theme</span>
-		</Button>
-	);
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="relative"
+      onClick={toggleTheme}
+    >
+      <SunIcon className="size-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+      {theme === "dark" ? (
+        <MoonIcon className="absolute size-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      ) : (
+        <MonitorIcon className="absolute size-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+      )}
+      <span className="sr-only">Toggle theme</span>
+    </Button>
+  );
 }

@@ -61,7 +61,8 @@ export const STREAMING_COPY = {
 
 export const CAPABILITIES_COPY = {
   heading: "Hello, Voxora.",
-  subhead: "Every stage is a small interface, so you can swap models without touching the pipeline.",
+  subhead:
+    "Every stage is a small interface, so you can swap models without touching the pipeline.",
   items: [
     {
       num: "01",
@@ -117,7 +118,8 @@ export const CAPABILITIES_COPY = {
 
 export const DEPLOYMENT_COPY = {
   heading: "Run it your way.",
-  subhead: "Every provider is configuration, not code. Mix hosted and local stages per deployment.",
+  subhead:
+    "Every provider is configuration, not code. Mix hosted and local stages per deployment.",
 };
 
 export const DEPLOYMENTS = [
@@ -217,7 +219,8 @@ export const FAQ_COPY = {
 
 export const STACK_COPY = {
   heading: "Built from open pieces.",
-  subhead: "Replace any slot independently; the orchestrator only knows the interface.",
+  subhead:
+    "Replace any slot independently; the orchestrator only knows the interface.",
 };
 
 export const STACK_ITEMS = [
@@ -245,7 +248,8 @@ export const STACK_ITEMS = [
 
 export const SECONDARY_CTA = {
   heading: "Ready to talk to your machine?",
-  subhead: "Open the studio, allow the microphone, and speak. Nothing to install, nothing to sign up for.",
+  subhead:
+    "Open the studio, allow the microphone, and speak. Nothing to install, nothing to sign up for.",
   primary: { label: "Start a conversation", to: "/app" },
   secondary: { label: "Read the protocol", href: "#pipeline" },
 };

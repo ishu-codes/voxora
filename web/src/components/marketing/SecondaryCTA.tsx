@@ -1,8 +1,8 @@
-import { Section } from "./Section";
-import { Reveal } from "./Reveal";
 import { DashedPanel } from "./DashedPanel";
-import { Pill, OutlinePill } from "./Pill";
 import { NoiseOverlay } from "./NoiseOverlay";
+import { OutlinePill, Pill } from "./Pill";
+import { Reveal } from "./Reveal";
+import { Section } from "./Section";
 import { SECONDARY_CTA } from "./sections";
 
 export function SecondaryCTA() {

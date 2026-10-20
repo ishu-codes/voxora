@@ -31,6 +31,7 @@ def test_detects_speech_start_and_end():
 
     start_events = _speak(vad, 2)
     assert [event.kind for event in start_events] == ["speech_start"]
+    assert start_events[0].audio, "pre-roll audio should accompany the start event"
     assert vad.is_speech is True
 
     end_events = _silence(vad, 2)

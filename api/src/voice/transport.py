@@ -36,10 +36,19 @@ class QueueTransport:
         if self.closed:
             return
         event_type = str(event.get("type", ""))
+        if event_type == "audio.chunk":
+            logger.debug(
+                "-> audio.chunk turn=%s encoded_chars=%d",
+                event.get("turn_id"),
+                len(str(event.get("data", ""))),
+            )
+        else:
+            logger.debug("-> %s", event_type)
         droppable = event_type in {"audio.chunk", "audio.level"}
         if droppable:
             if self._queue.full():
                 self.dropped += 1
+                logger.warning("Dropping %s: output queue saturated", event_type)
                 return
             self._queue.put_nowait(event)
             return
@@ -47,7 +56,7 @@ class QueueTransport:
             await asyncio.wait_for(self._queue.put(event), timeout=1.0)
         except asyncio.TimeoutError:
             self.dropped += 1
-            logger.warning("Dropping control event: output queue saturated")
+            logger.warning("Dropping control event %s: output queue saturated", event_type)
 
     async def _write_loop(self) -> None:
         while True:

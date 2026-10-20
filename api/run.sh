@@ -9,8 +9,8 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 API_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 install() {
-    # Runtime deps plus the pytest extra and the Prometheus dev group.
-    uv sync --group dev --extra dev
+    # Runtime deps plus the pytest development group.
+    uv sync --group dev
 }
 
 activate() {
@@ -29,7 +29,7 @@ case "$1" in
 
     dev)
         activate
-        fastapi dev main-dev.py
+        uvicorn main:app --reload --host 0.0.0.0 --port "${PORT:-8000}"
     ;;
 
     serve)

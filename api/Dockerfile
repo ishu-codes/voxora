@@ -13,4 +13,4 @@ ENV PORT=8000
 EXPOSE 8000
 
 # Cloud Run injects the port via $PORT; local runs default to 8000.
-CMD ["sh", "-c", "alembic -c alembic.ini upgrade head && exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]

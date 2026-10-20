@@ -1,8 +1,8 @@
 """The cancellable streaming pipeline: VAD -> STT -> LLM -> TTS -> browser.
 
-A single :class:`VoicePipeline` instance owns one conversation.  It keeps the
+A single :class:`VoicePipeline` instance owns one conversation. It keeps the
 stages decoupled: it never imports a model SDK, it only calls the provider
-interfaces.  Turn generation is referenced by an integer so that audio produced
+interfaces. Turn generation is referenced by an integer so that audio produced
 by a cancelled turn can be dropped by both sides.
 """
 
@@ -25,11 +25,14 @@ from .vad import EnergyVAD, VAD
 
 logger = logging.getLogger(__name__)
 
-BROWSER_STT_NAMES = {"browser"}
-
 
 def _ms(start: float, end: float) -> float:
     return round((end - start) * 1000.0, 1)
+
+
+def _clip(text: str, limit: int = 500) -> str:
+    """Keep logs readable without hiding which text was processed."""
+    return text if len(text) <= limit else f"{text[:limit]}... ({len(text)} chars)"
 
 
 class VoicePipeline:
@@ -44,6 +47,7 @@ class VoicePipeline:
         vad: VAD | None = None,
         metrics: MetricsRegistry | None = None,
         session: VoiceSession | None = None,
+        turn_limit: int | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.transport = transport
@@ -51,7 +55,10 @@ class VoicePipeline:
         self.stt = stt
         self.llm = llm
         self.tts = tts
+        self._voice: str | None = None
+        self.turn_limit = turn_limit
         self.session = session or VoiceSession()
+        self._tag = f"session={self.session.session_id[:8]}"
         self.metrics = metrics or default_registry
         self.clock = clock
         self.vad: VAD = vad or EnergyVAD(
@@ -67,8 +74,7 @@ class VoicePipeline:
         self._turn_task: asyncio.Task[None] | None = None
         self._task_turn_id: int | None = None
         self._turns: dict[int, dict[str, Any]] = {}
-        self._awaiting_transcript: asyncio.Future[str] | None = None
-        self._pending_transcript: str | None = None
+        self._stt_error: ProviderError | None = None
         self._state = "idle"
         self._last_level_at = 0.0
         self._closed = False
@@ -77,7 +83,12 @@ class VoicePipeline:
 
     @property
     def mode(self) -> str:
-        return "browser-stt" if self.stt.name in BROWSER_STT_NAMES else "server-stt"
+        return "server-stt"
+
+    def set_voice(self, voice: str | None) -> None:
+        """Select a Sarvam speaker for subsequent sentences."""
+        cleaned = (voice or "").strip()
+        self._voice = cleaned or None
 
     def ready_event(self, reasons: dict[str, str] | None = None) -> dict[str, Any]:
         reasons = reasons or {}
@@ -100,12 +111,17 @@ class VoicePipeline:
                 "name": self.tts.name,
                 "kind": self.tts.kind,
                 "sample_rate": self.tts.sample_rate,
+                "voice": self._voice or self.settings.tts_voice,
                 "reason": reasons.get("tts", ""),
             },
             "vad": {
                 "name": type(self.vad).__name__,
                 "threshold": self.settings.vad_threshold,
                 "end_silence_ms": self.settings.vad_end_silence_ms,
+            },
+            "platform": {
+                "limited": self.turn_limit is not None,
+                "turn_limit": self.turn_limit,
             },
             "targets": {
                 "first_audio_p50_ms": 700,
@@ -114,8 +130,8 @@ class VoicePipeline:
             },
         }
 
-    async def start(self) -> None:
-        await self.transport.send(self.ready_event())
+    async def start(self, reasons: dict[str, str] | None = None) -> None:
+        await self.transport.send(self.ready_event(reasons))
         await self._set_state("listening")
 
     # ------------------------------------------------------------ audio input
@@ -133,9 +149,12 @@ class VoicePipeline:
         events = self.vad.process(frame)
         for event in events:
             if event.kind == "speech_start":
-                await self._on_speech_start()
+                await self._on_speech_start(event.audio)
             elif event.kind == "speech_end":
-                await self._on_speech_end(event.audio, event.duration_ms)
+                await self.stt.push_audio(frame)
+                await self._on_speech_end(event.duration_ms)
+        if not events and self.vad.is_speech:
+            await self.stt.push_audio(frame)
         await self._maybe_send_level(frame)
 
     async def _maybe_send_level(self, frame: bytes) -> None:
@@ -151,11 +170,23 @@ class VoicePipeline:
             }
         )
 
-    async def _on_speech_start(self) -> None:
+    async def _on_speech_start(self, pre_roll: bytes) -> None:
         self._generation += 1
-        self._pending_transcript = None
+        generation = self._generation
+        self._stt_error = None
+        logger.info(
+            "%s speech start turn=%s pre_roll_bytes=%d",
+            self._tag,
+            self._label(generation),
+            len(pre_roll),
+        )
 
         if self._turn_task is not None and not self._turn_task.done():
+            logger.info(
+                "%s barge-in cancelling turn=%s",
+                self._tag,
+                self._label(self._task_turn_id or 0),
+            )
             self._turn_task.cancel()
             await self.transport.send(
                 {
@@ -165,10 +196,33 @@ class VoicePipeline:
                 }
             )
 
-        await self.transport.send({"type": "speech.start", "turn_id": self._label(self._generation)})
+        await self.transport.send({"type": "speech.start", "turn_id": self._label(generation)})
         await self._set_state("listening")
 
-    async def _on_speech_end(self, audio: bytes, duration_ms: float) -> None:
+        async def on_partial(text: str) -> None:
+            if generation == self._generation:
+                await self.transport.send(
+                    {"type": "transcript.partial", "text": text, "final": False}
+                )
+
+        try:
+            await self.stt.begin_utterance(on_partial)
+            if pre_roll:
+                await self.stt.push_audio(pre_roll)
+        except ProviderError as exc:
+            logger.error("%s stt begin failed: %s", self._tag, exc.message)
+            self._stt_error = exc
+            await self.transport.send(
+                {
+                    "type": "error",
+                    "turn_id": self._label(generation),
+                    "stage": exc.stage,
+                    "message": exc.message,
+                    "recoverable": True,
+                }
+            )
+
+    async def _on_speech_end(self, duration_ms: float) -> None:
         generation = self._generation
         turn_id = self._label(generation)
         ts_end = self.clock()
@@ -181,25 +235,58 @@ class VoicePipeline:
             "tts": self.tts.name,
         }
         await self._set_state("thinking", generation)
+        logger.info(
+            "%s speech end turn=%s duration_ms=%.1f",
+            self._tag,
+            turn_id,
+            duration_ms,
+        )
 
-        self._turn_task = asyncio.create_task(self._handle_turn(generation, audio, ts_end))
+        self._turn_task = asyncio.create_task(self._handle_turn(generation, ts_end))
         self._task_turn_id = generation
 
     # --------------------------------------------------------------- turn run
 
-    async def _handle_turn(self, generation: int, audio: bytes, ts_end: float) -> None:
+    async def _handle_turn(self, generation: int, ts_end: float) -> None:
         try:
-            text = await self._transcribe(generation, audio, ts_end)
+            text = await self._transcribe(generation, ts_end)
             if generation != self._generation:
+                logger.debug("%s dropping stale turn=%s", self._tag, self._label(generation))
                 return
             if not text:
+                logger.info("%s turn=%s empty transcript", self._tag, self._label(generation))
                 await self.transport.send({"type": "turn.empty", "turn_id": self._label(generation)})
                 await self._set_state("listening", generation)
                 return
 
+            logger.info(
+                "%s turn=%s user_text=%r",
+                self._tag,
+                self._label(generation),
+                _clip(text),
+            )
             await self.transport.send(
                 {"type": "transcript.final", "turn_id": self._label(generation), "text": text}
             )
+            if (
+                self.turn_limit is not None
+                and self.session.turn_count >= self.turn_limit
+            ):
+                await self.transport.send(
+                    {
+                        "type": "error",
+                        "turn_id": self._label(generation),
+                        "stage": "quota",
+                        "message": (
+                            "The shared platform trial has reached its turn limit. "
+                            "Add your Sarvam key and an OpenAI-compatible endpoint "
+                            "in Settings to keep talking without platform limits."
+                        ),
+                        "recoverable": False,
+                    }
+                )
+                await self._set_state("listening", generation)
+                return
             self.session.add("user", text)
             self.session.turn_count += 1
             await self._run_assistant(generation, text, ts_end)
@@ -217,38 +304,22 @@ class VoicePipeline:
                 self._turn_task = None
                 self._task_turn_id = None
 
-    async def _transcribe(self, generation: int, audio: bytes, ts_end: float) -> str:
-        if self.mode == "browser-stt":
-            text = await self._await_browser_transcript()
-        else:
-            started = self.clock()
-            try:
-                text = await asyncio.wait_for(
-                    self.stt.transcribe(audio, SAMPLE_RATE),
-                    timeout=30.0,
-                )
-            finally:
-                self._turns[generation]["stt_ms"] = _ms(started, self.clock())
-            await self.transport.send(
-                {"type": "transcript.partial", "text": text, "final": True}
-            )
-        return (text or "").strip()
-
-    async def _await_browser_transcript(self) -> str:
-        if self._pending_transcript:
-            text, self._pending_transcript = self._pending_transcript, None
-            return text
-        loop = asyncio.get_running_loop()
-        future: asyncio.Future[str] = loop.create_future()
-        self._awaiting_transcript = future
+    async def _transcribe(self, generation: int, ts_end: float) -> str:
+        error, self._stt_error = self._stt_error, None
+        if error is not None:
+            raise error
+        started = self.clock()
         try:
-            return await asyncio.wait_for(
-                future, timeout=self.settings.browser_transcript_timeout_s
-            )
-        except asyncio.TimeoutError:
-            return ""
+            text = await self.stt.end_utterance()
         finally:
-            self._awaiting_transcript = None
+            self._turns[generation]["stt_ms"] = _ms(started, self.clock())
+        logger.info(
+            "%s stt result turn=%s text=%r",
+            self._tag,
+            self._label(generation),
+            _clip((text or "").strip()),
+        )
+        return (text or "").strip()
 
     async def _run_assistant(self, generation: int, user_text: str, ts_end: float) -> None:
         turn = self._turns[generation]
@@ -258,7 +329,17 @@ class VoicePipeline:
         llm_started = self.clock()
         first_token_at: float | None = None
         first_audio_at: float | None = None
-        sentence_index = 0
+        audio_chunks = 0
+        audio_bytes = 0
+        logger.info(
+            "%s llm request turn=%s provider=%s model=%s endpoint=%s messages=%d",
+            self._tag,
+            self._label(generation),
+            self.llm.name,
+            self.settings.llm_model,
+            self.settings.llm_base_url,
+            len(messages),
+        )
 
         async def produce() -> None:
             nonlocal first_token_at
@@ -286,55 +367,57 @@ class VoicePipeline:
                     pass
 
         async def consume() -> None:
-            nonlocal first_audio_at, sentence_index
+            nonlocal first_audio_at, audio_chunks, audio_bytes
             while True:
                 sentence = await queue.get()
                 if sentence is None:
                     break
                 if generation != self._generation:
                     break
-                if self.tts.kind == "browser":
+                logger.debug(
+                    "%s tts sentence turn=%s text=%r",
+                    self._tag,
+                    self._label(generation),
+                    sentence,
+                )
+                tts_started = self.clock()
+                async for chunk in self.tts.synthesize(sentence, voice=self._voice):
+                    if generation != self._generation:
+                        logger.info(
+                            "%s dropping audio from cancelled turn=%s",
+                            self._tag,
+                            self._label(generation),
+                        )
+                        return
+                    audio_chunks += 1
+                    audio_bytes += len(chunk)
                     if first_audio_at is None:
                         first_audio_at = self.clock()
-                        turn["tts_first_audio_ms"] = 0.0
+                        turn["tts_first_audio_ms"] = _ms(tts_started, first_audio_at)
                         turn["e2e_first_audio_ms"] = _ms(ts_end, first_audio_at)
+                        logger.info(
+                            "%s first audio to client turn=%s tts_ms=%.1f e2e_ms=%.1f",
+                            self._tag,
+                            self._label(generation),
+                            turn["tts_first_audio_ms"],
+                            turn["e2e_first_audio_ms"],
+                        )
                         await self._set_state("speaking", generation)
                     await self.transport.send(
                         {
-                            "type": "speak.chunk",
+                            "type": "audio.chunk",
                             "turn_id": self._label(generation),
-                            "text": sentence,
-                            "index": sentence_index,
+                            "data": base64.b64encode(chunk).decode("ascii"),
+                            "sample_rate": self.tts.sample_rate,
+                            "format": "pcm16",
                         }
                     )
-                    sentence_index += 1
-                else:
-                    tts_started = self.clock()
-                    async for chunk in self.tts.synthesize(sentence):
-                        if generation != self._generation:
-                            return
-                        if first_audio_at is None:
-                            first_audio_at = self.clock()
-                            turn["tts_first_audio_ms"] = _ms(tts_started, first_audio_at)
-                            turn["e2e_first_audio_ms"] = _ms(ts_end, first_audio_at)
-                            await self._set_state("speaking", generation)
-                        await self.transport.send(
-                            {
-                                "type": "audio.chunk",
-                                "turn_id": self._label(generation),
-                                "data": base64.b64encode(chunk).decode("ascii"),
-                                "sample_rate": self.tts.sample_rate,
-                                "format": "pcm16",
-                            }
-                        )
 
         await self._gather(produce(), consume())
 
         if generation != self._generation:
+            logger.info("%s turn=%s cancelled before completion", self._tag, self._label(generation))
             return
-
-        if self.tts.kind == "browser":
-            await self.transport.send({"type": "speak.end", "turn_id": self._label(generation)})
 
         full_text = "".join(tokens).strip()
         if full_text:
@@ -342,6 +425,22 @@ class VoicePipeline:
 
         turn["total_ms"] = _ms(ts_end, self.clock())
         self.metrics.record(turn)
+        logger.info(
+            "%s llm response turn=%s first_token_ms=%s chars=%d text=%r",
+            self._tag,
+            self._label(generation),
+            turn.get("llm_first_token_ms"),
+            len(full_text),
+            _clip(full_text),
+        )
+        logger.info(
+            "%s audio sent turn=%s chunks=%d bytes=%d total_ms=%.1f",
+            self._tag,
+            self._label(generation),
+            audio_chunks,
+            audio_bytes,
+            turn["total_ms"],
+        )
 
         await self.transport.send(
             {"type": "assistant.done", "turn_id": self._label(generation), "text": full_text}
@@ -376,6 +475,13 @@ class VoicePipeline:
             raise
 
     async def _fail(self, generation: int, stage: str, message: str) -> None:
+        logger.warning(
+            "%s turn=%s failed stage=%s message=%s",
+            self._tag,
+            self._label(generation),
+            stage,
+            message,
+        )
         turn = self._turns.get(generation)
         if turn is not None:
             turn["error"] = f"{stage}: {message}"[:300]
@@ -394,19 +500,6 @@ class VoicePipeline:
 
     # ------------------------------------------------------------ client input
 
-    async def handle_browser_transcript(self, text: str, final: bool) -> None:
-        text = (text or "").strip()
-        if not text:
-            return
-        if not final:
-            await self.transport.send({"type": "transcript.partial", "text": text})
-            return
-        future = self._awaiting_transcript
-        if future is not None and not future.done():
-            future.set_result(text)
-        else:
-            self._pending_transcript = text
-
     async def handle_client_metrics(self, turn_id: str, payload: dict[str, Any]) -> None:
         allowed = {
             key: value
@@ -418,6 +511,7 @@ class VoicePipeline:
 
     async def interrupt(self, reason: str = "manual") -> None:
         task = self._turn_task
+        logger.info("%s interrupt reason=%s", self._tag, reason)
         if task is not None and not task.done():
             self._generation += 1
             task.cancel()
@@ -429,7 +523,8 @@ class VoicePipeline:
                 }
             )
         self.vad.reset()
-        self._pending_transcript = None
+        await self.stt.cancel_utterance()
+        self._stt_error = None
         await self._set_state("listening")
 
     # ------------------------------------------------------------------ utils
@@ -459,9 +554,7 @@ class VoicePipeline:
                 await self._turn_task
             except (asyncio.CancelledError, Exception):
                 pass
-
-    async def close_providers(self) -> None:
-        for provider in (self.stt, self.llm, self.tts):
+        for provider in (self.stt, self.tts):
             try:
                 await provider.close()
             except Exception:  # pragma: no cover - best effort cleanup

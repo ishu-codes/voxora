@@ -1,12 +1,15 @@
-import { Section, SectionHeader } from "./Section";
-import { Reveal } from "./Reveal";
 import { DashedPanel } from "./DashedPanel";
+import { Reveal } from "./Reveal";
+import { Section, SectionHeader } from "./Section";
 import { LATENCY_COPY, LATENCY_PROPS } from "./sections";
 
 export function LatencyStats() {
   return (
     <Section id="latency" className="bg-background">
-      <SectionHeader heading={LATENCY_COPY.heading} subhead={LATENCY_COPY.subhead} />
+      <SectionHeader
+        heading={LATENCY_COPY.heading}
+        subhead={LATENCY_COPY.subhead}
+      />
 
       <div className="mt-14 grid gap-6 sm:grid-cols-3">
         {LATENCY_PROPS.map((stat, index) => (

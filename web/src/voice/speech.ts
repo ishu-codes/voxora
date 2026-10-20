@@ -78,10 +78,21 @@ export function createRecognition(options: {
   return recognition;
 }
 
+export function supportsSpeechSynthesis(): boolean {
+  return typeof window !== "undefined" && "speechSynthesis" in window;
+}
+
+/** Chrome loads the voice list asynchronously after the first call. */
+export function listBrowserVoices(): SpeechSynthesisVoice[] {
+  if (!supportsSpeechSynthesis()) return [];
+  return window.speechSynthesis.getVoices();
+}
+
 export class BrowserSpeaker {
   private pending = 0;
   private speaking = false;
   private voice: SpeechSynthesisVoice | null = null;
+  private voiceId: string | null = null;
   private readonly handlers: { onStart: () => void; onEnd: () => void };
 
   constructor(handlers: { onStart: () => void; onEnd: () => void }) {
@@ -89,7 +100,13 @@ export class BrowserSpeaker {
   }
 
   get supported(): boolean {
-    return typeof window !== "undefined" && "speechSynthesis" in window;
+    return supportsSpeechSynthesis();
+  }
+
+  /** Select a voice by `voiceURI` or name; null returns to the system default. */
+  setVoice(voiceId: string | null): void {
+    this.voiceId = voiceId;
+    this.voice = null;
   }
 
   /** Voices load asynchronously in Chrome, so refresh on demand. */
@@ -98,8 +115,22 @@ export class BrowserSpeaker {
     if (this.voice) return this.voice;
     const voices = window.speechSynthesis.getVoices();
     if (!voices.length) return null;
+
+    if (this.voiceId) {
+      const selected = voices.find(
+        (voice) =>
+          voice.voiceURI === this.voiceId || voice.name === this.voiceId,
+      );
+      if (selected) {
+        this.voice = selected;
+        return this.voice;
+      }
+    }
+
     const preferred =
-      voices.find((voice) => voice.lang.startsWith("en") && voice.localService) ??
+      voices.find(
+        (voice) => voice.lang.startsWith("en") && voice.localService,
+      ) ??
       voices.find((voice) => voice.lang.startsWith("en")) ??
       voices[0];
     this.voice = preferred ?? null;

@@ -8,13 +8,10 @@ dependencies = [
     "fastapi[standard]>=0.141.0",
     "httpx>=0.28.0",
     "python-dotenv>=1.2.0",
+    "websockets>=15.0",
 ]
 
-[project.optional-dependencies]
-# Local speech recognition. Hosted Whisper and browser recognition need nothing.
-stt = [
-    "faster-whisper>=1.1.0",
-]
+[dependency-groups]
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
@@ -24,8 +21,3 @@ dev = [
 asyncio_mode = "auto"
 testpaths = ["tests"]
 filterwarnings = ["ignore::DeprecationWarning"]
-
-[dependency-groups]
-dev = [
-    "prometheus-fastapi-instrumentator>=8.1.0",
-]

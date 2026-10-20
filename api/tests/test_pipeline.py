@@ -18,16 +18,36 @@ def _frame(amplitude: float) -> bytes:
 
 
 class FakeSTT:
+    """In-memory stand-in for the Sarvam streaming adapter."""
+
     name = "fake"
-    supports_partials = False
+    supports_partials = True
 
-    def __init__(self, text: str = "what is latency") -> None:
+    def __init__(self, text: str = "what is latency", partials: tuple[str, ...] = ()) -> None:
         self.text = text
+        self.partials = partials
         self.calls = 0
+        self.frames = 0
+        self.begun = 0
+        self.cancelled = 0
+        self._on_partial = None
 
-    async def transcribe(self, pcm: bytes, sample_rate: int) -> str:
+    async def begin_utterance(self, on_partial=None) -> None:
+        self.begun += 1
+        self._on_partial = on_partial
+        for partial in self.partials:
+            if on_partial is not None:
+                await on_partial(partial)
+
+    async def push_audio(self, pcm: bytes) -> None:
+        self.frames += len(pcm)
+
+    async def end_utterance(self) -> str:
         self.calls += 1
         return self.text
+
+    async def cancel_utterance(self) -> None:
+        self.cancelled += 1
 
     async def close(self) -> None:
         return None
@@ -54,18 +74,6 @@ class FakeLLM:
         return None
 
 
-class FakeBrowserTTS:
-    name = "browser"
-    kind = "browser"
-    sample_rate = 0
-
-    def synthesize(self, text: str) -> AsyncIterator[bytes]:
-        raise AssertionError("browser TTS must not be asked for audio")
-
-    async def close(self) -> None:
-        return None
-
-
 class FakeAudioTTS:
     name = "fake-tts"
     kind = "audio"
@@ -73,35 +81,28 @@ class FakeAudioTTS:
 
     def __init__(self, chunks: int = 2) -> None:
         self.chunks = chunks
+        self.voices: list[str | None] = []
 
-    async def _stream(self, text: str) -> AsyncIterator[bytes]:
+    async def _stream(self, text: str, voice: str | None = None) -> AsyncIterator[bytes]:
+        self.voices.append(voice)
         for _ in range(self.chunks):
             yield b"\x00\x01" * 128
 
-    def synthesize(self, text: str) -> AsyncIterator[bytes]:
-        return self._stream(text)
+    def synthesize(self, text: str, voice: str | None = None) -> AsyncIterator[bytes]:
+        return self._stream(text, voice)
 
     async def close(self) -> None:
         return None
 
 
-class SlowAudioTTS:
+class SlowAudioTTS(FakeAudioTTS):
     """Emits audio over time so a turn can be interrupted mid-synthesis."""
 
-    name = "slow-tts"
-    kind = "audio"
-    sample_rate = 24_000
-
-    async def _stream(self, text: str) -> AsyncIterator[bytes]:
+    async def _stream(self, text: str, voice: str | None = None) -> AsyncIterator[bytes]:
+        self.voices.append(voice)
         for _ in range(6):
             yield b"\x00\x01" * 128
             await asyncio.sleep(0.05)
-
-    def synthesize(self, text: str) -> AsyncIterator[bytes]:
-        return self._stream(text)
-
-    async def close(self) -> None:
-        return None
 
 
 def _settings(**overrides) -> Settings:
@@ -116,7 +117,7 @@ def _settings(**overrides) -> Settings:
     return Settings(**base)
 
 
-def _pipeline(stt, llm, tts, settings=None, metrics=None):
+def _pipeline(stt, llm, tts, settings=None, metrics=None, turn_limit=None):
     settings = settings or _settings()
     vad = EnergyVAD(
         threshold=settings.vad_threshold,
@@ -127,7 +128,14 @@ def _pipeline(stt, llm, tts, settings=None, metrics=None):
     )
     transport = CollectingTransport()
     pipeline = VoicePipeline(
-        transport, settings, stt, llm, tts, vad=vad, metrics=metrics or MetricsRegistry()
+        transport,
+        settings,
+        stt,
+        llm,
+        tts,
+        vad=vad,
+        metrics=metrics or MetricsRegistry(),
+        turn_limit=turn_limit,
     )
     return pipeline, transport
 
@@ -148,20 +156,24 @@ async def _await_turn(pipeline: VoicePipeline, timeout: float = 3.0) -> None:
     await asyncio.wait_for(task, timeout)
 
 
-async def test_full_turn_uses_all_stages():
-    stt = FakeSTT("what is latency")
+async def test_full_turn_streams_partials_and_audio():
+    stt = FakeSTT("what is latency", partials=("what is", "what is latency"))
     llm = FakeLLM(["Latency ", "is the ", "delay ", "between ", "events."])
-    pipeline, transport = _pipeline(stt, llm, FakeBrowserTTS())
+    pipeline, transport = _pipeline(stt, llm, FakeAudioTTS(2))
 
     await _speak(pipeline)
     await _silence(pipeline, 3)
     await _await_turn(pipeline)
 
+    assert stt.begun == 1
     assert stt.calls == 1
+    assert stt.frames > 0, "utterance audio should reach the streaming STT"
+    partials = transport.of_type("transcript.partial")
+    assert [event["text"] for event in partials] == ["what is", "what is latency"]
     final = transport.of_type("transcript.final")
     assert final and final[0]["text"] == "what is latency"
     assert transport.of_type("assistant.delta")
-    assert transport.of_type("speak.chunk")
+    assert len(transport.of_type("audio.chunk")) == 2
     assert transport.of_type("assistant.done")[0]["text"].strip() == (
         "Latency is the delay between events."
     )
@@ -173,8 +185,10 @@ async def test_full_turn_uses_all_stages():
     await pipeline.close()
 
 
-async def test_audio_provider_emits_base64_pcm_chunks():
-    pipeline, transport = _pipeline(FakeSTT(), FakeLLM(["A longer answer for playback."]), FakeAudioTTS(2))
+async def test_audio_chunks_are_base64_pcm16_at_provider_rate():
+    pipeline, transport = _pipeline(
+        FakeSTT(), FakeLLM(["A longer answer for playback."]), FakeAudioTTS(2)
+    )
     await _speak(pipeline)
     await _silence(pipeline, 3)
     await _await_turn(pipeline)
@@ -183,11 +197,27 @@ async def test_audio_provider_emits_base64_pcm_chunks():
     assert len(chunks) == 2
     assert base64.b64decode(chunks[0]["data"])
     assert chunks[0]["sample_rate"] == 24_000
+    assert chunks[0]["format"] == "pcm16"
+    await pipeline.close()
+
+
+async def test_selected_voice_is_used_for_synthesis():
+    tts = FakeAudioTTS(1)
+    pipeline, _transport = _pipeline(FakeSTT(), FakeLLM(["Voice test."]), tts)
+    pipeline.set_voice("ritu")
+
+    assert pipeline.ready_event()["tts"]["voice"] == "ritu"
+
+    await _speak(pipeline)
+    await _silence(pipeline, 3)
+    await _await_turn(pipeline)
+
+    assert tts.voices == ["ritu"]
     await pipeline.close()
 
 
 async def test_empty_transcript_ends_turn_cleanly():
-    pipeline, transport = _pipeline(FakeSTT(""), FakeLLM(["unused"]), FakeBrowserTTS())
+    pipeline, transport = _pipeline(FakeSTT(""), FakeLLM(["unused"]), FakeAudioTTS())
     await _speak(pipeline)
     await _silence(pipeline, 3)
     await _await_turn(pipeline)
@@ -200,7 +230,7 @@ async def test_empty_transcript_ends_turn_cleanly():
 
 async def test_barge_in_cancels_generation_and_marks_latest_turn():
     llm = FakeLLM(["one ", "two ", "three ", "four ", "five."], delay=0.05)
-    pipeline, transport = _pipeline(FakeSTT(), llm, FakeBrowserTTS())
+    pipeline, transport = _pipeline(FakeSTT(), llm, FakeAudioTTS())
 
     await _speak(pipeline)
     await _silence(pipeline, 3)
@@ -218,14 +248,19 @@ async def test_barge_in_cancels_generation_and_marks_latest_turn():
     await _silence(pipeline, 3)
     await _await_turn(pipeline)
     first_turn_id = cancelled[0]["turn_id"]
-    deltas = [event for event in transport.of_type("assistant.delta") if event["turn_id"] == first_turn_id]
+    deltas = [
+        event
+        for event in transport.of_type("assistant.delta")
+        if event["turn_id"] == first_turn_id
+    ]
     assert deltas, "the partial answer should have streamed before cancellation"
     await pipeline.close()
 
 
-async def test_manual_interrupt_stops_turn():
+async def test_manual_interrupt_stops_turn_and_stt_utterance():
     llm = FakeLLM(["a ", "b ", "c"], delay=0.1)
-    pipeline, transport = _pipeline(FakeSTT(), llm, FakeBrowserTTS())
+    stt = FakeSTT()
+    pipeline, transport = _pipeline(stt, llm, FakeAudioTTS())
     await _speak(pipeline)
     await _silence(pipeline, 3)
     await asyncio.sleep(0.05)
@@ -233,6 +268,7 @@ async def test_manual_interrupt_stops_turn():
     await pipeline.interrupt("manual")
     cancelled = transport.of_type("turn.cancelled")
     assert cancelled and cancelled[0]["reason"] == "manual"
+    assert stt.cancelled == 1
     await pipeline.close()
 
 
@@ -244,7 +280,7 @@ async def test_provider_error_surfaces_and_recovers():
             raise ProviderError("llm", "boom")
             yield  # pragma: no cover
 
-    pipeline, transport = _pipeline(FakeSTT(), BrokenLLM([]), FakeBrowserTTS())
+    pipeline, transport = _pipeline(FakeSTT(), BrokenLLM([]), FakeAudioTTS())
     await _speak(pipeline)
     await _silence(pipeline, 3)
     await _await_turn(pipeline)
@@ -256,9 +292,30 @@ async def test_provider_error_surfaces_and_recovers():
     await pipeline.close()
 
 
+async def test_stt_failure_surfaces_at_turn_end():
+    class BrokenSTT(FakeSTT):
+        async def begin_utterance(self, on_partial=None) -> None:
+            from src.voice.providers.base import ProviderError
+
+            raise ProviderError("stt", "sarvam down")
+
+    pipeline, transport = _pipeline(BrokenSTT(), FakeLLM(["unused"]), FakeAudioTTS())
+    await _speak(pipeline)
+    await _silence(pipeline, 3)
+    await _await_turn(pipeline)
+
+    errors = [event for event in transport.of_type("error") if event["stage"] == "stt"]
+    assert errors and errors[0]["message"] == "sarvam down"
+    assert transport.of_type("assistant.failed")
+    assert transport.of_type("state")[-1]["state"] == "listening"
+    await pipeline.close()
+
+
 async def test_client_metrics_are_merged_for_turn():
     metrics = MetricsRegistry()
-    pipeline, transport = _pipeline(FakeSTT(), FakeLLM(["hello."]), FakeBrowserTTS(), metrics=metrics)
+    pipeline, transport = _pipeline(
+        FakeSTT(), FakeLLM(["hello."]), FakeAudioTTS(), metrics=metrics
+    )
     await _speak(pipeline)
     await _silence(pipeline, 3)
     await _await_turn(pipeline)
@@ -305,21 +362,24 @@ async def test_no_stale_audio_after_barge_in():
     await pipeline.close()
 
 
-async def test_browser_stt_waits_for_client_transcript():
-    from src.voice.providers.stt import BrowserSTT
+async def test_platform_turn_limit_blocks_extra_turns():
+    pipeline, transport = _pipeline(
+        FakeSTT("first question"),
+        FakeLLM(["first answer."]),
+        FakeAudioTTS(1),
+        turn_limit=1,
+    )
 
-    pipeline, transport = _pipeline(BrowserSTT(), FakeLLM(["Hi."]), FakeBrowserTTS())
-
-    async def deliver():
-        await asyncio.sleep(0.05)
-        await pipeline.handle_browser_transcript("hello from the browser", final=True)
-
-    deliver_task = asyncio.create_task(deliver())
     await _speak(pipeline)
     await _silence(pipeline, 3)
     await _await_turn(pipeline)
-    await deliver_task
+    assert pipeline.session.turn_count == 1
 
-    assert transport.of_type("transcript.final")[0]["text"] == "hello from the browser"
-    assert pipeline.session.history[0].content == "hello from the browser"
+    await _speak(pipeline)
+    await _silence(pipeline, 3)
+    await _await_turn(pipeline)
+
+    quota = [event for event in transport.of_type("error") if event["stage"] == "quota"]
+    assert quota and quota[0]["recoverable"] is False
+    assert pipeline.session.turn_count == 1
     await pipeline.close()

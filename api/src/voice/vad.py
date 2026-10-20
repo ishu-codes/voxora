@@ -91,7 +91,7 @@ class EnergyVAD:
                 self._utterance_ms = 0.0
                 self._utterance = bytearray(b"".join(self._pre_roll))
                 events.append(
-                    VADEvent("speech_start", duration_ms=self._utterance_ms)
+                    VADEvent("speech_start", audio=bytes(self._utterance), duration_ms=self._utterance_ms)
                 )
             return events
 

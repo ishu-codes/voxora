@@ -33,13 +33,11 @@ async def lifespan(app: FastAPI):
     app.state.voice_providers = ProviderBundle.build(settings)
     bundle: ProviderBundle = app.state.voice_providers
     logger.info(
-        "providers stt=%s (%s) llm=%s (%s) tts=%s (%s)",
-        bundle.stt.name,
-        bundle.reasons.get("stt"),
+        "providers stt=sarvam:%s tts=sarvam:%s llm=%s (%s)",
+        settings.stt_model,
+        settings.tts_model,
         bundle.llm.name,
         bundle.reasons.get("llm"),
-        bundle.tts.name,
-        bundle.reasons.get("tts"),
     )
     yield
     await shutdown_providers(app)

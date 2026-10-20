@@ -1,9 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { toast } from "sonner";
 
+import type { VoiceOption } from "@/components/ui/voice-picker";
+import { API_URL } from "@/lib/voice-catalog";
+import { loadVoiceSettings, toConfigurePayload } from "@/lib/voice-settings";
 import { AudioCapture, AudioPlayer, decodePcm16 } from "./audio";
-import { isServerEvent, type AgentState, type ConnectionStatus, type ReadyEvent, type ServerEvent } from "./protocol";
-import { BrowserSpeaker, createRecognition, supportsBrowserStt, type Recognition } from "./speech";
+import {
+  type AgentState,
+  type ConnectionStatus,
+  isServerEvent,
+  type ReadyEvent,
+  type ServerEvent,
+} from "./protocol";
+import {
+  BrowserSpeaker,
+  createRecognition,
+  listBrowserVoices,
+  type Recognition,
+  supportsBrowserStt,
+} from "./speech";
+import { useVoiceCatalog } from "./useVoiceCatalog";
 
 export type VoiceMessage = {
   id: string;
@@ -35,8 +50,20 @@ export type VoiceSessionState = {
   diagnostics: TurnDiagnostics[];
 };
 
-const API_URL = ((import.meta as unknown as { env?: Record<string, string> }).env?.VITE_API_URL as string) || "http://localhost:8000";
-const WS_URL_OVERRIDE = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_VOICE_WS as string | undefined;
+const WS_URL_OVERRIDE = process.env.NEXT_PUBLIC_VOICE_WS;
+
+function fallbackVoice(voiceId: string | undefined): VoiceOption | null {
+  if (!voiceId) return null;
+  return {
+    voiceId,
+    name: voiceId
+      .split(/[-_]/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" "),
+    labels: { description: "Sarvam Bulbul" },
+  };
+}
 
 function voiceWsUrl(): string {
   if (WS_URL_OVERRIDE) return WS_URL_OVERRIDE;
@@ -50,6 +77,7 @@ function voiceWsUrl(): string {
 const BARGE_IN_VOICED_FRAMES = 5;
 const IDLE_LEVEL = 0;
 const MAX_RECONNECTS = 6;
+const SYSTEM_VOICE = "system";
 
 function percentile(values: number[], p: number): number | null {
   if (!values.length) return null;
@@ -63,6 +91,7 @@ function percentile(values: number[], p: number): number | null {
 }
 
 export function useVoiceSession() {
+  const catalog = useVoiceCatalog();
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [agentState, setAgentState] = useState<AgentState>("idle");
   const [ready, setReady] = useState<ReadyEvent | null>(null);
@@ -71,6 +100,11 @@ export function useVoiceSession() {
   const [error, setError] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
   const [diagnostics, setDiagnostics] = useState<TurnDiagnostics[]>([]);
+  const [captureStream, setCaptureStream] = useState<MediaStream | null>(null);
+  const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>(
+    [],
+  );
+  const [voice, setVoiceState] = useState<string | undefined>(undefined);
 
   const wsRef = useRef<WebSocket | null>(null);
   const captureRef = useRef<AudioCapture | null>(null);
@@ -82,16 +116,80 @@ export function useVoiceSession() {
   const intentionalCloseRef = useRef(false);
   const readyRef = useRef<ReadyEvent | null>(null);
   const mutedRef = useRef(false);
+  const voiceRef = useRef<string | undefined>(undefined);
+  const voiceKindRef = useRef<"browser" | "audio" | null>(null);
+  const catalogRef = useRef(catalog);
+  catalogRef.current = catalog;
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<number | null>(null);
   const suppressTurnRef = useRef<string | null>(null);
 
+  const connectSocketRef = useRef<() => void>(() => undefined);
   const currentUserMessageIdRef = useRef<string | null>(null);
   const currentAssistantTurnRef = useRef<string | null>(null);
   const speechEndAtRef = useRef<number | null>(null);
   const voicedAtRef = useRef<number | null>(null);
   const turnDiagRef = useRef<Map<string, TurnDiagnostics>>(new Map());
-  const localVadRef = useRef({ speaking: false, voicedRun: 0, silenceMs: 0, startedAt: 0 });
+  const localVadRef = useRef({
+    speaking: false,
+    voicedRun: 0,
+    silenceMs: 0,
+    startedAt: 0,
+  });
+
+  // Browser voices are populated asynchronously by the Web Speech API.
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
+
+    const load = () => setBrowserVoices(listBrowserVoices());
+    load();
+    window.speechSynthesis.addEventListener("voiceschanged", load);
+    return () =>
+      window.speechSynthesis.removeEventListener("voiceschanged", load);
+  }, []);
+
+  const options = useMemo<VoiceOption[]>(() => {
+    const kind = ready?.tts.kind ?? catalog?.kind;
+    if (kind === "audio") {
+      const voices: VoiceOption[] =
+        catalog?.voices.map((item) => ({
+          voiceId: item.id,
+          name: item.name,
+          labels: {
+            gender: item.gender,
+            description: item.description,
+          },
+        })) ?? [];
+      const displayed = voice ?? ready?.tts.voice ?? catalog?.default_voice;
+      if (
+        displayed &&
+        displayed !== SYSTEM_VOICE &&
+        !voices.some((item) => item.voiceId === displayed)
+      ) {
+        const fallback = fallbackVoice(displayed);
+        if (fallback) return [fallback, ...voices];
+      }
+      return voices;
+    }
+    if (kind === "browser") {
+      return [
+        {
+          voiceId: SYSTEM_VOICE,
+          name: "System default",
+          labels: { description: "Let the browser choose" },
+        },
+        ...browserVoices.map((item) => ({
+          voiceId: item.voiceURI,
+          name: item.name,
+          labels: {
+            accent: item.lang,
+            description: item.localService ? "On-device" : "Network",
+          },
+        })),
+      ];
+    }
+    return [];
+  }, [browserVoices, catalog, ready?.tts.kind, ready?.tts.voice, voice]);
 
   const publishDiagnostics = useCallback(() => {
     setDiagnostics(Array.from(turnDiagRef.current.values()).slice(-24));
@@ -101,7 +199,11 @@ export function useVoiceSession() {
     (turnId: string): TurnDiagnostics => {
       const existing = turnDiagRef.current.get(turnId);
       if (existing) return existing;
-      const created: TurnDiagnostics = { turnId, serverE2e: null, startedAt: Date.now() };
+      const created: TurnDiagnostics = {
+        turnId,
+        serverE2e: null,
+        startedAt: Date.now(),
+      };
       turnDiagRef.current.set(turnId, created);
       return created;
     },
@@ -110,7 +212,6 @@ export function useVoiceSession() {
 
   const pushError = useCallback((message: string) => {
     setError(message);
-    toast.error(message);
   }, []);
 
   const send = useCallback((payload: unknown): boolean => {
@@ -122,28 +223,81 @@ export function useVoiceSession() {
 
   const sendTurnMetrics = useCallback(
     (turnId: string, metrics: Record<string, number>) => {
-      if (Object.keys(metrics).length) send({ type: "metrics", turn_id: turnId, metrics });
+      if (Object.keys(metrics).length) {
+        send({ type: "metrics", turn_id: turnId, metrics });
+      }
     },
     [send],
   );
 
-  const upsertUserMessage = useCallback((text: string, final: boolean, turnId?: string) => {
-    const existingId = currentUserMessageIdRef.current;
-    setMessages((previous) => {
-      if (existingId) {
-        const index = previous.findIndex((message) => message.id === existingId);
-        if (index >= 0) {
-          const copy = [...previous];
-          copy[index] = { ...copy[index], text, final, turnId: turnId ?? copy[index].turnId };
-          return copy;
-        }
+  const selectVoice = useCallback(
+    (voiceId: string) => {
+      voiceRef.current = voiceId;
+      setVoiceState(voiceId);
+
+      const kind = readyRef.current?.tts.kind;
+      if (kind === "browser") {
+        speakerRef.current?.setVoice(voiceId === SYSTEM_VOICE ? null : voiceId);
+      } else if (kind === "audio") {
+        send({ type: "voice", voice: voiceId } satisfies {
+          type: "voice";
+          voice: string;
+        });
       }
-      const id = turnId ? `user-${turnId}` : `user-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-      currentUserMessageIdRef.current = final ? null : id;
-      return [...previous, { id, role: "user", text, final, turnId, at: Date.now() }];
-    });
-    if (final) currentUserMessageIdRef.current = null;
-  }, []);
+    },
+    [send],
+  );
+
+  useEffect(() => {
+    if (catalog?.kind !== "audio" || !catalog.voices.length) return;
+    const current = voiceRef.current;
+    const valid =
+      current &&
+      current !== SYSTEM_VOICE &&
+      catalog.voices.some((item) => item.id === current);
+    const next = valid
+      ? current
+      : catalog.default_voice || catalog.voices[0].id;
+    if (!next || next === current) return;
+    voiceRef.current = next;
+    setVoiceState(next);
+    if (readyRef.current?.tts.kind === "audio") {
+      send({ type: "voice", voice: next });
+    }
+  }, [catalog, send]);
+
+  const upsertUserMessage = useCallback(
+    (text: string, final: boolean, turnId?: string) => {
+      const existingId = currentUserMessageIdRef.current;
+      setMessages((previous) => {
+        if (existingId) {
+          const index = previous.findIndex(
+            (message) => message.id === existingId,
+          );
+          if (index >= 0) {
+            const copy = [...previous];
+            copy[index] = {
+              ...copy[index],
+              text,
+              final,
+              turnId: turnId ?? copy[index].turnId,
+            };
+            return copy;
+          }
+        }
+        const id = turnId
+          ? `user-${turnId}`
+          : `user-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
+        currentUserMessageIdRef.current = final ? null : id;
+        return [
+          ...previous,
+          { id, role: "user", text, final, turnId, at: Date.now() },
+        ];
+      });
+      if (final) currentUserMessageIdRef.current = null;
+    },
+    [],
+  );
 
   const appendAssistantMessage = useCallback((turnId: string, text: string) => {
     setMessages((previous) => {
@@ -152,12 +306,23 @@ export function useVoiceSession() {
       );
       if (index >= 0) {
         const copy = [...previous];
-        copy[index] = { ...copy[index], text: copy[index].text + text, final: false };
+        copy[index] = {
+          ...copy[index],
+          text: copy[index].text + text,
+          final: false,
+        };
         return copy;
       }
       return [
         ...previous,
-        { id: `assistant-${turnId}`, role: "assistant", text, final: false, turnId, at: Date.now() },
+        {
+          id: `assistant-${turnId}`,
+          role: "assistant",
+          text,
+          final: false,
+          turnId,
+          at: Date.now(),
+        },
       ];
     });
   }, []);
@@ -166,7 +331,8 @@ export function useVoiceSession() {
     (turnId: string, patch: Partial<VoiceMessage>) => {
       setMessages((previous) => {
         const index = previous.findIndex(
-          (message) => message.role === "assistant" && message.turnId === turnId,
+          (message) =>
+            message.role === "assistant" && message.turnId === turnId,
         );
         if (index < 0) return previous;
         const copy = [...previous];
@@ -219,9 +385,17 @@ export function useVoiceSession() {
           setAgentState("speaking");
         },
         onEnd: () => {
-          setAgentState((previous) => (previous === "speaking" ? "listening" : previous));
+          setAgentState((previous) =>
+            previous === "speaking" ? "listening" : previous,
+          );
         },
       });
+      speakerRef.current.setVoice(
+        voiceRef.current && voiceRef.current !== SYSTEM_VOICE
+          ? voiceRef.current
+          : null,
+      );
+      speakerRef.current.primeVoices();
     }
     return playerRef.current;
   }, [recordFirstPlayback]);
@@ -236,7 +410,44 @@ export function useVoiceSession() {
           reconnectAttemptsRef.current = 0;
           setAgentState("listening");
           setError(null);
-          if (event.stt.mode === "browser-stt" && !recognitionRef.current && activeRef.current) {
+
+          const kind = event.tts.kind;
+          if (voiceKindRef.current !== null && voiceKindRef.current !== kind) {
+            voiceRef.current = undefined;
+          }
+          voiceKindRef.current = kind;
+
+          const audioVoices = catalogRef.current?.voices ?? [];
+          const currentAudioVoice =
+            voiceRef.current &&
+            audioVoices.some((item) => item.id === voiceRef.current)
+              ? voiceRef.current
+              : undefined;
+          const nextVoice =
+            kind === "audio"
+              ? (currentAudioVoice ??
+                event.tts.voice ??
+                catalogRef.current?.default_voice ??
+                audioVoices[0]?.id ??
+                "shubh")
+              : (voiceRef.current ?? SYSTEM_VOICE);
+
+          voiceRef.current = nextVoice;
+          setVoiceState(nextVoice);
+
+          if (kind === "audio" && nextVoice !== event.tts.voice) {
+            send({ type: "voice", voice: nextVoice });
+          } else if (kind === "browser") {
+            speakerRef.current?.setVoice(
+              nextVoice === SYSTEM_VOICE ? null : nextVoice,
+            );
+          }
+
+          if (
+            event.stt.mode === "browser-stt" &&
+            !recognitionRef.current &&
+            activeRef.current
+          ) {
             startRecognition();
           }
           break;
@@ -261,7 +472,9 @@ export function useVoiceSession() {
             if (turnId && voicedAtRef.current != null) {
               const diag = ensureTurnDiagnostics(turnId);
               if (diag.bargeIn == null) {
-                diag.bargeIn = Math.round(performance.now() - voicedAtRef.current);
+                diag.bargeIn = Math.round(
+                  performance.now() - voicedAtRef.current,
+                );
                 publishDiagnostics();
                 sendTurnMetrics(turnId, { barge_in_ms: diag.bargeIn });
               }
@@ -300,9 +513,14 @@ export function useVoiceSession() {
           break;
         }
         case "assistant.done": {
-          settleAssistantMessage(event.turn_id, { text: event.text || undefined });
+          settleAssistantMessage(event.turn_id, {
+            text: event.text || undefined,
+          });
           suppressTurnRef.current = null;
-          if (!playerRef.current?.isSpeaking && !speakerRef.current?.isSpeaking) {
+          if (
+            !playerRef.current?.isSpeaking &&
+            !speakerRef.current?.isSpeaking
+          ) {
             setAgentState("listening");
           }
           break;
@@ -319,7 +537,9 @@ export function useVoiceSession() {
           if (event.reason === "barge_in") {
             const diag = ensureTurnDiagnostics(event.turn_id);
             if (diag.bargeIn == null && voicedAtRef.current != null) {
-              diag.bargeIn = Math.round(performance.now() - voicedAtRef.current);
+              diag.bargeIn = Math.round(
+                performance.now() - voicedAtRef.current,
+              );
               publishDiagnostics();
               sendTurnMetrics(event.turn_id, { barge_in_ms: diag.bargeIn });
             }
@@ -365,7 +585,10 @@ export function useVoiceSession() {
           return;
         }
         recognition.onend = () => {
-          if (activeRef.current && readyRef.current?.stt.mode === "browser-stt") {
+          if (
+            activeRef.current &&
+            readyRef.current?.stt.mode === "browser-stt"
+          ) {
             try {
               recognition.start();
             } catch {
@@ -436,19 +659,19 @@ export function useVoiceSession() {
             }
           }
         }
+      } else if (rms >= threshold) {
+        vad.silenceMs = 0;
       } else {
-        if (rms >= threshold) {
-          vad.silenceMs = 0;
-        } else {
-          vad.silenceMs += 20;
-        }
+        vad.silenceMs += 20;
         const endSilence = readyRef.current?.vad.end_silence_ms ?? 650;
         if (vad.silenceMs >= endSilence || now - vad.startedAt > 30_000) {
           vad.speaking = false;
           vad.voicedRun = 0;
           vad.silenceMs = 0;
           speechEndAtRef.current = now;
-          setAgentState((previous) => (previous === "speaking" ? previous : "thinking"));
+          setAgentState((previous) =>
+            previous === "speaking" ? previous : "thinking",
+          );
         }
       }
     },
@@ -466,9 +689,8 @@ export function useVoiceSession() {
     setStatus("reconnecting");
     const delay = Math.min(800 * 2 ** attempt, 8_000);
     reconnectTimerRef.current = window.setTimeout(() => {
-      if (activeRef.current) connectSocket();
+      if (activeRef.current) connectSocketRef.current();
     }, delay);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pushError]);
 
   const connectSocket = useCallback(() => {
@@ -477,7 +699,11 @@ export function useVoiceSession() {
       reconnectTimerRef.current = null;
     }
     const previous = wsRef.current;
-    if (previous && (previous.readyState === WebSocket.OPEN || previous.readyState === WebSocket.CONNECTING)) {
+    if (
+      previous &&
+      (previous.readyState === WebSocket.OPEN ||
+        previous.readyState === WebSocket.CONNECTING)
+    ) {
       previous.close();
     }
     intentionalCloseRef.current = false;
@@ -491,6 +717,10 @@ export function useVoiceSession() {
     }
     ws.binaryType = "arraybuffer";
     wsRef.current = ws;
+    ws.onopen = () => {
+      if (wsRef.current !== ws) return;
+      ws.send(JSON.stringify(toConfigurePayload(loadVoiceSettings())));
+    };
     ws.onmessage = (message: MessageEvent<string>) => {
       if (typeof message.data !== "string") return;
       try {
@@ -504,15 +734,19 @@ export function useVoiceSession() {
       if (activeRef.current) pushError("Voice connection error.");
     };
     ws.onclose = () => {
-      if (wsRef.current === ws) wsRef.current = null;
+      if (wsRef.current !== ws) return;
+      wsRef.current = null;
       if (intentionalCloseRef.current || !activeRef.current) {
         setStatus((current) => (current === "error" ? current : "idle"));
         return;
       }
       scheduleReconnect();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [handleServerEvent, pushError, scheduleReconnect]);
+
+  useEffect(() => {
+    connectSocketRef.current = connectSocket;
+  }, [connectSocket]);
 
   const start = useCallback(async () => {
     if (activeRef.current) return;
@@ -523,7 +757,12 @@ export function useVoiceSession() {
     reconnectAttemptsRef.current = 0;
     turnDiagRef.current.clear();
     setDiagnostics([]);
-    localVadRef.current = { speaking: false, voicedRun: 0, silenceMs: 0, startedAt: 0 };
+    localVadRef.current = {
+      speaking: false,
+      voicedRun: 0,
+      silenceMs: 0,
+      startedAt: 0,
+    };
     speechEndAtRef.current = null;
 
     ensurePlayer();
@@ -531,7 +770,11 @@ export function useVoiceSession() {
 
     try {
       if (!captureRef.current) captureRef.current = new AudioCapture();
-      await captureRef.current.start({ onFrame: handleFrame, onLevel: (rms) => setLevel(rms) });
+      await captureRef.current.start({
+        onFrame: handleFrame,
+        onLevel: (rms) => setLevel(rms),
+      });
+      setCaptureStream(captureRef.current.mediaStream);
     } catch (cause) {
       activeRef.current = false;
       const message =
@@ -561,6 +804,7 @@ export function useVoiceSession() {
     stopPlayback();
     await captureRef.current?.stop();
     captureRef.current = null;
+    setCaptureStream(null);
     await playerRef.current?.close();
     playerRef.current = null;
     speakerRef.current = null;
@@ -595,7 +839,8 @@ export function useVoiceSession() {
     return () => {
       activeRef.current = false;
       intentionalCloseRef.current = true;
-      if (reconnectTimerRef.current) window.clearTimeout(reconnectTimerRef.current);
+      if (reconnectTimerRef.current)
+        window.clearTimeout(reconnectTimerRef.current);
       recognitionRef.current?.abort();
       void captureRef.current?.stop();
       void playerRef.current?.close();
@@ -628,6 +873,10 @@ export function useVoiceSession() {
     muted,
     diagnostics,
     summary,
+    stream: captureStream,
+    voices: options,
+    voice,
+    selectVoice,
     start,
     stop,
     interrupt,

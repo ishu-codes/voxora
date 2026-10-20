@@ -1,12 +1,16 @@
-import { Section, SectionHeader } from "./Section";
-import { Reveal } from "./Reveal";
 import { DashedPanel } from "./DashedPanel";
+import { Reveal } from "./Reveal";
+import { Section, SectionHeader } from "./Section";
 import { STREAMING_COPY } from "./sections";
 
 export function StreamingSection() {
   return (
     <Section className="bg-muted/20">
-      <SectionHeader heading={STREAMING_COPY.heading} subhead={STREAMING_COPY.subhead} className="mx-auto text-center" />
+      <SectionHeader
+        heading={STREAMING_COPY.heading}
+        subhead={STREAMING_COPY.subhead}
+        className="mx-auto text-center"
+      />
 
       <div className="mt-14 grid gap-6 lg:grid-cols-2">
         <Reveal direction="left">

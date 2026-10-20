@@ -14,7 +14,7 @@ from typing import AsyncIterator
 import httpx
 
 from ..config import Settings
-from .base import ProviderError
+from .base import ProviderError, provider_http_error
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class OpenAICompatibleLLM:
         self._client = httpx.AsyncClient(
             base_url=settings.llm_base_url,
             timeout=httpx.Timeout(settings.llm_timeout_s, connect=10.0),
-            headers={"Authorization": f"Bearer {settings.key_for('llm')}"},
+            headers={"Authorization": f"Bearer {self._settings.llm_api_key}"},
         )
 
     async def _stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
@@ -75,9 +75,9 @@ class OpenAICompatibleLLM:
         try:
             async with self._client.stream("POST", "/chat/completions", json=payload) as response:
                 if response.status_code >= 400:
-                    body = (await response.aread()).decode("utf-8", "replace")[:400]
-                    raise ProviderError(
-                        "llm", f"Language model error ({response.status_code}): {body}"
+                    body = (await response.aread()).decode("utf-8", "replace")
+                    raise provider_http_error(
+                        "llm", "Language model", response.status_code, body
                     )
                 async for line in response.aiter_lines():
                     if not line:
@@ -115,7 +115,7 @@ def build_llm(settings: Settings) -> tuple[EchoLLM | OpenAICompatibleLLM, str]:
         return EchoLLM(), "configured"
     if choice in {"openai", "openai-compatible", "groq", "ollama", "vllm", "custom"}:
         return OpenAICompatibleLLM(settings), "configured"
-    if settings.key_for("llm"):
+    if settings.llm_api_key:
         return OpenAICompatibleLLM(settings), "auto: API key present"
     return EchoLLM(), "auto: no LLM key, using demo responder"
 

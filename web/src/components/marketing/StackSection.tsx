@@ -1,12 +1,15 @@
-import { Section, SectionHeader } from "./Section";
-import { Reveal } from "./Reveal";
 import { DashedPanel } from "./DashedPanel";
+import { Reveal } from "./Reveal";
+import { Section, SectionHeader } from "./Section";
 import { STACK_COPY, STACK_ITEMS } from "./sections";
 
 export function StackSection() {
   return (
     <Section id="stack" className="bg-background">
-      <SectionHeader heading={STACK_COPY.heading} subhead={STACK_COPY.subhead} />
+      <SectionHeader
+        heading={STACK_COPY.heading}
+        subhead={STACK_COPY.subhead}
+      />
 
       <div className="mt-14 space-y-3">
         {STACK_ITEMS.map((item, index) => (
@@ -16,9 +19,13 @@ export function StackSection() {
                 <span className="rounded-full border border-border bg-muted px-3 py-1 font-mono text-xs font-semibold text-foreground">
                   {item.slot}
                 </span>
-                <span className="text-sm font-medium text-foreground sm:text-base">{item.options}</span>
+                <span className="text-sm font-medium text-foreground sm:text-base">
+                  {item.options}
+                </span>
               </div>
-              <span className="font-mono text-xs text-muted-foreground">{item.detail}</span>
+              <span className="font-mono text-xs text-muted-foreground">
+                {item.detail}
+              </span>
             </DashedPanel>
           </Reveal>
         ))}

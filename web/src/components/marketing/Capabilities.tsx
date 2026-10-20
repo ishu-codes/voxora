@@ -1,21 +1,28 @@
-import { Section, SectionHeader } from "./Section";
-import { Reveal } from "./Reveal";
 import { DashedPanel } from "./DashedPanel";
+import { Reveal } from "./Reveal";
+import { Section, SectionHeader } from "./Section";
 import { CAPABILITIES_COPY } from "./sections";
 
 export function Capabilities() {
   return (
     <Section id="capabilities" className="bg-background">
-      <SectionHeader heading={CAPABILITIES_COPY.heading} subhead={CAPABILITIES_COPY.subhead} />
+      <SectionHeader
+        heading={CAPABILITIES_COPY.heading}
+        subhead={CAPABILITIES_COPY.subhead}
+      />
 
       <div className="mt-14 grid gap-0">
         {CAPABILITIES_COPY.items.map((item, index) => (
           <Reveal key={item.num} delay={index * 60}>
             <DashedPanel className="group flex flex-col gap-4 bg-card p-6 transition-colors hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between sm:p-7">
               <div className="flex items-start gap-5 sm:items-center">
-                <span className="font-mono text-sm font-semibold text-brand-text">{item.num}</span>
+                <span className="font-mono text-sm font-semibold text-brand-text">
+                  {item.num}
+                </span>
                 <div>
-                  <h3 className="text-base font-semibold tracking-tight sm:text-lg">{item.title}</h3>
+                  <h3 className="text-base font-semibold tracking-tight sm:text-lg">
+                    {item.title}
+                  </h3>
                   <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                     {item.description}
                   </p>

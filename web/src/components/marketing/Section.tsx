@@ -10,7 +10,13 @@ type SectionProps = {
   dashed?: boolean;
 };
 
-export function Section({ children, className, innerClassName, id, dashed = false }: SectionProps) {
+export function Section({
+  children,
+  className,
+  innerClassName,
+  id,
+  dashed = false,
+}: SectionProps) {
   return (
     <section
       id={id}
@@ -20,7 +26,9 @@ export function Section({ children, className, innerClassName, id, dashed = fals
         className,
       )}
     >
-      <div className={cn("container relative z-10", innerClassName)}>{children}</div>
+      <div className={cn("container relative z-10", innerClassName)}>
+        {children}
+      </div>
     </section>
   );
 }
@@ -32,16 +40,27 @@ type SectionHeaderProps = {
   className?: string;
 };
 
-export function SectionHeader({ kicker, heading, subhead, className }: SectionHeaderProps) {
+export function SectionHeader({
+  kicker,
+  heading,
+  subhead,
+  className,
+}: SectionHeaderProps) {
   return (
     <Reveal className={cn("max-w-2xl space-y-4", className)}>
       {kicker ? (
-        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">{kicker}</p>
+        <p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+          {kicker}
+        </p>
       ) : null}
       <h2 className="text-3xl font-semibold tracking-tighter text-balance sm:text-4xl lg:text-5xl">
         {heading}
       </h2>
-      {subhead ? <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">{subhead}</p> : null}
+      {subhead ? (
+        <p className="text-base leading-relaxed text-muted-foreground sm:text-lg">
+          {subhead}
+        </p>
+      ) : null}
     </Reveal>
   );
 }

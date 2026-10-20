@@ -16,6 +16,7 @@ export function Wordmark({ size = "md", className }: WordmarkProps) {
         className,
       )}
       style={{ height: heights[size], fontSize: fontSize[size], lineHeight: 1 }}
+      role="img"
       aria-label="Voxora"
     >
       <span className="font-mono text-brand-text">{"//"}</span>

@@ -1,14 +1,17 @@
-import { Section, SectionHeader } from "./Section";
-import { Reveal } from "./Reveal";
-import { DashedPanel } from "./DashedPanel";
-import { Pill, OutlinePill } from "./Pill";
-import { DEPLOYMENTS, DEPLOYMENT_COPY } from "./sections";
 import { Check } from "lucide-react";
+import { DashedPanel } from "./DashedPanel";
+import { OutlinePill, Pill } from "./Pill";
+import { Reveal } from "./Reveal";
+import { Section, SectionHeader } from "./Section";
+import { DEPLOYMENT_COPY, DEPLOYMENTS } from "./sections";
 
 export function Deployment() {
   return (
     <Section id="deployment" className="bg-muted/20">
-      <SectionHeader heading={DEPLOYMENT_COPY.heading} subhead={DEPLOYMENT_COPY.subhead} />
+      <SectionHeader
+        heading={DEPLOYMENT_COPY.heading}
+        subhead={DEPLOYMENT_COPY.subhead}
+      />
 
       <div className="mt-14 grid gap-6 md:grid-cols-3">
         {DEPLOYMENTS.map((option, index) => (
@@ -22,19 +25,30 @@ export function Deployment() {
                 </span>
               )}
 
-              <h3 className="text-lg font-semibold tracking-tight">{option.name}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{option.description}</p>
+              <h3 className="text-lg font-semibold tracking-tight">
+                {option.name}
+              </h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {option.description}
+              </p>
 
               <div className="mt-6 flex items-baseline gap-1.5">
                 <span className="font-mono text-2xl font-semibold tracking-tight tabular-nums">
                   {option.price}
                 </span>
-                {option.period && <span className="text-sm text-muted-foreground">{option.period}</span>}
+                {option.period && (
+                  <span className="text-sm text-muted-foreground">
+                    {option.period}
+                  </span>
+                )}
               </div>
 
               <ul className="mt-7 flex-1 space-y-3">
                 {option.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                  <li
+                    key={feature}
+                    className="flex items-start gap-2.5 text-sm text-muted-foreground"
+                  >
                     <Check className="mt-0.5 size-4 shrink-0 text-brand-text" />
                     {feature}
                   </li>
@@ -47,7 +61,11 @@ export function Deployment() {
                     {option.cta}
                   </Pill>
                 ) : (
-                  <OutlinePill asLink to={option.to} className="w-full justify-center">
+                  <OutlinePill
+                    asLink
+                    to={option.to}
+                    className="w-full justify-center"
+                  >
                     {option.cta}
                   </OutlinePill>
                 )}

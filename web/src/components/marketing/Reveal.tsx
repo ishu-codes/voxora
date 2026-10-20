@@ -1,4 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+"use client";
+
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 type Direction = "up" | "left" | "right";
@@ -16,7 +18,12 @@ const directionClass: Record<Direction, string> = {
   right: "reveal-right",
 };
 
-export function Reveal({ children, className, delay = 0, direction = "up" }: RevealProps) {
+export function Reveal({
+  children,
+  className,
+  delay = 0,
+  direction = "up",
+}: RevealProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
 
@@ -47,7 +54,12 @@ export function Reveal({ children, className, delay = 0, direction = "up" }: Rev
     <div
       ref={ref}
       style={{ transitionDelay: `${delay}ms` }}
-      className={cn("reveal", directionClass[direction], visible && "reveal-visible", className)}
+      className={cn(
+        "reveal",
+        directionClass[direction],
+        visible && "reveal-visible",
+        className,
+      )}
     >
       {children}
     </div>

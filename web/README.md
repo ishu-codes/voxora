@@ -1,66 +1,36 @@
-# Voxora Web
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-React + TypeScript client for Voxora, a low-latency real-time voice agent. The
-browser captures microphone audio, streams 20 ms PCM frames to the FastAPI
-backend, renders live transcripts, and plays streamed speech the moment it
-arrives.
+## Getting Started
 
-## Run
+First, run the development server:
 
 ```bash
-pnpm install
-cp .env.example .env
-pnpm dev            # http://localhost:3000
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-The API defaults to `http://localhost:8000` (see `VITE_API_URL`). Start it with
-`cd ../api && ./run.sh serve`.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-```bash
-pnpm build          # tsc + vite build
-pnpm lint           # oxlint
-```
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-## Routes
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-| Path | Page |
-| --- | --- |
-| `/` | Marketing landing page |
-| `/app` | Voice studio (microphone + transcript + latency panel) |
-| `/privacy`, `/terms` | Legal pages |
+## Learn More
 
-## How the client works
+To learn more about Next.js, take a look at the following resources:
 
-```
-microphone ─ AudioWorklet (resample → 16 kHz PCM16, 20 ms frames) ─ WebSocket
-                                                                      │
-   Web Audio playback queue ◀── audio.chunk ──┐                        │
-   Speech Synthesis queue   ◀── speak.chunk ──┴── server pipeline ◀────┘
-```
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-- `src/voice/audio.ts` — `AudioCapture` (AudioWorklet resampler that emits
-  fixed 20 ms frames) and `AudioPlayer` (gapless PCM queue on the Web Audio
-  clock with instant `stop()`).
-- `src/voice/speech.ts` — Web Speech API wrappers: streaming speech recognition
-  for browser-side STT and sentence-chunk playback for browser-side TTS.
-- `src/voice/useVoiceSession.ts` — the session state machine. Owns the socket,
-  message list, agent state, reconnect backoff, local barge-in detection and
-  latency bookkeeping.
-- `src/voice/protocol.ts` — typed mirror of the backend WebSocket events.
-- `src/components/voice/*` — microphone orb, transcript and latency panels.
-- `src/pages/VoicePage.tsx` — composes the studio and the diagnostics drawer.
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-### Interruption
+## Deploy on Vercel
 
-The client runs a lightweight local VAD on the same frames it sends. When the
-user starts speaking during playback, the playback queue is stopped on that
-frame (well under the 200 ms p95 target) and the current turn's audio is
-suppressed. The backend VAD detects the same onset, cancels the LLM/TTS tasks
-and emits `turn.cancelled`, so no stale audio can reappear.
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-### Metrics
-
-Every turn records the server-side `e2e_first_audio_ms` plus client-measured
-`first_playback_ms` (end of local speech to first audible chunk) and
-`barge_in_ms`. The client reports them back with a `metrics` message; the
-latency panel shows per-turn values and rolling p50/p95 for the session.
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

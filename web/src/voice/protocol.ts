@@ -14,8 +14,13 @@ export type ReadyEvent = {
   audio: { format: "pcm16"; input_sample_rate: number; frame_ms: number };
   stt: ProviderInfo & { partials: boolean; mode: "browser-stt" | "server-stt" };
   llm: ProviderInfo;
-  tts: ProviderInfo & { kind: "audio" | "browser"; sample_rate: number };
+  tts: ProviderInfo & {
+    kind: "audio" | "browser";
+    sample_rate: number;
+    voice?: string;
+  };
   vad: { name: string; threshold: number; end_silence_ms: number };
+  platform?: { limited: boolean; turn_limit: number | null };
   targets: {
     first_audio_p50_ms: number;
     first_audio_p95_ms: number;
@@ -35,20 +40,60 @@ export type ServerEvent =
   | { type: "assistant.failed"; turn_id: string }
   | { type: "speak.chunk"; turn_id: string; text: string; index: number }
   | { type: "speak.end"; turn_id: string }
-  | { type: "audio.chunk"; turn_id: string; data: string; sample_rate: number; format: "pcm16" }
-  | { type: "turn.cancelled"; turn_id: string; reason: "barge_in" | "manual" | string }
+  | {
+      type: "audio.chunk";
+      turn_id: string;
+      data: string;
+      sample_rate: number;
+      format: "pcm16";
+    }
+  | {
+      type: "turn.cancelled";
+      turn_id: string;
+      reason: "barge_in" | "manual" | string;
+    }
   | { type: "turn.empty"; turn_id: string }
-  | { type: "turn.metrics"; turn_id: string; metrics: Record<string, number | null> }
-  | { type: "error"; turn_id?: string; stage: string; message: string; recoverable: boolean }
+  | {
+      type: "turn.metrics";
+      turn_id: string;
+      metrics: Record<string, number | null>;
+    }
+  | {
+      type: "error";
+      turn_id?: string;
+      stage: string;
+      message: string;
+      recoverable: boolean;
+    }
   | { type: "pong" };
 
-export type AgentState = "idle" | "listening" | "thinking" | "speaking" | "error";
+export type AgentState =
+  | "idle"
+  | "listening"
+  | "thinking"
+  | "speaking"
+  | "error";
 
-export type ConnectionStatus = "idle" | "connecting" | "connected" | "reconnecting" | "error";
+export type ConnectionStatus =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "error";
 
 export type ClientEvent =
+  | {
+      type: "configure";
+      byok: {
+        sarvam_api_key: string;
+        openai_api_key: string;
+        openai_base_url: string;
+        openai_model: string;
+      };
+    }
   | { type: "transcript"; text: string; final: boolean }
   | { type: "interrupt"; reason?: string }
+  | { type: "voice"; voice: string }
   | { type: "metrics"; turn_id: string; metrics: Record<string, number> }
   | { type: "playback.done" }
   | { type: "ping" };
