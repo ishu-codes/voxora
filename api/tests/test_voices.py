@@ -1,9 +1,29 @@
+from types import SimpleNamespace
+
 from fastapi.testclient import TestClient
 
 from main import app
 from src.voice.config import Settings
-from src.voice.router import VoiceCredentials
+from src.voice.router import VoiceCredentials, _handle_text
 from src.voice.voices import build_catalog
+
+
+class _TransportStub:
+    def __init__(self) -> None:
+        self.events: list[dict] = []
+
+    async def send(self, event: dict) -> None:
+        self.events.append(event)
+
+
+class _PipelineStub:
+    def __init__(self) -> None:
+        self.session = SimpleNamespace(session_id="test-session")
+        self.transport = _TransportStub()
+        self.interrupts: list[tuple[str, str | None]] = []
+
+    async def interrupt(self, reason: str, turn_id: str | None = None) -> None:
+        self.interrupts.append((reason, turn_id))
 
 
 def test_v3_catalog_contains_default_and_known_speakers():
@@ -69,6 +89,31 @@ def test_credentials_require_http_base_url():
         assert "http" in str(exc)
     else:  # pragma: no cover - defensive
         raise AssertionError("expected invalid URL to be rejected")
+
+
+async def test_router_rejects_invalid_interrupt_turn_id():
+    pipeline = _PipelineStub()
+
+    await _handle_text(pipeline, '{"type":"interrupt","turn_id":""}')
+    await _handle_text(pipeline, '{"type":"interrupt","turn_id":42}')
+
+    assert pipeline.interrupts == []
+    assert [event["stage"] for event in pipeline.transport.events] == [
+        "protocol",
+        "protocol",
+    ]
+
+
+async def test_router_forwards_turn_targeted_interrupt():
+    pipeline = _PipelineStub()
+
+    await _handle_text(
+        pipeline,
+        '{"type":"interrupt","reason":"barge_in","turn_id":"turn-7"}',
+    )
+
+    assert pipeline.interrupts == [("barge_in", "turn-7")]
+    assert pipeline.transport.events == []
 
 
 def test_voice_catalog_endpoint_is_cacheable():

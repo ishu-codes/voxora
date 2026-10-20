@@ -4,6 +4,8 @@ import type { VoiceOption } from "@/components/ui/voice-picker";
 import { API_URL } from "@/lib/voice-catalog";
 import { loadVoiceSettings, toConfigurePayload } from "@/lib/voice-settings";
 import { AudioCapture, AudioPlayer, decodePcm16 } from "./audio";
+import { useConversationStore } from "./conversation-store";
+import { InterruptedTurns } from "./interrupted-turns";
 import {
   type AgentState,
   type ConnectionStatus,
@@ -19,6 +21,7 @@ import {
   supportsBrowserStt,
 } from "./speech";
 import { useVoiceCatalog } from "./useVoiceCatalog";
+import { LocalVad, MIN_SPEECH_MS } from "./vad";
 
 export type VoiceMessage = {
   id: string;
@@ -47,8 +50,11 @@ export type VoiceSessionState = {
   level: number;
   error: string | null;
   muted: boolean;
+  vadStatus: LocalVadStatus;
   diagnostics: TurnDiagnostics[];
 };
+
+export type LocalVadStatus = "off" | "loading" | "active" | "fallback";
 
 const WS_URL_OVERRIDE = process.env.NEXT_PUBLIC_VOICE_WS;
 
@@ -78,6 +84,17 @@ const BARGE_IN_VOICED_FRAMES = 5;
 const IDLE_LEVEL = 0;
 const MAX_RECONNECTS = 6;
 const SYSTEM_VOICE = "system";
+const MAX_PRE_ROLL_FRAMES = 30; // 600 ms of 20 ms frames
+const TURN_WATCHDOG_MS = 60_000;
+const SPEECH_TAIL_EXTRA_MS = 200;
+const CAPTURE_STALL_MS = 4_000;
+const CAPTURE_WATCHDOG_MS = 1_500;
+const CAPTURE_RETRY_MS = 2_000;
+const CAPTURE_MAX_RETRIES = 6;
+// A restart only clears the retry budget once it has stayed healthy this long.
+// Without this, a capture that dies every few seconds rebuilds forever.
+const CAPTURE_STABILITY_MS = 15_000;
+const ENERGY_GATE_FRAMES = 10; // 200 ms of fallback speech while Silero is quiet
 
 function percentile(values: number[], p: number): number | null {
   if (!values.length) return null;
@@ -95,10 +112,13 @@ export function useVoiceSession() {
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [agentState, setAgentState] = useState<AgentState>("idle");
   const [ready, setReady] = useState<ReadyEvent | null>(null);
-  const [messages, setMessages] = useState<VoiceMessage[]>([]);
+  const messages = useConversationStore((state) => state.messages);
+  const setMessages = useConversationStore((state) => state.setMessages);
+  const clearMessages = useConversationStore((state) => state.clearMessages);
   const [level, setLevel] = useState(IDLE_LEVEL);
   const [error, setError] = useState<string | null>(null);
   const [muted, setMuted] = useState(false);
+  const [vadStatus, setVadStatus] = useState<LocalVadStatus>("off");
   const [diagnostics, setDiagnostics] = useState<TurnDiagnostics[]>([]);
   const [captureStream, setCaptureStream] = useState<MediaStream | null>(null);
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>(
@@ -122,15 +142,37 @@ export function useVoiceSession() {
   catalogRef.current = catalog;
   const reconnectAttemptsRef = useRef(0);
   const reconnectTimerRef = useRef<number | null>(null);
-  const suppressTurnRef = useRef<string | null>(null);
+  const turnsRef = useRef(new InterruptedTurns());
 
   const connectSocketRef = useRef<() => void>(() => undefined);
   const currentUserMessageIdRef = useRef<string | null>(null);
   const currentAssistantTurnRef = useRef<string | null>(null);
+  const activeTurnRef = useRef<string | null>(null);
   const speechEndAtRef = useRef<number | null>(null);
   const voicedAtRef = useRef<number | null>(null);
   const turnDiagRef = useRef<Map<string, TurnDiagnostics>>(new Map());
-  const localVadRef = useRef({
+  const turnWatchdogRef = useRef<number | null>(null);
+
+  const localVadRef = useRef<LocalVad | null>(null);
+  const vadStatusRef = useRef<LocalVadStatus>("off");
+  const vadSpeakingRef = useRef(false);
+  const vadConfirmedRef = useRef(false);
+  const vadStartedAtRef = useRef<number | null>(null);
+  const vadGateOpenRef = useRef(true);
+  const vadTailTimerRef = useRef<number | null>(null);
+  const preRollRef = useRef<Int16Array[]>([]);
+  const sessionTokenRef = useRef(0);
+  const lastFrameAtRef = useRef(0);
+  const energyGateRunRef = useRef(0);
+  const captureWatchdogRef = useRef<number | null>(null);
+  const captureStartingRef = useRef(false);
+  const captureRecoveryRef = useRef({
+    inFlight: false,
+    attempts: 0,
+    lastAttemptAt: 0,
+    recoveredAt: 0,
+  });
+  const rmsVadRef = useRef({
     speaking: false,
     voicedRun: 0,
     silenceMs: 0,
@@ -296,36 +338,40 @@ export function useVoiceSession() {
       });
       if (final) currentUserMessageIdRef.current = null;
     },
-    [],
+    [setMessages],
   );
 
-  const appendAssistantMessage = useCallback((turnId: string, text: string) => {
-    setMessages((previous) => {
-      const index = previous.findIndex(
-        (message) => message.role === "assistant" && message.turnId === turnId,
-      );
-      if (index >= 0) {
-        const copy = [...previous];
-        copy[index] = {
-          ...copy[index],
-          text: copy[index].text + text,
-          final: false,
-        };
-        return copy;
-      }
-      return [
-        ...previous,
-        {
-          id: `assistant-${turnId}`,
-          role: "assistant",
-          text,
-          final: false,
-          turnId,
-          at: Date.now(),
-        },
-      ];
-    });
-  }, []);
+  const appendAssistantMessage = useCallback(
+    (turnId: string, text: string) => {
+      setMessages((previous) => {
+        const index = previous.findIndex(
+          (message) =>
+            message.role === "assistant" && message.turnId === turnId,
+        );
+        if (index >= 0) {
+          const copy = [...previous];
+          copy[index] = {
+            ...copy[index],
+            text: copy[index].text + text,
+            final: false,
+          };
+          return copy;
+        }
+        return [
+          ...previous,
+          {
+            id: `assistant-${turnId}`,
+            role: "assistant",
+            text,
+            final: false,
+            turnId,
+            at: Date.now(),
+          },
+        ];
+      });
+    },
+    [setMessages],
+  );
 
   const settleAssistantMessage = useCallback(
     (turnId: string, patch: Partial<VoiceMessage>) => {
@@ -340,13 +386,139 @@ export function useVoiceSession() {
         return copy;
       });
     },
-    [],
+    [setMessages],
   );
 
   const stopPlayback = useCallback(() => {
     playerRef.current?.stop();
     speakerRef.current?.stop();
+    localVadRef.current?.setAssistantSpeaking(false);
   }, []);
+
+  const sendPcm = useCallback((pcm: Int16Array): boolean => {
+    if (mutedRef.current) return false;
+    const ws = wsRef.current;
+    if (!ws || ws.readyState !== WebSocket.OPEN) return false;
+    // Copy because AudioWorklet buffers are transferred/detached.
+    ws.send(new Int16Array(pcm).buffer as ArrayBuffer);
+    return true;
+  }, []);
+
+  const clearVadTailTimer = useCallback(() => {
+    if (vadTailTimerRef.current != null) {
+      window.clearTimeout(vadTailTimerRef.current);
+      vadTailTimerRef.current = null;
+    }
+  }, []);
+
+  const openSpeechGate = useCallback(() => {
+    clearVadTailTimer();
+    if (vadGateOpenRef.current) return;
+    vadGateOpenRef.current = true;
+    const frames = preRollRef.current;
+    preRollRef.current = [];
+    for (const frame of frames) sendPcm(frame);
+  }, [clearVadTailTimer, sendPcm]);
+
+  const scheduleSpeechGateClose = useCallback(() => {
+    clearVadTailTimer();
+    const endSilence = readyRef.current?.vad.end_silence_ms ?? 650;
+    const delay = Math.max(300, endSilence + SPEECH_TAIL_EXTRA_MS);
+    vadTailTimerRef.current = window.setTimeout(() => {
+      vadTailTimerRef.current = null;
+      if (vadSpeakingRef.current) return;
+      vadGateOpenRef.current = false;
+      preRollRef.current = [];
+    }, delay);
+  }, [clearVadTailTimer]);
+
+  const clearTurnWatchdog = useCallback(() => {
+    if (turnWatchdogRef.current != null) {
+      window.clearTimeout(turnWatchdogRef.current);
+      turnWatchdogRef.current = null;
+    }
+  }, []);
+
+  const armTurnWatchdog = useCallback(
+    (turnId: string) => {
+      clearTurnWatchdog();
+      turnWatchdogRef.current = window.setTimeout(() => {
+        turnWatchdogRef.current = null;
+        turnsRef.current.interrupt(turnId);
+        if (activeTurnRef.current === turnId) activeTurnRef.current = null;
+        stopPlayback();
+        setAgentState((previous) =>
+          previous === "speaking" || previous === "thinking"
+            ? "listening"
+            : previous,
+        );
+        pushError("The assistant response timed out. You can speak again.");
+      }, TURN_WATCHDOG_MS);
+    },
+    [clearTurnWatchdog, pushError, stopPlayback],
+  );
+
+  /**
+   * Stop the assistant and invalidate its turn. Called from local VAD, the
+   * energy fallback, the server's speech.start and the manual interrupt.
+   */
+  const handleBargeIn = useCallback(
+    (source: "vad" | "rms" | "server"): boolean => {
+      const now = performance.now();
+      const turnId =
+        activeTurnRef.current ?? currentAssistantTurnRef.current ?? null;
+      const playing = Boolean(
+        playerRef.current?.isSpeaking || speakerRef.current?.isSpeaking,
+      );
+      const cancelling = Boolean(
+        turnId && (playing || turnsRef.current.isActive(turnId)),
+      );
+
+      if (!cancelling && !playing) {
+        setAgentState((previous) =>
+          previous === "speaking" || previous === "thinking"
+            ? previous
+            : "capturing",
+        );
+        return false;
+      }
+
+      if (turnId) {
+        turnsRef.current.interrupt(turnId);
+        if (activeTurnRef.current === turnId) activeTurnRef.current = null;
+        settleAssistantMessage(turnId, { interrupted: true });
+        const diag = ensureTurnDiagnostics(turnId);
+        if (diag.bargeIn == null) {
+          const onset = vadStartedAtRef.current ?? now;
+          diag.bargeIn = Math.round(now - onset);
+          publishDiagnostics();
+          sendTurnMetrics(turnId, { barge_in_ms: diag.bargeIn });
+        }
+      }
+
+      stopPlayback();
+      setAgentState("interrupted");
+
+      if (source !== "server") {
+        // Explicitly cancel the backend turn as soon as speech is confirmed.
+        // turn_id keeps a late interrupt from cancelling a newer response.
+        send({
+          type: "interrupt",
+          reason: "barge_in",
+          ...(turnId ? { turn_id: turnId } : {}),
+        });
+      }
+      return true;
+    },
+    [
+      ensureTurnDiagnostics,
+      publishDiagnostics,
+      send,
+      sendTurnMetrics,
+      settleAssistantMessage,
+      stopPlayback,
+    ],
+  );
 
   const recordFirstPlayback = useCallback(
     (turnId: string) => {
@@ -362,13 +534,124 @@ export function useVoiceSession() {
     [ensureTurnDiagnostics, publishDiagnostics, sendTurnMetrics],
   );
 
+  const startLocalVad = useCallback(
+    async (stream: MediaStream, audioContext?: AudioContext | null) => {
+      const previous = localVadRef.current;
+      if (previous) {
+        localVadRef.current = null;
+        await previous.destroy();
+      }
+      if (!activeRef.current) return;
+      const token = ++sessionTokenRef.current;
+      const vad = new LocalVad(
+        {
+          getStream: () => stream,
+          onSpeechStart: () => {
+            if (!activeRef.current || mutedRef.current) return;
+            vadSpeakingRef.current = true;
+            vadConfirmedRef.current = false;
+            vadStartedAtRef.current = performance.now();
+            clearVadTailTimer();
+          },
+          onSpeechRealStart: () => {
+            if (!activeRef.current || mutedRef.current) return;
+            vadSpeakingRef.current = true;
+            vadConfirmedRef.current = true;
+            if (vadStartedAtRef.current == null) {
+              vadStartedAtRef.current = performance.now() - MIN_SPEECH_MS;
+            }
+            // Stop audio first, then release the buffered onset frames to STT.
+            handleBargeIn("vad");
+            openSpeechGate();
+          },
+          onSpeechEnd: () => {
+            const wasConfirmed = vadConfirmedRef.current;
+            vadSpeakingRef.current = false;
+            vadConfirmedRef.current = false;
+            vadStartedAtRef.current = null;
+            speechEndAtRef.current = performance.now();
+            scheduleSpeechGateClose();
+            if (
+              wasConfirmed &&
+              !playerRef.current?.isSpeaking &&
+              !speakerRef.current?.isSpeaking
+            ) {
+              setAgentState((previous) =>
+                previous === "interrupted" || previous === "capturing"
+                  ? "thinking"
+                  : previous,
+              );
+            }
+          },
+          onMisfire: () => {
+            vadSpeakingRef.current = false;
+            vadConfirmedRef.current = false;
+            vadStartedAtRef.current = null;
+            scheduleSpeechGateClose();
+          },
+        },
+        {},
+        { audioContext },
+      );
+
+      localVadRef.current = vad;
+      vadStatusRef.current = "loading";
+      setVadStatus("loading");
+
+      try {
+        await vad.start();
+        if (
+          !activeRef.current ||
+          token !== sessionTokenRef.current ||
+          localVadRef.current !== vad
+        ) {
+          await vad.destroy();
+          return;
+        }
+        vadStatusRef.current = "active";
+        setVadStatus("active");
+        // From now on silence stays local; confirmed speech is flushed with a
+        // pre-roll so the first syllables still reach Sarvam. Speech may have
+        // already started while the model was loading, in which case its gate
+        // must stay open instead of being closed behind the active utterance.
+        if (!vadSpeakingRef.current) {
+          vadGateOpenRef.current = false;
+          preRollRef.current = [];
+        }
+        if (playerRef.current?.isSpeaking || speakerRef.current?.isSpeaking) {
+          vad.setAssistantSpeaking(true);
+        }
+      } catch (cause) {
+        if (localVadRef.current === vad) localVadRef.current = null;
+        await vad.destroy();
+        if (!activeRef.current || token !== sessionTokenRef.current) return;
+        vadStatusRef.current = "fallback";
+        setVadStatus("fallback");
+        const detail =
+          cause instanceof Error && cause.message ? ` (${cause.message})` : "";
+        pushError(
+          `Local voice detection could not start${detail}. Falling back to server detection; barge-in still works.`,
+        );
+      }
+    },
+    [
+      clearVadTailTimer,
+      handleBargeIn,
+      openSpeechGate,
+      pushError,
+      scheduleSpeechGateClose,
+    ],
+  );
+
   const ensurePlayer = useCallback((): AudioPlayer => {
     if (!playerRef.current) {
       playerRef.current = new AudioPlayer({
         onSpeakingChange: (speaking) => {
+          localVadRef.current?.setAssistantSpeaking(speaking);
           setAgentState((previous) => {
             if (speaking) return "speaking";
-            return previous === "speaking" ? "listening" : previous;
+            if (previous !== "speaking") return previous;
+            return vadSpeakingRef.current ? "capturing" : "listening";
           });
         },
         onFirstAudio: () => {
@@ -380,14 +663,17 @@ export function useVoiceSession() {
     if (!speakerRef.current) {
       speakerRef.current = new BrowserSpeaker({
         onStart: () => {
+          localVadRef.current?.setAssistantSpeaking(true);
           const turnId = currentAssistantTurnRef.current;
           if (turnId) recordFirstPlayback(turnId);
           setAgentState("speaking");
         },
         onEnd: () => {
-          setAgentState((previous) =>
-            previous === "speaking" ? "listening" : previous,
-          );
+          localVadRef.current?.setAssistantSpeaking(false);
+          setAgentState((previous) => {
+            if (previous !== "speaking") return previous;
+            return vadSpeakingRef.current ? "capturing" : "listening";
+          });
         },
       });
       speakerRef.current.setVoice(
@@ -453,6 +739,12 @@ export function useVoiceSession() {
           break;
         }
         case "state": {
+          if (
+            turnsRef.current.isCancelled(event.turn_id) &&
+            event.state !== "listening"
+          ) {
+            break;
+          }
           if (playerRef.current?.isSpeaking || speakerRef.current?.isSpeaking) {
             setAgentState("speaking");
           } else {
@@ -464,90 +756,156 @@ export function useVoiceSession() {
           setLevel(event.rms);
           break;
         case "speech.start":
-          // The backend already cancelled the turn; make sure local playback
-          // stops on the same frame the user starts speaking.
+          // Server-side VAD confirms the same onset. Local VAD normally stops
+          // playback earlier, so this is a fallback for browsers where the
+          // Silero model failed to load.
+          if (turnsRef.current.isCancelled(event.turn_id)) break;
           if (playerRef.current?.isSpeaking || speakerRef.current?.isSpeaking) {
-            stopPlayback();
-            const turnId = currentAssistantTurnRef.current;
-            if (turnId && voicedAtRef.current != null) {
-              const diag = ensureTurnDiagnostics(turnId);
-              if (diag.bargeIn == null) {
-                diag.bargeIn = Math.round(
-                  performance.now() - voicedAtRef.current,
-                );
-                publishDiagnostics();
-                sendTurnMetrics(turnId, { barge_in_ms: diag.bargeIn });
-              }
-            }
-            if (turnId) suppressTurnRef.current = turnId;
+            handleBargeIn("server");
+          } else {
+            setAgentState("capturing");
           }
-          setAgentState("listening");
           break;
         case "transcript.partial":
           upsertUserMessage(event.text, false);
+          if (!playerRef.current?.isSpeaking) setAgentState("capturing");
           break;
         case "transcript.final": {
           upsertUserMessage(event.text, true, event.turn_id);
+          turnsRef.current.begin(event.turn_id);
+          activeTurnRef.current = event.turn_id;
           currentAssistantTurnRef.current = event.turn_id;
           ensureTurnDiagnostics(event.turn_id);
           publishDiagnostics();
-          suppressTurnRef.current = null;
+          armTurnWatchdog(event.turn_id);
           setAgentState("thinking");
           break;
         }
-        case "assistant.delta":
+        case "assistant.delta": {
+          if (turnsRef.current.isCancelled(event.turn_id)) break;
+          if (
+            activeTurnRef.current !== null &&
+            activeTurnRef.current !== event.turn_id
+          ) {
+            break;
+          }
           appendAssistantMessage(event.turn_id, event.text);
           if (!playerRef.current?.isSpeaking) setAgentState("thinking");
           break;
+        }
         case "speak.chunk":
+          if (turnsRef.current.isCancelled(event.turn_id)) break;
+          if (
+            activeTurnRef.current !== null &&
+            activeTurnRef.current !== event.turn_id
+          ) {
+            break;
+          }
           currentAssistantTurnRef.current = event.turn_id;
           speakerRef.current?.speak(event.text);
           break;
         case "speak.end":
           break;
         case "audio.chunk": {
-          if (suppressTurnRef.current === event.turn_id) break;
+          if (turnsRef.current.isCancelled(event.turn_id)) break;
+          if (
+            activeTurnRef.current !== null &&
+            activeTurnRef.current !== event.turn_id
+          ) {
+            break;
+          }
           currentAssistantTurnRef.current = event.turn_id;
           const player = ensurePlayer();
           player.enqueue(decodePcm16(event.data), event.sample_rate);
           break;
         }
         case "assistant.done": {
+          const stale =
+            turnsRef.current.isCancelled(event.turn_id) ||
+            (activeTurnRef.current !== null &&
+              activeTurnRef.current !== event.turn_id);
+          if (stale) {
+            settleAssistantMessage(event.turn_id, {
+              interrupted: turnsRef.current.isCancelled(event.turn_id),
+            });
+            break;
+          }
           settleAssistantMessage(event.turn_id, {
             text: event.text || undefined,
           });
-          suppressTurnRef.current = null;
+          turnsRef.current.settle(event.turn_id);
+          if (activeTurnRef.current === event.turn_id) {
+            activeTurnRef.current = null;
+          }
+          clearTurnWatchdog();
           if (
             !playerRef.current?.isSpeaking &&
             !speakerRef.current?.isSpeaking
           ) {
-            setAgentState("listening");
+            setAgentState(vadSpeakingRef.current ? "capturing" : "listening");
           }
           break;
         }
-        case "assistant.failed":
+        case "assistant.failed": {
+          if (
+            turnsRef.current.isCancelled(event.turn_id) ||
+            (activeTurnRef.current !== null &&
+              activeTurnRef.current !== event.turn_id)
+          ) {
+            break;
+          }
           settleAssistantMessage(event.turn_id, { failed: true });
+          turnsRef.current.settle(event.turn_id);
+          if (activeTurnRef.current === event.turn_id) {
+            activeTurnRef.current = null;
+          }
+          clearTurnWatchdog();
           setAgentState("listening");
           break;
+        }
         case "turn.cancelled": {
-          stopPlayback();
+          const wasCurrent = currentAssistantTurnRef.current === event.turn_id;
+          turnsRef.current.interrupt(event.turn_id);
+          activeTurnRef.current =
+            activeTurnRef.current === event.turn_id
+              ? null
+              : activeTurnRef.current;
+          if (wasCurrent) {
+            stopPlayback();
+            currentAssistantTurnRef.current = null;
+          }
           settleAssistantMessage(event.turn_id, { interrupted: true });
-          suppressTurnRef.current = null;
-          setAgentState("listening");
+          clearTurnWatchdog();
           if (event.reason === "barge_in") {
             const diag = ensureTurnDiagnostics(event.turn_id);
-            if (diag.bargeIn == null && voicedAtRef.current != null) {
-              diag.bargeIn = Math.round(
-                performance.now() - voicedAtRef.current,
-              );
-              publishDiagnostics();
-              sendTurnMetrics(event.turn_id, { barge_in_ms: diag.bargeIn });
+            if (diag.bargeIn == null) {
+              const onset = vadStartedAtRef.current ?? voicedAtRef.current;
+              if (onset != null) {
+                diag.bargeIn = Math.round(performance.now() - onset);
+                publishDiagnostics();
+                sendTurnMetrics(event.turn_id, {
+                  barge_in_ms: diag.bargeIn,
+                });
+              }
             }
+          }
+          if (
+            !playerRef.current?.isSpeaking &&
+            !speakerRef.current?.isSpeaking &&
+            activeTurnRef.current === null
+          ) {
+            setAgentState(vadSpeakingRef.current ? "capturing" : "listening");
           }
           break;
         }
         case "turn.empty":
+          if (turnsRef.current.isCancelled(event.turn_id)) break;
           currentUserMessageIdRef.current = null;
+          if (activeTurnRef.current === event.turn_id) {
+            activeTurnRef.current = null;
+          }
+          turnsRef.current.settle(event.turn_id);
+          clearTurnWatchdog();
           setAgentState("listening");
           pushError("No speech detected. Try speaking a little longer.");
           break;
@@ -559,8 +917,22 @@ export function useVoiceSession() {
           break;
         }
         case "error":
+          if (
+            event.turn_id &&
+            (turnsRef.current.isCancelled(event.turn_id) ||
+              (activeTurnRef.current !== null &&
+                activeTurnRef.current !== event.turn_id))
+          ) {
+            break;
+          }
           pushError(event.message);
-          if (event.stage !== "stt") setAgentState("listening");
+          if (
+            event.stage !== "stt" &&
+            !playerRef.current?.isSpeaking &&
+            !speakerRef.current?.isSpeaking
+          ) {
+            setAgentState("listening");
+          }
           break;
         case "pong":
           break;
@@ -606,8 +978,11 @@ export function useVoiceSession() {
     },
     [
       appendAssistantMessage,
+      armTurnWatchdog,
+      clearTurnWatchdog,
       ensurePlayer,
       ensureTurnDiagnostics,
+      handleBargeIn,
       publishDiagnostics,
       pushError,
       send,
@@ -620,9 +995,14 @@ export function useVoiceSession() {
 
   const handleFrame = useCallback(
     (pcm: Int16Array) => {
-      const ws = wsRef.current;
-      if (ws && ws.readyState === WebSocket.OPEN && !mutedRef.current) {
-        ws.send(pcm.buffer.slice(0) as ArrayBuffer);
+      // Frames arrive every 20 ms even when the room is silent, so this is the
+      // health signal for the capture graph.
+      lastFrameAtRef.current = performance.now();
+
+      if (mutedRef.current) {
+        preRollRef.current = [];
+        energyGateRunRef.current = 0;
+        return;
       }
 
       let sum = 0;
@@ -632,8 +1012,39 @@ export function useVoiceSession() {
       }
       const rms = Math.sqrt(sum / pcm.length);
       const now = performance.now();
-      const vad = localVadRef.current;
       const threshold = readyRef.current?.vad.threshold ?? 0.012;
+
+      if (vadGateOpenRef.current) {
+        sendPcm(pcm);
+        energyGateRunRef.current = 0;
+      } else {
+        preRollRef.current.push(new Int16Array(pcm));
+        if (preRollRef.current.length > MAX_PRE_ROLL_FRAMES) {
+          preRollRef.current.shift();
+        }
+
+        // This fallback also covers the model-loading window. Keep silence off
+        // the wire until either Silero or sustained local energy confirms that
+        // the user has started speaking.
+        const assistantAudible = Boolean(
+          playerRef.current?.isSpeaking || speakerRef.current?.isSpeaking,
+        );
+        const fallbackThreshold = assistantAudible
+          ? Math.max(0.035, threshold * 2.5)
+          : Math.max(0.012, threshold);
+        if (rms >= fallbackThreshold) {
+          energyGateRunRef.current += 1;
+          if (energyGateRunRef.current >= ENERGY_GATE_FRAMES) {
+            energyGateRunRef.current = 0;
+            handleBargeIn("rms");
+            openSpeechGate();
+          }
+        } else {
+          energyGateRunRef.current = 0;
+        }
+      }
+
+      const vad = rmsVadRef.current;
 
       if (!vad.speaking) {
         vad.voicedRun = rms >= threshold ? vad.voicedRun + 1 : 0;
@@ -642,21 +1053,10 @@ export function useVoiceSession() {
           vad.silenceMs = 0;
           vad.startedAt = now;
           voicedAtRef.current = now - BARGE_IN_VOICED_FRAMES * 20;
-          // Local barge-in: cut playback before the server round-trip lands.
-          // The server VAD detects the same onset and cancels outstanding work,
-          // so no extra interrupt message is needed here.
-          if (playerRef.current?.isSpeaking || speakerRef.current?.isSpeaking) {
-            const turnId = currentAssistantTurnRef.current;
-            stopPlayback();
-            if (turnId) {
-              const diag = ensureTurnDiagnostics(turnId);
-              if (diag.bargeIn == null && voicedAtRef.current != null) {
-                diag.bargeIn = Math.round(now - voicedAtRef.current);
-                publishDiagnostics();
-                sendTurnMetrics(turnId, { barge_in_ms: diag.bargeIn });
-              }
-              suppressTurnRef.current = turnId;
-            }
+          // Silero owns onset when active. The energy detector still runs so
+          // it can close the gate after an energy-fallback utterance.
+          if (vadStatusRef.current !== "active") {
+            handleBargeIn("rms");
           }
         }
       } else if (rms >= threshold) {
@@ -669,14 +1069,176 @@ export function useVoiceSession() {
           vad.voicedRun = 0;
           vad.silenceMs = 0;
           speechEndAtRef.current = now;
+          scheduleSpeechGateClose();
           setAgentState((previous) =>
             previous === "speaking" ? previous : "thinking",
           );
         }
       }
     },
-    [ensureTurnDiagnostics, publishDiagnostics, sendTurnMetrics, stopPlayback],
+    [handleBargeIn, openSpeechGate, scheduleSpeechGateClose, sendPcm],
   );
+
+  const stopCaptureWatchdog = useCallback(() => {
+    if (captureWatchdogRef.current != null) {
+      window.clearInterval(captureWatchdogRef.current);
+      captureWatchdogRef.current = null;
+    }
+  }, []);
+
+  /**
+   * Rebuild the microphone graph after the track ends, the device is taken
+   * away, or the browser suspends audio in a background tab. The WebSocket and
+   * turn state stay intact; only capture and local VAD are replaced.
+   */
+  const recoverCapture = useCallback(
+    async (reason: string) => {
+      if (!activeRef.current || captureStartingRef.current) return;
+      const recovery = captureRecoveryRef.current;
+      const now = performance.now();
+      if (
+        recovery.inFlight ||
+        now - recovery.lastAttemptAt < CAPTURE_RETRY_MS
+      ) {
+        return;
+      }
+      recovery.inFlight = true;
+      recovery.lastAttemptAt = now;
+      if (process.env.NODE_ENV !== "production") {
+        console.info("[voice] rebuilding microphone capture", { reason });
+      }
+      let capture: AudioCapture | null = null;
+
+      try {
+        const previousVad = localVadRef.current;
+        localVadRef.current = null;
+        await previousVad?.destroy();
+        if (!activeRef.current) return;
+
+        vadStatusRef.current = "loading";
+        setVadStatus("loading");
+        vadGateOpenRef.current = false;
+        preRollRef.current = [];
+        energyGateRunRef.current = 0;
+        rmsVadRef.current = {
+          speaking: false,
+          voicedRun: 0,
+          silenceMs: 0,
+          startedAt: 0,
+        };
+
+        const previousCapture = captureRef.current;
+        captureRef.current = null;
+        await previousCapture?.stop();
+        if (!activeRef.current) return;
+
+        setCaptureStream(null);
+        capture = new AudioCapture();
+        await capture.start({
+          onFrame: handleFrame,
+          onLevel: (rms) => setLevel(rms),
+          onStreamLost: (lostReason) => {
+            void recoverCapture(lostReason);
+          },
+        });
+
+        if (!activeRef.current) {
+          await capture.stop();
+          return;
+        }
+
+        captureRef.current = capture;
+        lastFrameAtRef.current = performance.now();
+        recovery.recoveredAt = lastFrameAtRef.current;
+        setCaptureStream(capture.mediaStream);
+        await playerRef.current?.resume();
+        const stream = capture.mediaStream;
+        if (stream) void startLocalVad(stream, capture.audioContext);
+        setError((current) =>
+          current?.startsWith("The microphone stopped working")
+            ? null
+            : current,
+        );
+      } catch (cause) {
+        await capture?.stop();
+        if (!activeRef.current) return;
+        const failedAt = performance.now();
+        const stable =
+          recovery.recoveredAt > 0 &&
+          failedAt - recovery.recoveredAt >= CAPTURE_STABILITY_MS;
+        recovery.attempts = stable ? 1 : recovery.attempts + 1;
+        const detail =
+          cause instanceof Error && cause.message ? ` (${cause.message})` : "";
+        if (recovery.attempts > CAPTURE_MAX_RETRIES) {
+          stopCaptureWatchdog();
+          vadStatusRef.current = "off";
+          setVadStatus("off");
+          pushError(
+            `The microphone stopped working${detail}. End the conversation and start it again to reconnect.`,
+          );
+        } else {
+          const delay = Math.min(
+            CAPTURE_RETRY_MS * 2 ** (recovery.attempts - 1),
+            15_000,
+          );
+          window.setTimeout(() => {
+            void recoverCapture(reason);
+          }, delay);
+        }
+      } finally {
+        recovery.inFlight = false;
+      }
+    },
+    [handleFrame, pushError, startLocalVad, stopCaptureWatchdog],
+  );
+
+  const startCaptureWatchdog = useCallback(() => {
+    stopCaptureWatchdog();
+    captureWatchdogRef.current = window.setInterval(() => {
+      if (!activeRef.current) return;
+      if (captureStartingRef.current) return;
+      const capture = captureRef.current;
+      if (!capture) {
+        void recoverCapture("missing-capture");
+        return;
+      }
+      if (performance.now() - lastFrameAtRef.current > CAPTURE_STALL_MS) {
+        void recoverCapture("stalled-capture");
+      }
+    }, CAPTURE_WATCHDOG_MS);
+  }, [recoverCapture, stopCaptureWatchdog]);
+
+  useEffect(() => {
+    // Coming back from a background tab only needs a resume. If frames still
+    // do not return, the capture watchdog rebuilds the graph. Rebuilding here
+    // as well raced with itself when focus and devicechange fired together.
+    const resumeAfterSuspend = () => {
+      if (!activeRef.current || document.visibilityState !== "visible") return;
+      void captureRef.current?.resume();
+      void playerRef.current?.resume();
+      void localVadRef.current?.resume();
+    };
+
+    const onDeviceChange = () => {
+      if (!activeRef.current) return;
+      void captureRef.current?.resume();
+      void localVadRef.current?.resume();
+    };
+
+    document.addEventListener("visibilitychange", resumeAfterSuspend);
+    window.addEventListener("focus", resumeAfterSuspend);
+    window.addEventListener("pageshow", resumeAfterSuspend);
+    navigator.mediaDevices?.addEventListener("devicechange", onDeviceChange);
+    return () => {
+      document.removeEventListener("visibilitychange", resumeAfterSuspend);
+      window.removeEventListener("focus", resumeAfterSuspend);
+      window.removeEventListener("pageshow", resumeAfterSuspend);
+      navigator.mediaDevices?.removeEventListener(
+        "devicechange",
+        onDeviceChange,
+      );
+    };
+  }, []);
 
   const scheduleReconnect = useCallback(() => {
     if (reconnectAttemptsRef.current >= MAX_RECONNECTS) {
@@ -731,7 +1293,10 @@ export function useVoiceSession() {
       }
     };
     ws.onerror = () => {
-      if (activeRef.current) pushError("Voice connection error.");
+      if (activeRef.current) {
+        handleBargeIn("server");
+        pushError("Voice connection error.");
+      }
     };
     ws.onclose = () => {
       if (wsRef.current !== ws) return;
@@ -740,9 +1305,20 @@ export function useVoiceSession() {
         setStatus((current) => (current === "error" ? current : "idle"));
         return;
       }
+      // A dropped socket means the in-flight response can no longer be
+      // trusted. Stop its audio and leave the UI in a usable state.
+      handleBargeIn("server");
+      clearTurnWatchdog();
+      setAgentState("listening");
       scheduleReconnect();
     };
-  }, [handleServerEvent, pushError, scheduleReconnect]);
+  }, [
+    clearTurnWatchdog,
+    handleBargeIn,
+    handleServerEvent,
+    pushError,
+    scheduleReconnect,
+  ]);
 
   useEffect(() => {
     connectSocketRef.current = connectSocket;
@@ -751,19 +1327,38 @@ export function useVoiceSession() {
   const start = useCallback(async () => {
     if (activeRef.current) return;
     setError(null);
-    setMessages([]);
     setStatus("connecting");
     activeRef.current = true;
     reconnectAttemptsRef.current = 0;
     turnDiagRef.current.clear();
     setDiagnostics([]);
-    localVadRef.current = {
+    clearTurnWatchdog();
+    clearVadTailTimer();
+    turnsRef.current.reset();
+    activeTurnRef.current = null;
+    currentAssistantTurnRef.current = null;
+    currentUserMessageIdRef.current = null;
+    rmsVadRef.current = {
       speaking: false,
       voicedRun: 0,
       silenceMs: 0,
       startedAt: 0,
     };
+    vadSpeakingRef.current = false;
+    vadConfirmedRef.current = false;
+    vadStartedAtRef.current = null;
+    vadGateOpenRef.current = false;
+    preRollRef.current = [];
     speechEndAtRef.current = null;
+    lastFrameAtRef.current = performance.now();
+    energyGateRunRef.current = 0;
+    captureRecoveryRef.current = {
+      inFlight: false,
+      attempts: 0,
+      lastAttemptAt: 0,
+      recoveredAt: 0,
+    };
+    captureStartingRef.current = true;
 
     ensurePlayer();
     speakerRef.current?.primeVoices();
@@ -773,10 +1368,26 @@ export function useVoiceSession() {
       await captureRef.current.start({
         onFrame: handleFrame,
         onLevel: (rms) => setLevel(rms),
+        onStreamLost: (reason) => {
+          void recoverCapture(reason);
+        },
       });
+      lastFrameAtRef.current = performance.now();
       setCaptureStream(captureRef.current.mediaStream);
+      if (!activeRef.current) {
+        await captureRef.current.stop();
+        captureRef.current = null;
+        setCaptureStream(null);
+        return;
+      }
     } catch (cause) {
+      const wasActive = activeRef.current;
       activeRef.current = false;
+      stopCaptureWatchdog();
+      await captureRef.current?.stop();
+      captureRef.current = null;
+      setCaptureStream(null);
+      if (!wasActive) return;
       const message =
         cause instanceof DOMException && cause.name === "NotAllowedError"
           ? "Microphone permission was denied. Allow access in your browser and try again."
@@ -786,22 +1397,65 @@ export function useVoiceSession() {
       pushError(message);
       setStatus("error");
       return;
+    } finally {
+      captureStartingRef.current = false;
     }
 
+    startCaptureWatchdog();
+    const stream = captureRef.current.mediaStream;
+    if (stream) void startLocalVad(stream, captureRef.current.audioContext);
+
     await playerRef.current?.resume();
+    if (!activeRef.current) return;
     connectSocket();
-  }, [connectSocket, ensurePlayer, handleFrame, pushError]);
+  }, [
+    clearTurnWatchdog,
+    clearVadTailTimer,
+    connectSocket,
+    ensurePlayer,
+    handleFrame,
+    pushError,
+    recoverCapture,
+    startCaptureWatchdog,
+    startLocalVad,
+    stopCaptureWatchdog,
+  ]);
 
   const stop = useCallback(async () => {
     activeRef.current = false;
+    sessionTokenRef.current += 1;
     intentionalCloseRef.current = true;
+    stopCaptureWatchdog();
+    captureStartingRef.current = false;
+    captureRecoveryRef.current = {
+      inFlight: false,
+      attempts: 0,
+      lastAttemptAt: 0,
+      recoveredAt: 0,
+    };
+    lastFrameAtRef.current = 0;
+    energyGateRunRef.current = 0;
     if (reconnectTimerRef.current) {
       window.clearTimeout(reconnectTimerRef.current);
       reconnectTimerRef.current = null;
     }
+    clearTurnWatchdog();
+    clearVadTailTimer();
     recognitionRef.current?.abort();
     recognitionRef.current = null;
     stopPlayback();
+    const vad = localVadRef.current;
+    localVadRef.current = null;
+    vadStatusRef.current = "off";
+    setVadStatus("off");
+    vadSpeakingRef.current = false;
+    vadConfirmedRef.current = false;
+    vadStartedAtRef.current = null;
+    vadGateOpenRef.current = true;
+    preRollRef.current = [];
+    turnsRef.current.reset();
+    activeTurnRef.current = null;
+    await vad?.destroy();
     await captureRef.current?.stop();
     captureRef.current = null;
     setCaptureStream(null);
@@ -819,18 +1473,34 @@ export function useVoiceSession() {
     mutedRef.current = false;
     currentAssistantTurnRef.current = null;
     currentUserMessageIdRef.current = null;
-  }, [stopPlayback]);
+  }, [clearTurnWatchdog, clearVadTailTimer, stopCaptureWatchdog, stopPlayback]);
 
   const interrupt = useCallback(() => {
+    const turnId =
+      activeTurnRef.current ?? currentAssistantTurnRef.current ?? null;
+    if (turnId) {
+      turnsRef.current.interrupt(turnId);
+      settleAssistantMessage(turnId, { interrupted: true });
+    }
+    activeTurnRef.current = null;
+    clearTurnWatchdog();
     stopPlayback();
-    send({ type: "interrupt", reason: "manual" });
+    send({
+      type: "interrupt",
+      reason: "manual",
+      ...(turnId ? { turn_id: turnId } : {}),
+    });
     setAgentState("listening");
-  }, [send, stopPlayback]);
+  }, [clearTurnWatchdog, send, settleAssistantMessage, stopPlayback]);
 
   const toggleMute = useCallback(() => {
     setMuted((previous) => {
       const next = !previous;
       mutedRef.current = next;
+      // Drop anything buffered before the change and wait for a fresh,
+      // confirmed onset after it.
+      preRollRef.current = [];
+      vadGateOpenRef.current = false;
       return next;
     });
   }, []);
@@ -838,15 +1508,38 @@ export function useVoiceSession() {
   useEffect(() => {
     return () => {
       activeRef.current = false;
+      sessionTokenRef.current += 1;
       intentionalCloseRef.current = true;
       if (reconnectTimerRef.current)
         window.clearTimeout(reconnectTimerRef.current);
+      if (turnWatchdogRef.current) window.clearTimeout(turnWatchdogRef.current);
+      if (vadTailTimerRef.current) window.clearTimeout(vadTailTimerRef.current);
+      if (captureWatchdogRef.current)
+        window.clearInterval(captureWatchdogRef.current);
       recognitionRef.current?.abort();
-      void captureRef.current?.stop();
-      void playerRef.current?.close();
+      const vad = localVadRef.current;
+      localVadRef.current = null;
+      const capture = captureRef.current;
+      captureRef.current = null;
+      const player = playerRef.current;
+      playerRef.current = null;
+      void (async () => {
+        // The VAD shares the capture context, so it must disconnect before the
+        // context is closed.
+        await vad?.destroy();
+        await capture?.stop();
+        await player?.close();
+      })();
       wsRef.current?.close();
     };
   }, []);
+
+  const clearConversation = useCallback(() => {
+    clearMessages();
+    currentUserMessageIdRef.current = null;
+    turnDiagRef.current.clear();
+    setDiagnostics([]);
+  }, [clearMessages]);
 
   const summary = useMemo(() => {
     const firstPlayback = diagnostics
@@ -871,6 +1564,7 @@ export function useVoiceSession() {
     level,
     error,
     muted,
+    vadStatus,
     diagnostics,
     summary,
     stream: captureStream,
@@ -881,6 +1575,7 @@ export function useVoiceSession() {
     stop,
     interrupt,
     toggleMute,
+    clearConversation,
     dismissError: () => setError(null),
   };
 }

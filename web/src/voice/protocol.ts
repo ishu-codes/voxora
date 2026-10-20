@@ -70,8 +70,10 @@ export type ServerEvent =
 export type AgentState =
   | "idle"
   | "listening"
+  | "capturing"
   | "thinking"
   | "speaking"
+  | "interrupted"
   | "error";
 
 export type ConnectionStatus =
@@ -92,7 +94,7 @@ export type ClientEvent =
       };
     }
   | { type: "transcript"; text: string; final: boolean }
-  | { type: "interrupt"; reason?: string }
+  | { type: "interrupt"; reason?: string; turn_id?: string }
   | { type: "voice"; voice: string }
   | { type: "metrics"; turn_id: string; metrics: Record<string, number> }
   | { type: "playback.done" }

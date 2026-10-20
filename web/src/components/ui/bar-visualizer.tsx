@@ -31,6 +31,12 @@ function createAudioAnalyser(
   const source = audioContext.createMediaStreamSource(mediaStream);
   const analyser = audioContext.createAnalyser();
 
+  // Contexts created outside a click can start suspended. Resume so the
+  // analyser (and therefore the bars) keeps receiving audio.
+  if (audioContext.state === "suspended") {
+    void audioContext.resume().catch(() => undefined);
+  }
+
   if (options.fftSize) analyser.fftSize = options.fftSize;
   if (options.smoothingTimeConstant !== undefined) {
     analyser.smoothingTimeConstant = options.smoothingTimeConstant;
@@ -44,10 +50,38 @@ function createAudioAnalyser(
 
   const cleanup = () => {
     source.disconnect();
-    audioContext.close();
+    void audioContext.close().catch(() => undefined);
   };
 
   return { analyser, audioContext, cleanup };
+}
+
+/**
+ * Mobile browsers and background tabs suspend AudioContexts. Attach cheap
+ * listeners that resume the analyser as soon as the page is interactive again.
+ */
+function resumeAnalyserOnInteraction(audioContext: AudioContext): () => void {
+  const resume = () => {
+    if (audioContext.state === "suspended") {
+      void audioContext.resume().catch(() => undefined);
+    }
+  };
+  const onVisibilityChange = () => {
+    if (document.visibilityState === "visible") resume();
+  };
+
+  document.addEventListener("pointerdown", resume);
+  document.addEventListener("keydown", resume);
+  document.addEventListener("visibilitychange", onVisibilityChange);
+  window.addEventListener("focus", resume);
+  resume();
+
+  return () => {
+    document.removeEventListener("pointerdown", resume);
+    document.removeEventListener("keydown", resume);
+    document.removeEventListener("visibilitychange", onVisibilityChange);
+    window.removeEventListener("focus", resume);
+  };
 }
 
 /**
@@ -82,10 +116,11 @@ export function useAudioVolume(
       return;
     }
 
-    const { analyser, cleanup } = createAudioAnalyser(
+    const { analyser, audioContext, cleanup } = createAudioAnalyser(
       mediaStream,
       memoizedOptions,
     );
+    const detachResume = resumeAnalyserOnInteraction(audioContext);
 
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
@@ -116,6 +151,7 @@ export function useAudioVolume(
 
     return () => {
       cleanup();
+      detachResume();
       if (frameId.current) {
         cancelAnimationFrame(frameId.current);
       }
@@ -188,10 +224,11 @@ export function useMultibandVolume(
       return;
     }
 
-    const { analyser, cleanup } = createAudioAnalyser(
+    const { analyser, audioContext, cleanup } = createAudioAnalyser(
       mediaStream,
       opts.analyserOptions,
     );
+    const detachResume = resumeAnalyserOnInteraction(audioContext);
 
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Float32Array(bufferLength);
@@ -248,6 +285,7 @@ export function useMultibandVolume(
 
     return () => {
       cleanup();
+      detachResume();
       if (frameId.current) {
         cancelAnimationFrame(frameId.current);
       }
@@ -348,9 +386,13 @@ export interface BarVisualizerProps extends HTMLAttributes<HTMLDivElement> {
   barCount?: number;
   /** Audio source */
   mediaStream?: MediaStream | null;
+  /** Optional live RMS level from the capture graph (0-1). */
+  level?: number;
   /** Min/max height as percentage */
   minHeight?: number;
   maxHeight?: number;
+  /** Multiplier applied to the analysed volume (defaults to 1) */
+  sensitivity?: number;
   /** Enable demo mode with fake audio data */
   demo?: boolean;
   /** Align bars from center instead of bottom */
@@ -363,8 +405,10 @@ const BarVisualizerComponent = forwardRef<HTMLDivElement, BarVisualizerProps>(
       state,
       barCount = 15,
       mediaStream,
+      level,
       minHeight = 20,
       maxHeight = 100,
+      sensitivity = 1,
       demo = false,
       centerAlign = false,
       className,
@@ -373,12 +417,17 @@ const BarVisualizerComponent = forwardRef<HTMLDivElement, BarVisualizerProps>(
     },
     ref,
   ) => {
-    // Audio processing
-    const realVolumeBands = useMultibandVolume(mediaStream, {
-      bands: barCount,
-      loPass: 100,
-      hiPass: 200,
-    });
+    // Audio processing. The wider band covers voice fundamentals rather than a
+    // narrow slice, so quiet speech still moves the bars.
+    const realVolumeBands = useMultibandVolume(
+      level == null ? mediaStream : null,
+      {
+        bands: barCount,
+        loPass: 20,
+        hiPass: 300,
+        analyserOptions: { fftSize: 1024, smoothingTimeConstant: 0.4 },
+      },
+    );
 
     // Generate fake volume data for demo mode using refs to avoid state updates
     const fakeVolumeBandsRef = useRef<number[]>(new Array(barCount).fill(0.2));
@@ -443,10 +492,19 @@ const BarVisualizerComponent = forwardRef<HTMLDivElement, BarVisualizerProps>(
       };
     }, [demo, state, barCount]);
 
-    // Use fake or real volume data based on demo mode
+    const capturedVolumeBands = useMemo(() => {
+      if (level == null) return realVolumeBands;
+      const levelBand = Math.min(1, Math.max(0, level) * 5);
+      return realVolumeBands.map((volume, index) => {
+        const contour = 0.78 + 0.22 * Math.sin(index * 1.7);
+        return Math.max(volume, levelBand * contour);
+      });
+    }, [level, realVolumeBands]);
+
+    // Use fake or capture volume data based on demo mode
     const volumeBands = useMemo(
-      () => (demo ? fakeVolumeBands : realVolumeBands),
-      [demo, fakeVolumeBands, realVolumeBands],
+      () => (demo ? fakeVolumeBands : capturedVolumeBands),
+      [demo, fakeVolumeBands, capturedVolumeBands],
     );
 
     // Animation sequencing
@@ -478,9 +536,12 @@ const BarVisualizerComponent = forwardRef<HTMLDivElement, BarVisualizerProps>(
         {...props}
       >
         {volumeBands.map((volume, index) => {
+          const level = demo
+            ? volume
+            : Math.min(1, Math.max(0, volume) * sensitivity);
           const heightPct = Math.min(
             maxHeight,
-            Math.max(minHeight, volume * 100 + 5),
+            Math.max(minHeight, level * 100 + 5),
           );
           const isHighlighted = highlightedIndices?.includes(index) ?? false;
 
@@ -528,8 +589,10 @@ const BarVisualizer = memo(BarVisualizerComponent, (prevProps, nextProps) => {
     prevProps.state === nextProps.state &&
     prevProps.barCount === nextProps.barCount &&
     prevProps.mediaStream === nextProps.mediaStream &&
+    prevProps.level === nextProps.level &&
     prevProps.minHeight === nextProps.minHeight &&
     prevProps.maxHeight === nextProps.maxHeight &&
+    prevProps.sensitivity === nextProps.sensitivity &&
     prevProps.demo === nextProps.demo &&
     prevProps.centerAlign === nextProps.centerAlign &&
     prevProps.className === nextProps.className &&

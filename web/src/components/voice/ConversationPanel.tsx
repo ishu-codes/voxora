@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageSquareIcon, XIcon } from "lucide-react";
+import { MessageSquareIcon, Trash2Icon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Conversation,
@@ -26,6 +26,7 @@ type ConversationPanelProps = {
   status: ConnectionStatus;
   diagnostics: TurnDiagnostics[];
   summary: Summary;
+  onClear: () => void;
   onClose: () => void;
 };
 
@@ -39,6 +40,7 @@ export function ConversationPanel({
   status,
   diagnostics,
   summary,
+  onClear,
   onClose,
 }: ConversationPanelProps) {
   const thinking =
@@ -55,15 +57,28 @@ export function ConversationPanel({
             {status === "connected" ? "Live transcript" : "Session transcript"}
           </h2>
         </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={onClose}
-          aria-label="Close conversation"
-        >
-          <XIcon />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onClear}
+            disabled={messages.length === 0}
+            aria-label="Clear conversation"
+            title="Clear conversation"
+          >
+            <Trash2Icon />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={onClose}
+            aria-label="Close conversation"
+          >
+            <XIcon />
+          </Button>
+        </div>
       </header>
 
       {messages.length === 0 ? (

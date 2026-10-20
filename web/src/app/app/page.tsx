@@ -8,19 +8,19 @@ import {
   MicOffIcon,
   PhoneIcon,
   PhoneOffIcon,
-  SettingsIcon,
   XIcon,
 } from "lucide-react";
-import Link from "next/link";
 import { useState } from "react";
+import { Navbar } from "@/components/navbar/Navbar";
 import { BarVisualizer } from "@/components/ui/bar-visualizer";
 import { Button } from "@/components/ui/button";
 import { Orb } from "@/components/ui/orb";
 import { VoicePicker } from "@/components/ui/voice-picker";
 import { ConversationPanel } from "@/components/voice/ConversationPanel";
 import { cn } from "@/lib/utils";
-import { useVoiceSession } from "@/voice/useVoiceSession";
-import { Navbar } from "./Navbar";
+import { useVoiceSessionContext } from "@/voice/voice-session-provider";
+
+type VisualizerState = React.ComponentProps<typeof BarVisualizer>["state"];
 
 function ControlButton({
   label,
@@ -56,39 +56,63 @@ function ControlButton({
 }
 
 export default function VoiceStudioPage() {
-  const session = useVoiceSession();
+  const session = useVoiceSessionContext();
   const [conversationOpen, setConversationOpen] = useState(false);
 
   const connecting = session.status === "connecting";
   const live =
     session.status === "connected" || session.status === "reconnecting";
   const canHangUp = live || connecting;
-  const showBars = live && !session.muted;
+
+  const initializing =
+    live && (!session.ready || session.vadStatus === "loading");
+  const visualizerState: VisualizerState =
+    session.status === "connecting" || session.status === "reconnecting"
+      ? "connecting"
+      : initializing
+        ? "initializing"
+        : live && session.agentState === "speaking"
+          ? "speaking"
+          : live && session.agentState === "thinking"
+            ? "thinking"
+            : live
+              ? "listening"
+              : undefined;
+  const showBars = visualizerState != null;
 
   const orbState: "thinking" | "listening" | "talking" | null =
     connecting || session.status === "reconnecting"
       ? "thinking"
       : session.agentState === "speaking"
         ? "talking"
-        : session.agentState === "listening"
+        : session.agentState === "listening" ||
+            session.agentState === "capturing" ||
+            session.agentState === "interrupted"
           ? "listening"
           : session.agentState === "thinking"
             ? "thinking"
             : null;
 
-  const statusText = connecting
-    ? "Connecting"
-    : session.status === "reconnecting"
-      ? "Reconnecting"
-      : live
-        ? session.agentState === "speaking"
-          ? "Voxora is speaking"
-          : session.agentState === "thinking"
-            ? "Voxora is thinking"
-            : "Listening"
-        : session.status === "error"
-          ? "Connection error"
-          : "Ready";
+  const statusText =
+    visualizerState === undefined
+      ? session.status === "error"
+        ? "Connection error"
+        : "Ready"
+      : visualizerState === "connecting"
+        ? session.status === "reconnecting"
+          ? "Reconnecting"
+          : "Connecting"
+        : visualizerState === "initializing"
+          ? "Initializing voice detection"
+          : visualizerState === "speaking"
+            ? "Voxora is speaking"
+            : visualizerState === "thinking"
+              ? "Voxora is thinking"
+              : session.muted
+                ? "Muted"
+                : session.agentState === "interrupted"
+                  ? "Interrupted"
+                  : "Listening";
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background pt-[85px] text-foreground">
@@ -125,21 +149,7 @@ export default function VoiceStudioPage() {
               triggerVariant="ghost"
               className="h-9 w-auto min-w-[180px] max-w-[240px] rounded-full px-3 text-sm font-normal text-muted-foreground hover:text-foreground"
             />
-            <Button
-              variant="ghost"
-              size="icon-lg"
-              render={<Link href="/settings" />}
-              aria-label="Provider settings"
-              title="Provider settings"
-              className="rounded-full text-muted-foreground hover:text-foreground"
-            >
-              <SettingsIcon className="size-5" />
-            </Button>
           </div>
-
-          <p className="sr-only" aria-live="polite">
-            {statusText}
-          </p>
 
           <div className="flex w-full max-w-xl flex-col items-center gap-5">
             <div className="relative size-65 shrink-0 sm:size-60 lg:size-70 xl:size-80">
@@ -159,8 +169,11 @@ export default function VoiceStudioPage() {
               aria-hidden={!showBars}
             >
               <BarVisualizer
-                state={showBars ? "listening" : undefined}
+                state={visualizerState}
                 mediaStream={session.muted ? null : session.stream}
+                level={session.muted ? 0 : session.level}
+                demo={visualizerState === "speaking"}
+                sensitivity={1.6}
                 barCount={28}
                 centerAlign
                 minHeight={4}
@@ -168,6 +181,13 @@ export default function VoiceStudioPage() {
                 className="h-14 w-full bg-transparent p-0"
               />
             </div>
+
+            <output
+              className="font-mono text-[10px] uppercase tracking-[0.25em] text-muted-foreground"
+              aria-live="polite"
+            >
+              {statusText}
+            </output>
 
             <div className="flex items-center justify-center gap-4">
               <ControlButton
@@ -247,6 +267,7 @@ export default function VoiceStudioPage() {
             status={session.status}
             diagnostics={session.diagnostics}
             summary={session.summary}
+            onClear={session.clearConversation}
             onClose={() => setConversationOpen(false)}
           />
         </aside>

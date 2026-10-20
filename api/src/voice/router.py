@@ -387,7 +387,10 @@ async def voice_socket(websocket: WebSocket) -> None:
 def _describe_control(kind: object, payload: dict) -> str:
     """Summarise a client control frame without leaking credentials."""
     if kind == "interrupt":
-        return repr(str(payload.get("reason", "manual"))[:80])
+        return (
+            f"reason={str(payload.get('reason', 'manual'))[:80]!r} "
+            f"turn_id={payload.get('turn_id', '')!r}"
+        )
     if kind == "voice":
         return repr(str(payload.get("voice", ""))[:64])
     if kind == "metrics":
@@ -437,7 +440,24 @@ async def _handle_text(pipeline: VoicePipeline, raw: str) -> None:
             }
         )
     elif kind == "interrupt":
-        await pipeline.interrupt(str(payload.get("reason", "manual")))
+        reason = payload.get("reason", "manual")
+        if not isinstance(reason, str) or not reason.strip():
+            reason = "manual"
+        reason = reason.strip()[:64]
+        turn_id = payload.get("turn_id")
+        if turn_id is not None and (
+            not isinstance(turn_id, str) or not 1 <= len(turn_id) <= 128
+        ):
+            await pipeline.transport.send(
+                {
+                    "type": "error",
+                    "stage": "protocol",
+                    "message": "Interrupt turn_id must be a non-empty string",
+                    "recoverable": True,
+                }
+            )
+            return
+        await pipeline.interrupt(reason, turn_id=turn_id or None)
     elif kind == "voice":
         voice = payload.get("voice")
         if (

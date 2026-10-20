@@ -19,7 +19,8 @@ from fastapi.responses import JSONResponse
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.voice.config import settings
-from src.voice.router import ProviderBundle, router as voice_router, shutdown_providers
+from src.voice.router import ProviderBundle, shutdown_providers
+from src.voice.router import router as voice_router
 
 logging.basicConfig(
     level=getattr(logging, settings.log_level, logging.INFO),

@@ -272,6 +272,91 @@ async def test_manual_interrupt_stops_turn_and_stt_utterance():
     await pipeline.close()
 
 
+async def test_turn_targeted_interrupt_only_cancels_that_turn():
+    llm = FakeLLM(["one ", "two ", "three ", "four"], delay=0.05)
+    pipeline, transport = _pipeline(FakeSTT(), llm, FakeAudioTTS())
+    await _speak(pipeline)
+    await _silence(pipeline, 3)
+    await asyncio.sleep(0.05)
+
+    turn_id = pipeline._label(pipeline._task_turn_id or 0)
+    await pipeline.interrupt("barge_in", turn_id=turn_id)
+
+    cancelled = transport.of_type("turn.cancelled")
+    assert [event["turn_id"] for event in cancelled] == [turn_id]
+    await pipeline.close()
+
+
+async def test_stale_interrupt_does_not_cancel_newer_turn():
+    llm = FakeLLM(["first ", "answer ", "continues ", "here."], delay=0.03)
+    pipeline, transport = _pipeline(FakeSTT(), llm, FakeAudioTTS(1))
+
+    await _speak(pipeline)
+    await _silence(pipeline, 3)
+    await asyncio.sleep(0.04)
+    old_turn = pipeline._label(pipeline._task_turn_id or 0)
+    await pipeline.interrupt("barge_in", turn_id=old_turn)
+
+    # A second turn is now in flight.
+    await _speak(pipeline)
+    await _silence(pipeline, 3)
+    await asyncio.sleep(0.04)
+    new_turn = pipeline._label(pipeline._task_turn_id or 0)
+    assert new_turn != old_turn
+
+    # A late interrupt for the first turn must not touch the second one.
+    await pipeline.interrupt("barge_in", turn_id=old_turn)
+    await _await_turn(pipeline)
+
+    cancelled_ids = {event["turn_id"] for event in transport.of_type("turn.cancelled")}
+    assert new_turn not in cancelled_ids
+    done = transport.of_type("assistant.done")
+    assert [event["turn_id"] for event in done] == [new_turn]
+    await pipeline.close()
+
+
+async def test_late_stale_provider_response_is_discarded():
+    class StubbornSTT(FakeSTT):
+        """Ignores cancellation briefly, like a provider call already in flight."""
+
+        async def end_utterance(self) -> str:
+            self.calls += 1
+            try:
+                await asyncio.sleep(0.2)
+            except asyncio.CancelledError:
+                pass
+            return self.text
+
+    stt = StubbornSTT("this answer must never surface")
+    pipeline, transport = _pipeline(stt, FakeLLM(["stale ", "reply."]), FakeAudioTTS())
+    await _speak(pipeline)
+    await _silence(pipeline, 3)
+    turn_id = pipeline._label(pipeline._task_turn_id or 0)
+
+    await pipeline.interrupt("barge_in", turn_id=turn_id)
+    await asyncio.sleep(0.3)
+
+    assert transport.of_type("transcript.final") == []
+    assert transport.of_type("assistant.done") == []
+    await pipeline.close()
+
+
+async def test_repeated_interrupts_and_close_are_safe():
+    llm = FakeLLM(["a ", "b ", "c", "d"], delay=0.1)
+    pipeline, transport = _pipeline(FakeSTT(), llm, FakeAudioTTS())
+    await _speak(pipeline)
+    await _silence(pipeline, 3)
+    await asyncio.sleep(0.05)
+
+    await pipeline.interrupt("manual")
+    await pipeline.interrupt("manual")
+    await pipeline.interrupt("barge_in", turn_id="not-the-active-turn")
+
+    cancelled = transport.of_type("turn.cancelled")
+    assert len(cancelled) == 1
+    await pipeline.close()
+
+
 async def test_provider_error_surfaces_and_recovers():
     class BrokenLLM(FakeLLM):
         async def _stream(self, messages):

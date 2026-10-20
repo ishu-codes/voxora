@@ -10,8 +10,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-
-import { Navbar } from "@/components/marketing/Navbar";
+import { Navbar } from "@/components/navbar/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {

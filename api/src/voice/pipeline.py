@@ -25,6 +25,11 @@ from .vad import EnergyVAD, VAD
 
 logger = logging.getLogger(__name__)
 
+# How long an interrupted turn gets to unwind before the receive loop moves on.
+# Provider sockets may not cancel instantly, so stale output is still gated by
+# the generation counter rather than by this timeout.
+_CANCEL_GRACE_S = 0.5
+
 
 def _ms(start: float, end: float) -> float:
     return round((end - start) * 1000.0, 1)
@@ -73,6 +78,9 @@ class VoicePipeline:
         self._generation = 0
         self._turn_task: asyncio.Task[None] | None = None
         self._task_turn_id: int | None = None
+        # Tasks that outlived _CANCEL_GRACE_S. They are still reaped on close so
+        # a provider that ignores cancellation cannot run past the session.
+        self._orphan_tasks: set[asyncio.Task[None]] = set()
         self._turns: dict[int, dict[str, Any]] = {}
         self._stt_error: ProviderError | None = None
         self._state = "idle"
@@ -171,30 +179,17 @@ class VoicePipeline:
         )
 
     async def _on_speech_start(self, pre_roll: bytes) -> None:
+        cancelled_turn = await self._cancel_turn("barge_in")
         self._generation += 1
         generation = self._generation
         self._stt_error = None
         logger.info(
-            "%s speech start turn=%s pre_roll_bytes=%d",
+            "%s speech start turn=%s pre_roll_bytes=%d cancelled=%s",
             self._tag,
             self._label(generation),
             len(pre_roll),
+            cancelled_turn or "-",
         )
-
-        if self._turn_task is not None and not self._turn_task.done():
-            logger.info(
-                "%s barge-in cancelling turn=%s",
-                self._tag,
-                self._label(self._task_turn_id or 0),
-            )
-            self._turn_task.cancel()
-            await self.transport.send(
-                {
-                    "type": "turn.cancelled",
-                    "turn_id": self._label(self._task_turn_id or 0),
-                    "reason": "barge_in",
-                }
-            )
 
         await self.transport.send({"type": "speech.start", "turn_id": self._label(generation)})
         await self._set_state("listening")
@@ -475,6 +470,14 @@ class VoicePipeline:
             raise
 
     async def _fail(self, generation: int, stage: str, message: str) -> None:
+        if generation != self._generation:
+            logger.info(
+                "%s dropping failure from stale turn=%s stage=%s",
+                self._tag,
+                self._label(generation),
+                stage,
+            )
+            return
         logger.warning(
             "%s turn=%s failed stage=%s message=%s",
             self._tag,
@@ -509,23 +512,97 @@ class VoicePipeline:
         if allowed:
             self.metrics.merge(turn_id, allowed)
 
-    async def interrupt(self, reason: str = "manual") -> None:
-        task = self._turn_task
-        logger.info("%s interrupt reason=%s", self._tag, reason)
-        if task is not None and not task.done():
-            self._generation += 1
-            task.cancel()
-            await self.transport.send(
-                {
-                    "type": "turn.cancelled",
-                    "turn_id": self._label(self._task_turn_id or 0),
-                    "reason": reason,
-                }
-            )
+    async def interrupt(self, reason: str = "manual", turn_id: str | None = None) -> None:
+        """Cancel the active assistant response.
+
+        When ``turn_id`` is supplied (the browser's barge-in path), the
+        cancellation only applies if that turn is still the active one. A late
+        interrupt for an older turn can therefore never cancel a newer reply.
+        """
+        logger.info("%s interrupt reason=%s turn=%s", self._tag, reason, turn_id or "-")
+
+        if turn_id is not None:
+            cancelled = await self._cancel_turn(reason, expected_turn_id=turn_id)
+            if cancelled is None:
+                # The response already finished, or a newer turn is active.
+                return
+            # If the server VAD has already begun the next utterance, leave its
+            # STT stream and pre-roll alone. The interrupt only targets the
+            # response that was interrupted.
+            if not self.vad.is_speech:
+                self.vad.reset()
+                await self.stt.cancel_utterance()
+                self._stt_error = None
+            await self._set_state("listening")
+            return
+
+        # Manual/legacy interrupt: stop whatever is running, including an STT
+        # utterance that has not reached the LLM yet.
+        await self._cancel_turn(reason)
+        self._generation += 1
         self.vad.reset()
         await self.stt.cancel_utterance()
         self._stt_error = None
         await self._set_state("listening")
+
+    async def _cancel_turn(
+        self, reason: str, expected_turn_id: str | None = None
+    ) -> str | None:
+        """Cancel the active turn task and announce it exactly once.
+
+        The generation counter advances before the task is cancelled, so even a
+        provider that ignores ``CancelledError`` cannot emit more text or audio
+        for the interrupted turn.
+        """
+        task = self._turn_task
+        if task is None or task.done():
+            return None
+        turn_id = self._label(self._task_turn_id or 0)
+        if expected_turn_id is not None and expected_turn_id != turn_id:
+            logger.info(
+                "%s ignoring stale interrupt turn=%s active=%s",
+                self._tag,
+                expected_turn_id,
+                turn_id,
+            )
+            return None
+
+        self._generation += 1
+        self._turn_task = None
+        self._task_turn_id = None
+        task.cancel()
+        task.add_done_callback(self._orphan_tasks.discard)
+        self._orphan_tasks.add(task)
+        logger.info(
+            "%s cancelling turn=%s reason=%s",
+            self._tag,
+            turn_id,
+            reason,
+        )
+        try:
+            done, pending = await asyncio.wait({task}, timeout=_CANCEL_GRACE_S)
+            if pending:
+                logger.warning(
+                    "%s turn=%s did not stop within %.0f ms; stale output is gated",
+                    self._tag,
+                    turn_id,
+                    _CANCEL_GRACE_S * 1000,
+                )
+            for finished in done:
+                if not finished.cancelled():
+                    # Retrieve the exception so asyncio does not log it later.
+                    finished.exception()
+        except asyncio.CancelledError:
+            raise
+
+        await self.transport.send(
+            {
+                "type": "turn.cancelled",
+                "turn_id": turn_id,
+                "reason": reason,
+            }
+        )
+        return turn_id
 
     # ------------------------------------------------------------------ utils
 
@@ -548,12 +625,22 @@ class VoicePipeline:
         if self._closed:
             return
         self._closed = True
+        tasks: list[asyncio.Task[None]] = []
         if self._turn_task is not None and not self._turn_task.done():
             self._turn_task.cancel()
+            tasks.append(self._turn_task)
+        for task in list(self._orphan_tasks):
+            if not task.done():
+                task.cancel()
+            tasks.append(task)
+        if tasks:
             try:
-                await self._turn_task
-            except (asyncio.CancelledError, Exception):
-                pass
+                await asyncio.gather(*tasks, return_exceptions=True)
+            except asyncio.CancelledError:
+                raise
+        self._turn_task = None
+        self._task_turn_id = None
+        self._orphan_tasks.clear()
         for provider in (self.stt, self.tts):
             try:
                 await provider.close()

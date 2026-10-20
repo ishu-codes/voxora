@@ -109,8 +109,8 @@ Client → server
 
 | Payload | Meaning |
 | --- | --- |
-| binary frame | 20 ms of 16 kHz mono PCM16 (640 bytes); send continuously while the session is open |
-| `{"type":"interrupt","reason":"manual"}` | Stop the current turn |
+| binary frame | 20 ms of 16 kHz mono PCM16 (640 bytes); send while the local VAD gate is open, or continuously when local VAD is unavailable |
+| `{"type":"interrupt","reason":"manual","turn_id":"…"}` | Stop a specific turn; `turn_id` is optional, and a stale id is ignored |
 | `{"type":"voice","voice":"ritu"}` | Select a Sarvam speaker for the rest of the session |
 | `{"type":"metrics","turn_id":"…","metrics":{"first_playback_ms":512}}` | Client-measured playback latency |
 | `{"type":"ping"}` | Keepalive |
@@ -122,7 +122,7 @@ Server → client
 | `ready` | Session id, audio format, selected models, latency targets |
 | `state` | `listening` / `thinking` / `speaking` |
 | `audio.level` | Mic RMS for the level meter (throttled to 10 Hz) |
-| `speech.start` | VAD detected the user speaking; the browser must stop playback |
+| `speech.start` | Server VAD detected the user speaking; fallback signal to stop playback when local VAD is unavailable |
 | `transcript.partial` / `transcript.final` | Partial and final Sarvam transcripts |
 | `assistant.delta` | Incremental response tokens |
 | `audio.chunk` | Base64 PCM16 audio from Sarvam TTS |
@@ -133,8 +133,8 @@ Server → client
 | `pong` | Keepalive reply |
 
 Audio chunks carry the `turn_id` that produced them. The browser drops any
-chunk from a turn it has already cancelled, and the server stops emitting once
-the generation counter advances, so no stale audio is played.
+chunk from a turn it has already cancelled, and the server checks both the
+generation counter and the targeted turn id, so no stale audio is played.
 
 ## Pipeline behaviour
 
@@ -145,9 +145,13 @@ the generation counter advances, so no stale audio is played.
 - **Endpointing.** `EnergyVAD` tracks an adaptive noise floor, keeps a 300 ms
   pre-roll, and ends a turn after ~650 ms of silence. All thresholds are env
   vars. The pre-roll is sent to Sarvam with the first frame of the utterance.
-- **Barge-in.** The first voiced frame of a new utterance cancels the running
-  turn: outstanding LLM/TTS work is cancelled, the TTS socket is discarded,
-  `turn.cancelled` is emitted and the browser stops playback on `speech.start`.
+- **Barge-in.** Silero VAD runs in the browser with local `@ricky0123/vad-web`
+  assets. Once speech onset is confirmed it stops playback immediately and sends
+  `{"type":"interrupt","reason":"barge_in","turn_id":"…"}`. The server cancels
+  that turn's outstanding LLM/TTS work and discards its TTS socket; an interrupt
+  for an older turn is ignored, so late frames cannot cancel a newer reply. The
+  server-side energy VAD remains the backstop when the browser VAD is unavailable
+  or misses onset.
 - **Overlap.** LLM tokens flow into a bounded queue (16 sentences); a separate
   task synthesises each sentence as it arrives, so synthesis overlaps
   generation. The Sarvam TTS socket is reused within a turn.
@@ -186,9 +190,10 @@ user data and set `LOG_LEVEL=WARNING` if that is not acceptable.
   growing memory.
 - **Timeouts and cancellation.** Every stage is cancellable through the turn's
   `asyncio` task. STT finalisation and TTS streams have hard timeouts, and each
-  turn advances a generation counter that drops late output. Sarvam has no
-  server-side TTS cancel, so an interrupted socket is discarded before the next
-  reply.
+  turn advances a generation counter that drops late output. Interrupts name the
+  turn they target, so a delayed barge-in cannot cancel a newer reply. Sarvam has
+  no server-side TTS cancel, so an interrupted socket is discarded before the
+  next reply.
 - **Per-session accounting.** Each session logs turn count, dropped events and
   runtime on close; `GET /api/v1/voice/metrics` aggregates latency across turns.
 - **No raw audio logging.** Logs and metric records contain identifiers,
@@ -230,9 +235,9 @@ whether the run was warm or cold — the numbers only mean something in context.
 ```
 
 The suite covers the sentence chunker, VAD endpointing, full pipeline turns,
-streaming partials, barge-in cancellation, provider failures, metrics
-aggregation and provider construction. It needs no network or API keys; Sarvam
-sockets are replaced with in-memory fakes.
+streaming partials, turn-targeted barge-in cancellation, stale interrupt
+handling, provider failures, metrics aggregation and provider construction. It
+needs no network or API keys; Sarvam sockets are replaced with in-memory fakes.
 
 ## Layout
 

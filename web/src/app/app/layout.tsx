@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 
+import { VoiceSessionProvider } from "@/voice/voice-session-provider";
+
 export const metadata: Metadata = {
   title: "Voice studio",
   description:
@@ -7,5 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return <VoiceSessionProvider>{children}</VoiceSessionProvider>;
 }

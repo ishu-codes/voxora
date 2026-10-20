@@ -28,8 +28,9 @@ Two terminals:
 ```bash
 # 1. backend
 cd api
-uv sync --group dev --extra dev
+uv sync --group dev
 cp .env.example .env
+# add SARVAM_API_KEY and your LLM credentials to .env
 ./run.sh serve                 # http://localhost:8000
 
 # 2. frontend
@@ -39,35 +40,38 @@ pnpm dev                       # http://localhost:3000
 ```
 
 Open <http://localhost:3000/app>, press **Start**, allow the microphone and
-talk. With no keys configured it runs on the browser recogniser, a built-in
-demo responder and browser speech synthesis — enough to exercise streaming,
-barge-in and the latency panel end to end.
-
-For real answers, add a hosted key or a local model on the server:
+talk. Speech recognition and synthesis run on Sarvam's streaming models; the
+language model can be any OpenAI-compatible endpoint.
 
 ```bash
-# hosted (one key covers STT, LLM and TTS by default)
-OPENAI_API_KEY=sk-... ./run.sh serve
-
-# fully local
-uv sync --extra stt
-LLM_PROVIDER=ollama LLM_BASE_URL=http://localhost:11434/v1 LLM_MODEL=llama3.2 \
-STT_PROVIDER=faster-whisper TTS_PROVIDER=browser ./run.sh serve
+# backend .env
+SARVAM_API_KEY=sk_...
+LLM_BASE_URL=https://api.deepseek.com
+LLM_MODEL=deepseek-chat
+LLM_API_KEY=sk-...
 ```
+
+Without an LLM key the backend falls back to a small demo responder. Without a
+Sarvam key the voice session returns a clear configuration error.
 
 ## What is implemented
 
 Product requirements: the MVP P0 set plus the P1 provider/configuration
 requirements.
 
-- **Live audio session** — continuous 16 kHz PCM16 frames over one WebSocket,
-  no completed-recording upload.
-- **Streaming pipeline** — VAD endpointing, provider-interface STT, token-level
-  LLM streaming and sentence-buffered TTS that overlaps generation.
+- **Live audio session** — 16 kHz PCM16 frames over one WebSocket, no
+  completed-recording upload. Local VAD keeps silence on the device and streams
+  confirmed speech with a short pre-roll; it falls back to continuous streaming
+  if VAD cannot start.
+- **Streaming pipeline** — VAD endpointing, Sarvam Saaras partial transcripts,
+  token-level LLM streaming and sentence-buffered Sarvam Bulbul synthesis that
+  overlaps generation.
 - **Early playback** — playback starts on the first synthesised clause, not the
   finished answer.
-- **Interruption** — VAD barge-in cancels LLM and TTS work; the browser stops
-  playback on the first voiced frame and drops the cancelled turn's audio.
+- **Interruption** — Silero VAD (`@ricky0123/vad-web`, local ONNX assets)
+  confirms speech onset in the browser, stops playback immediately and sends a
+  turn-targeted `interrupt`. The server cancels only that turn and drops late
+  events from cancelled turns.
 - **Conversation context** — the session's recent history is sent with every
   request, so follow-ups work.
 - **Latency instrumentation** — per-stage timings, `turn.metrics` events,
@@ -85,6 +89,6 @@ are out of scope for this MVP.
 ## Tests
 
 ```bash
-cd api && ./run.sh test        # 24 tests, no network or database required
-cd web && pnpm build && pnpm lint
+cd api && ./run.sh test        # no network or database required
+cd web && pnpm test && pnpm typecheck && pnpm lint && pnpm build
 ```
