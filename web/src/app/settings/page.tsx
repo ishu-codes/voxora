@@ -68,7 +68,7 @@ export default function SettingsPage() {
   const custom = hasVoiceSettings(form);
 
   return (
-    <div className="min-h-dvh bg-background pt-[85px] text-foreground">
+    <div className="min-h-dvh bg-background text-foreground">
       <Navbar />
 
       <main className="container max-w-3xl py-10 sm:py-14">

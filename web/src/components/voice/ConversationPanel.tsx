@@ -1,6 +1,17 @@
 "use client";
 
 import { MessageSquareIcon, Trash2Icon, XIcon } from "lucide-react";
+import { useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Conversation,
@@ -9,6 +20,7 @@ import {
   ConversationScrollButton,
 } from "@/components/ui/conversation";
 import { Message, MessageContent } from "@/components/ui/message";
+import { SidebarHeader, SidebarTrigger } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import type { AgentState, ConnectionStatus } from "@/voice/protocol";
 import type { TurnDiagnostics, VoiceMessage } from "@/voice/useVoiceSession";
@@ -27,7 +39,6 @@ type ConversationPanelProps = {
   diagnostics: TurnDiagnostics[];
   summary: Summary;
   onClear: () => void;
-  onClose: () => void;
 };
 
 function formatMs(value: number | null) {
@@ -41,14 +52,15 @@ export function ConversationPanel({
   diagnostics,
   summary,
   onClear,
-  onClose,
 }: ConversationPanelProps) {
+  const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+  const trackedTurns = diagnostics.length;
   const thinking =
     agentState === "thinking" && messages.at(-1)?.role === "user";
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-background">
-      <header className="flex items-start justify-between gap-3 border-b border-border px-4 py-4">
+    <div className="flex h-full min-h-0 flex-col bg-sidebar">
+      <SidebarHeader className="h-[85px] shrink-0 flex-row items-center justify-between gap-3 border-b border-border bg-sidebar px-4 py-0">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
             Conversation
@@ -62,24 +74,47 @@ export function ConversationPanel({
             type="button"
             variant="ghost"
             size="icon-sm"
-            onClick={onClear}
+            onClick={() => setClearConfirmOpen(true)}
             disabled={messages.length === 0}
             aria-label="Clear conversation"
             title="Clear conversation"
           >
             <Trash2Icon />
           </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            onClick={onClose}
-            aria-label="Close conversation"
+          <SidebarTrigger
+            className="size-8 text-muted-foreground"
+            aria-label="Toggle conversation sidebar"
           >
-            <XIcon />
-          </Button>
+            <XIcon className="size-4" />
+            <span className="sr-only">Toggle conversation sidebar</span>
+          </SidebarTrigger>
         </div>
-      </header>
+      </SidebarHeader>
+
+      <AlertDialog open={clearConfirmOpen} onOpenChange={setClearConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear conversation history?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the transcript and latency summary from the current
+              session. Chat history is kept only in this browser tab and is
+              automatically deleted when you close the tab.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                onClear();
+                setClearConfirmOpen(false);
+              }}
+            >
+              Clear history
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {messages.length === 0 ? (
         <ConversationEmptyState
@@ -148,34 +183,33 @@ export function ConversationPanel({
       )}
 
       <footer className="border-t border-border px-4 py-3">
-        <div className="grid grid-cols-3 gap-2 text-center font-mono text-[10px] uppercase tracking-[0.15em] text-muted-foreground">
+        <div className="flex gap-2 justify-between text-center font-mono text-[10px] tracking-[0.15em] text-muted-foreground">
           <div>
             <div className="text-sm text-foreground tabular-nums">
-              {summary.turns}
+              {trackedTurns}
             </div>
-            turns
+            <span className="text-[10px] uppercase">turns</span>
           </div>
           <div>
             <div className="text-sm text-foreground tabular-nums">
               {formatMs(summary.firstPlaybackP50)}
             </div>
-            first audio p50
+            <span className="text-[10px] uppercase">first audio p50</span>
           </div>
           <div>
             <div className="text-sm text-foreground tabular-nums">
               {formatMs(summary.bargeInP95)}
             </div>
-            barge-in p95
+            <span className="text-[10px] uppercase">barge-in p95</span>
           </div>
         </div>
-        {diagnostics.length > 0 ? (
+
+        {/*{diagnostics.length > 0 ? (
           <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
             <span>Recent turns</span>
-            <span className="font-mono tabular-nums">
-              p95 {formatMs(summary.firstPlaybackP95)}
-            </span>
+            <span className="font-mono tabular-nums">p95 {formatMs(summary.firstPlaybackP95)}</span>
           </div>
-        ) : null}
+        ) : null}*/}
       </footer>
     </div>
   );

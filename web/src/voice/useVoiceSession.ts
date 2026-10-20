@@ -1157,8 +1157,14 @@ export function useVoiceSession() {
    * turn state stay intact; only capture and local VAD are replaced.
    */
   const recoverCapture = useCallback(
-    async (reason: string) => {
+    async (reason: string, sourceCapture?: AudioCapture) => {
       if (!activeRef.current || captureStartingRef.current) return;
+      // Ignore an ended/missing event from a capture that has already been
+      // replaced. Without this ownership check, teardown of the old graph can
+      // report a loss and immediately rebuild the capture that just succeeded.
+      if (sourceCapture !== undefined && captureRef.current !== sourceCapture) {
+        return;
+      }
       const recovery = captureRecoveryRef.current;
       const now = performance.now();
       if (
@@ -1168,6 +1174,7 @@ export function useVoiceSession() {
         return;
       }
       recovery.inFlight = true;
+      captureStartingRef.current = true;
       recovery.lastAttemptAt = now;
       if (process.env.NODE_ENV !== "production") {
         console.info("[voice] rebuilding microphone capture", { reason });
@@ -1198,12 +1205,15 @@ export function useVoiceSession() {
         if (!activeRef.current) return;
 
         setCaptureStream(null);
-        capture = new AudioCapture();
-        await capture.start({
+        const nextCapture = new AudioCapture();
+        capture = nextCapture;
+        await nextCapture.start({
           onFrame: handleFrame,
           onLevel: (rms) => setLevel(rms),
           onStreamLost: (lostReason) => {
-            void recoverCapture(lostReason);
+            if (captureRef.current === nextCapture) {
+              void recoverCapture(lostReason, nextCapture);
+            }
           },
         });
 
@@ -1212,13 +1222,17 @@ export function useVoiceSession() {
           return;
         }
 
-        captureRef.current = capture;
+        if (captureRef.current !== null) {
+          await nextCapture.stop();
+          return;
+        }
+        captureRef.current = nextCapture;
         lastFrameAtRef.current = performance.now();
         recovery.recoveredAt = lastFrameAtRef.current;
-        setCaptureStream(capture.mediaStream);
+        setCaptureStream(nextCapture.mediaStream);
         await playerRef.current?.resume();
-        const stream = capture.mediaStream;
-        if (stream) void startLocalVad(stream, capture.audioContext);
+        const stream = nextCapture.mediaStream;
+        if (stream) void startLocalVad(stream, nextCapture.audioContext);
         setError((current) =>
           current?.startsWith("The microphone stopped working")
             ? null
@@ -1252,6 +1266,7 @@ export function useVoiceSession() {
         }
       } finally {
         recovery.inFlight = false;
+        captureStartingRef.current = false;
       }
     },
     [handleFrame, pushError, startLocalVad, stopCaptureWatchdog],
@@ -1262,13 +1277,16 @@ export function useVoiceSession() {
     captureWatchdogRef.current = window.setInterval(() => {
       if (!activeRef.current) return;
       if (captureStartingRef.current) return;
+      if (captureRecoveryRef.current.inFlight) return;
       const capture = captureRef.current;
       if (!capture) {
-        void recoverCapture("missing-capture");
+        if (performance.now() - lastFrameAtRef.current > CAPTURE_STALL_MS) {
+          void recoverCapture("missing-capture");
+        }
         return;
       }
       if (performance.now() - lastFrameAtRef.current > CAPTURE_STALL_MS) {
-        void recoverCapture("stalled-capture");
+        void recoverCapture("stalled-capture", capture);
       }
     }, CAPTURE_WATCHDOG_MS);
   }, [recoverCapture, stopCaptureWatchdog]);
@@ -1431,17 +1449,20 @@ export function useVoiceSession() {
 
     try {
       if (!captureRef.current) captureRef.current = new AudioCapture();
-      await captureRef.current.start({
+      const initialCapture = captureRef.current;
+      await initialCapture.start({
         onFrame: handleFrame,
         onLevel: (rms) => setLevel(rms),
         onStreamLost: (reason) => {
-          void recoverCapture(reason);
+          if (captureRef.current === initialCapture) {
+            void recoverCapture(reason, initialCapture);
+          }
         },
       });
       lastFrameAtRef.current = performance.now();
-      setCaptureStream(captureRef.current.mediaStream);
+      setCaptureStream(initialCapture.mediaStream);
       if (!activeRef.current) {
-        await captureRef.current.stop();
+        await initialCapture.stop();
         captureRef.current = null;
         setCaptureStream(null);
         return;
