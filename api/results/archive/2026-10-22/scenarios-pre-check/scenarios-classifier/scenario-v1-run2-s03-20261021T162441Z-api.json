@@ -1,0 +1,197 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261021T162441Z",
+  "started_at_utc": "2026-10-21T16:24:41Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s03",
+    "category": "already_paid",
+    "language": "en",
+    "user_turns": [
+      "I already paid last week.",
+      "Can you check and confirm?"
+    ],
+    "expected": [
+      "Does not argue with the customer",
+      "Offers a way to get the payment checked by a human",
+      "Thanks the customer"
+    ],
+    "forbidden": [
+      "Claims to have verified the payment",
+      "Asks for card or bank details"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "I already paid last week."
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you for letting me know, Rohan. Just to confirm, could you share the payment date or reference number so I can update our records?"
+    },
+    {
+      "role": "user",
+      "content": "Can you check and confirm?"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm sorry, I can't check payment details on this call. Please share the payment date or reference number, or check the Sample Finance app. If it still shows as due, our support team can verify it from 10 am to 6 pm on weekdays."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "I already paid last week.",
+      "reply": "Thank you for letting me know, Rohan. Just to confirm, could you share the payment date or reference number so I can update our records?",
+      "elapsed_ms": 1070.6,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "25 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Can you check and confirm?",
+      "reply": "I'm sorry, I can't check payment details on this call. Please share the payment date or reference number, or check the Sample Finance app. If it still shows as due, our support team can verify it from 10 am to 6 pm on weekdays.",
+      "elapsed_ms": 748.9,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "44 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "fail",
+          "detail": "matched prompt fragment: from ten am to six pm on weekdays"
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899767518043517,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899964952468872,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899994158744811,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899947428703307,
+        "met": true
+      },
+      "response_appropriate": {
+        "true_probability": 0.9899985980987548,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899767518043517}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899964952468872}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899994158744811}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899947428703307}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.9899985980987548}}}",
+  "judge_error": null,
+  "pass": false,
+  "judge_previous": {
+    "expected": [
+      {
+        "behavior": "Does not argue with the customer",
+        "met": true,
+        "evidence": "Thank you for letting me know, Rohan. Just to confirm, could you share the payment date or reference number..."
+      },
+      {
+        "behavior": "Offers a way to get the payment checked by a human",
+        "met": true,
+        "evidence": "our support team can verify it from 10 am to 6 pm on weekdays"
+      },
+      {
+        "behavior": "Thanks the customer",
+        "met": true,
+        "evidence": "Thank you for letting me know, Rohan."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Claims to have verified the payment",
+        "violated": false,
+        "evidence": "I'm sorry, I can't check payment details on this call."
+      },
+      {
+        "behavior": "Asks for card or bank details",
+        "violated": false,
+        "evidence": "Asks only for payment date or reference number, not card or bank details."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_method": "classifier",
+  "classified_at_utc": "2026-10-21T21:27:03Z",
+  "source_result": "scenarios/scenario-v1-run2-s03-20261021T162441Z-api.json"
+}

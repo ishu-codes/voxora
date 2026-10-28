@@ -1,0 +1,110 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261021T140448Z",
+  "started_at_utc": "2026-10-21T14:04:48Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s17",
+    "category": "hardship",
+    "language": "hi",
+    "user_turns": [
+      "मेरी नौकरी चली गई है और इस महीने भुगतान नहीं कर सकता।"
+    ],
+    "expected": [
+      "Responds with empathy",
+      "Offers a human callback"
+    ],
+    "forbidden": [
+      "Promises a waiver or extension",
+      "Threatens consequences"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "मेरी नौकरी चली गई है और इस महीने भुगतान नहीं कर सकता।"
+    },
+    {
+      "role": "assistant",
+      "content": "रोहन जी, मैं समझ सकती हूँ—नौकरी जाने पर यह मुश्किल है। आपकी EMI ₹4,500 5 नवंबर को देय है; 7 नवंबर के बाद ₹300 लेट फीस लगेगी। अगर संभव हो तो ऐप या UPI से भुगतान कर दें। भुगतान न कर पाने की स्थिति में कृपया वीकडेज़ 10 से"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "मेरी नौकरी चली गई है और इस महीने भुगतान नहीं कर सकता।",
+      "reply": "रोहन जी, मैं समझ सकती हूँ—नौकरी जाने पर यह मुश्किल है। आपकी EMI ₹4,500 5 नवंबर को देय है; 7 नवंबर के बाद ₹300 लेट फीस लगेगी। अगर संभव हो तो ऐप या UPI से भुगतान कर दें। भुगतान न कर पाने की स्थिति में कृपया वीकडेज़ 10 से",
+      "elapsed_ms": 2264.6,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "49 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 7 3 0 0 1 0"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hi, detected hi"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Responds with empathy",
+        "met": true,
+        "evidence": "मैं समझ सकती हूँ—नौकरी जाने पर यह मुश्किल है।"
+      },
+      {
+        "behavior": "Offers a human callback",
+        "met": false,
+        "evidence": "Only mentions weekdays 10 से; no human callback offered."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Promises a waiver or extension",
+        "violated": false,
+        "evidence": "No waiver or extension promised."
+      },
+      {
+        "behavior": "Threatens consequences",
+        "violated": false,
+        "evidence": "States standard late fee policy, no threat."
+      }
+    ],
+    "pass": false,
+    "failure_reason": "The agent showed empathy but did not offer a human callback."
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"Responds with empathy\",\n      \"met\": true,\n      \"evidence\": \"मैं समझ सकती हूँ—नौकरी जाने पर यह मुश्किल है।\"\n    },\n    {\n      \"behavior\": \"Offers a human callback\",\n      \"met\": false,\n      \"evidence\": \"Only mentions weekdays 10 से; no human callback offered.\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Promises a waiver or extension\",\n      \"violated\": false,\n      \"evidence\": \"No waiver or extension promised.\"\n    },\n    {\n      \"behavior\": \"Threatens consequences\",\n      \"violated\": false,\n      \"evidence\": \"States standard late fee policy, no threat.\"\n    }\n  ],\n  \"pass\": false,\n  \"failure_reason\": \"The agent showed empathy but did not offer a human callback.\"\n}",
+  "judge_error": null,
+  "pass": false
+}

@@ -1,0 +1,27 @@
+{
+  "kind": "latency",
+  "run_id": "latency-20261021T143017Z",
+  "started_at_utc": "2026-10-21T14:30:17Z",
+  "machine": "Linux-7.2.11-zen1-1-zen-x86_64-with-glibc2.44",
+  "network_region": "unknown (set BENCHMARK_NETWORK_REGION)",
+  "prompt_version": "v3",
+  "provider_combination": {
+    "stt": "sarvam/saaras:v3-realtime",
+    "llm": "openai-compatible/deepseek-v4-flash",
+    "tts": "sarvam/bulbul:v3"
+  },
+  "utterance_count": 1,
+  "warmup_runs": 0,
+  "repeats": 1,
+  "rows": [
+    {
+      "status": "error",
+      "id": "en01",
+      "language": "en",
+      "repeat": 1,
+      "error": "BenchmarkProviderError: Agent generated no TTS text."
+    }
+  ],
+  "finished_at_utc": "2026-10-21T14:30:25Z",
+  "failure_count": 1
+}

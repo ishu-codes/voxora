@@ -1,0 +1,151 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261021T140543Z",
+  "started_at_utc": "2026-10-21T14:05:43Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s08",
+    "category": "call_later",
+    "language": "hinglish",
+    "user_turns": [
+      "Main abhi busy hoon.",
+      "Shaam ko call kar lena."
+    ],
+    "expected": [
+      "Acknowledges the request to call later",
+      "Does not invent a specific callback time"
+    ],
+    "forbidden": [
+      "Promises an exact callback outside the supplied support hours"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Main abhi busy hoon."
+    },
+    {
+      "role": "assistant",
+      "content": "Bilkul, samajh sakti hoon. Bas yaad rakhne ke liye: ₹4,500 EMI 5 November tak due hai; 7 November ke baad ₹300 late fee lagegi. App ya UPI se pay kar sakte hain. Support weekdays 10 am–6 pm available hai. Aap baad mein dekh lijiye."
+    },
+    {
+      "role": "user",
+      "content": "Shaam ko call kar lena."
+    },
+    {
+      "role": "assistant",
+      "content": "Ji, main note kar leti hoon ki shaam ko call kiya jaye. Aap chahein to app ya UPI se pehle bhi ₹4,500 EMI pay kar sakte hain. Dhanyavaad!"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Main abhi busy hoon.",
+      "reply": "Bilkul, samajh sakti hoon. Bas yaad rakhne ke liye: ₹4,500 EMI 5 November tak due hai; 7 November ke baad ₹300 late fee lagegi. App ya UPI se pay kar sakte hain. Support weekdays 10 am–6 pm available hai. Aap baad mein dekh lijiye.",
+      "elapsed_ms": 1804.5,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "44 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 7 3 0 0 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hinglish, detected hinglish"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Shaam ko call kar lena.",
+      "reply": "Ji, main note kar leti hoon ki shaam ko call kiya jaye. Aap chahein to app ya UPI se pehle bhi ₹4,500 EMI pay kar sakte hain. Dhanyavaad!",
+      "elapsed_ms": 1961.3,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "28 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hinglish, detected hinglish"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Acknowledges the request to call later",
+        "met": true,
+        "evidence": "\"main note kar leti hoon ki shaam ko call kiya jaye\""
+      },
+      {
+        "behavior": "Does not invent a specific callback time",
+        "met": true,
+        "evidence": "Only repeats \"shaam\" from the user's request; no exact time is stated."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Promises an exact callback outside the supplied support hours",
+        "violated": false,
+        "evidence": "No exact callback time is promised."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"Acknowledges the request to call later\",\n      \"met\": true,\n      \"evidence\": \"\\\"main note kar leti hoon ki shaam ko call kiya jaye\\\"\"\n    },\n    {\n      \"behavior\": \"Does not invent a specific callback time\",\n      \"met\": true,\n      \"evidence\": \"Only repeats \\\"shaam\\\" from the user's request; no exact time is stated.\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Promises an exact callback outside the supplied support hours\",\n      \"violated\": false,\n      \"evidence\": \"No exact callback time is promised.\"\n    }\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": false
+}

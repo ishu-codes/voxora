@@ -1,0 +1,110 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261021T140656Z",
+  "started_at_utc": "2026-10-21T14:06:56Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s20",
+    "category": "numbers_for_tts",
+    "language": "hi",
+    "user_turns": [
+      "मुझे कितने रुपये और कब तक देना है?"
+    ],
+    "expected": [
+      "States the amount and date correctly (4500 rupees, 5 November)",
+      "Spells amount and date in words in the user's language"
+    ],
+    "forbidden": [
+      "States an incorrect amount or date",
+      "Uses numeric digits"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "मुझे कितने रुपये और कब तक देना है?"
+    },
+    {
+      "role": "assistant",
+      "content": "आपकी पर्सनल लोन EMI ₹4,500 है, जो 5 नवंबर तक देनी है। 7 नवंबर के बाद ₹300 लेट फीस लगेगी।"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "मुझे कितने रुपये और कब तक देना है?",
+      "reply": "आपकी पर्सनल लोन EMI ₹4,500 है, जो 5 नवंबर तक देनी है। 7 नवंबर के बाद ₹300 लेट फीस लगेगी।",
+      "elapsed_ms": 2153.7,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "20 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 7 3 0 0"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hi, detected hi"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "States the amount and date correctly (4500 rupees, 5 November)",
+        "met": true,
+        "evidence": "\"आपकी पर्सनल लोन EMI ₹4,500 है, जो 5 नवंबर तक देनी है।\""
+      },
+      {
+        "behavior": "Spells amount and date in words in the user's language",
+        "met": false,
+        "evidence": "Uses \"₹4,500\", \"5 नवंबर\", \"7 नवंबर\", and \"₹300\" instead of spelling amounts/dates in words."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "States an incorrect amount or date",
+        "violated": false,
+        "evidence": "The amount and date are correct: ₹4,500 due by 5 November, late fee after 7 November."
+      },
+      {
+        "behavior": "Uses numeric digits",
+        "violated": true,
+        "evidence": "Contains numeric digits such as \"4,500\", \"5\", \"7\", and \"300\"."
+      }
+    ],
+    "pass": false,
+    "failure_reason": "The agent used numeric digits and did not spell the amount and date in words as required."
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"States the amount and date correctly (4500 rupees, 5 November)\",\n      \"met\": true,\n      \"evidence\": \"\\\"आपकी पर्सनल लोन EMI ₹4,500 है, जो 5 नवंबर तक देनी है।\\\"\"\n    },\n    {\n      \"behavior\": \"Spells amount and date in words in the user's language\",\n      \"met\": false,\n      \"evidence\": \"Uses \\\"₹4,500\\\", \\\"5 नवंबर\\\", \\\"7 नवंबर\\\", and \\\"₹300\\\" instead of spelling amounts/dates in words.\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"States an incorrect amount or date\",\n      \"violated\": false,\n      \"evidence\": \"The amount and date are correct: ₹4,500 due by 5 November, late fee after 7 November.\"\n    },\n    {\n      \"behavior\": \"Uses numeric digits\",\n      \"violated\": true,\n      \"evidence\": \"Contains numeric digits such as \\\"4,500\\\", \\\"5\\\", \\\"7\\\", and \\\"300\\\".\"\n    }\n  ],\n  \"pass\": false,\n  \"failure_reason\": \"The agent used numeric digits and did not spell the amount and date in words as required.\"\n}",
+  "judge_error": null,
+  "pass": false
+}

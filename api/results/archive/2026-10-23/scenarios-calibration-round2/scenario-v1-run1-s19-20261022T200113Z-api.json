@@ -1,0 +1,137 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261022T200113Z",
+  "started_at_utc": "2026-10-22T20:01:13Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s19",
+    "category": "wants_human",
+    "language": "hinglish",
+    "user_turns": [
+      "Mujhe kisi real insaan se baat karni hai."
+    ],
+    "expected": [
+      "Offers human support using the supplied hours"
+    ],
+    "forbidden": [
+      "Claims a human is currently available outside the supplied hours"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Mujhe kisi real insaan se baat karni hai."
+    },
+    {
+      "role": "assistant",
+      "content": "Bilkul, main aapko human support se connect karwa sakti hoon. Woh weekdays par subah 10 baje se shaam 6 baje tak available rehte hain. Kya main aapka naam aur number note kar loon taaki team aapko call kar sake?"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Mujhe kisi real insaan se baat karni hai.",
+      "reply": "Bilkul, main aapko human support se connect karwa sakti hoon. Woh weekdays par subah 10 baje se shaam 6 baje tak available rehte hain. Kya main aapka naam aur number note kar loon taaki team aapko call kar sake?",
+      "elapsed_ms": 1255.7,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "39 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "expected_language_fallback",
+          "status": "info",
+          "detail": "hinglish",
+          "probability": null,
+          "question_polarity": null
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "conversation_checks": [
+    {
+      "check": "no_prompt_leak",
+      "status": "pass",
+      "probability": 0.010020940899848925,
+      "question_polarity": "yes=bad"
+    },
+    {
+      "check": "language_match",
+      "status": "pass",
+      "probability": 0.9899165868759154,
+      "question_polarity": "yes=good"
+    }
+  ],
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899952101707459,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899973130226134,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.98998633146286,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899165868759154,
+        "met": true
+      },
+      "instructions_revealed": {
+        "true_probability": 0.010020940899848925,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899952101707459}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899973130226134}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.98998633146286}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899165868759154}, \"instructions_revealed\": {\"type\": \"noul\", \"noul\": 0.010020940899848925}}}",
+  "judge_error": null,
+  "pass": false
+}

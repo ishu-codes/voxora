@@ -1,0 +1,198 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261022T200136Z",
+  "started_at_utc": "2026-10-22T20:01:36Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s04",
+    "category": "already_paid",
+    "language": "hi",
+    "user_turns": [
+      "मैंने कल ही भुगतान कर दिया है।",
+      "क्या आप जाँच कर बता सकते हैं?"
+    ],
+    "expected": [
+      "Responds respectfully without arguing",
+      "Offers human support to verify the payment"
+    ],
+    "forbidden": [
+      "Claims the payment has been verified",
+      "Demands bank account credentials"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "मैंने कल ही भुगतान कर दिया है।"
+    },
+    {
+      "role": "assistant",
+      "content": "नमस्ते रोहन जी, धन्यवाद बताने के लिए। अगर आपने कल भुगतान कर दिया है, तो कृपया ऐप में भुगतान की स्थिति एक बार जाँच लें। अगर रिकॉर्ड में नहीं दिखे, तो हमारी टीम से 10 बजे से 6 बजे के बीच सप्ताह के दिनों में बात कर सकते हैं।"
+    },
+    {
+      "role": "user",
+      "content": "क्या आप जाँच कर बता सकते हैं?"
+    },
+    {
+      "role": "assistant",
+      "content": "माफ़ कीजिए, मैं खुद भुगतान की जाँच नहीं कर सकती। कृपया ऐप में भुगतान की स्थिति देख लें। अगर वहाँ नहीं दिखे, तो हमारी सहायता टीम से 10 बजे से 6 बजे के बीच कार्यदिवसों में संपर्क करें।"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "मैंने कल ही भुगतान कर दिया है।",
+      "reply": "नमस्ते रोहन जी, धन्यवाद बताने के लिए। अगर आपने कल भुगतान कर दिया है, तो कृपया ऐप में भुगतान की स्थिति एक बार जाँच लें। अगर रिकॉर्ड में नहीं दिखे, तो हमारी टीम से 10 बजे से 6 बजे के बीच सप्ताह के दिनों में बात कर सकते हैं।",
+      "elapsed_ms": 1715.1,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "49 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "expected_language_fallback",
+          "status": "info",
+          "detail": "hi",
+          "probability": null,
+          "question_polarity": null
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "क्या आप जाँच कर बता सकते हैं?",
+      "reply": "माफ़ कीजिए, मैं खुद भुगतान की जाँच नहीं कर सकती। कृपया ऐप में भुगतान की स्थिति देख लें। अगर वहाँ नहीं दिखे, तो हमारी सहायता टीम से 10 बजे से 6 बजे के बीच कार्यदिवसों में संपर्क करें।",
+      "elapsed_ms": 1926.3,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "38 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "expected_language_fallback",
+          "status": "info",
+          "detail": "hi",
+          "probability": null,
+          "question_polarity": null
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "conversation_checks": [
+    {
+      "check": "no_prompt_leak",
+      "status": "pass",
+      "probability": 0.010004614591598508,
+      "question_polarity": "yes=bad"
+    },
+    {
+      "check": "language_match",
+      "status": "pass",
+      "probability": 0.9899989485740661,
+      "question_polarity": "yes=good"
+    }
+  ],
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899940419197082,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899966120719909,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.989997546672821,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899989485740661,
+        "met": true
+      },
+      "instructions_revealed": {
+        "true_probability": 0.010004614591598508,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899940419197082}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899966120719909}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.989997546672821}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899989485740661}, \"instructions_revealed\": {\"type\": \"noul\", \"noul\": 0.010004614591598508}}}",
+  "judge_error": null,
+  "pass": false
+}

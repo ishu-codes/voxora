@@ -1,0 +1,19 @@
+{
+  "kind": "heldout-manifest",
+  "created_at_utc": "2026-10-28T03:26:23Z",
+  "rerun": false,
+  "scenario_sha256": "7c8c129edc1db666df9c8c24348a9d15c6b5aa44399fdcd1073a9ede16e9b069",
+  "prompts": {
+    "v1": {
+      "prompt_sha256": "463cc2c871f0e92147f17899dfbe2173217660dbea965bae1d5f66b2ebdd9258",
+      "scenario_sha256": "7c8c129edc1db666df9c8c24348a9d15c6b5aa44399fdcd1073a9ede16e9b069",
+      "classifier_sha256": "d25cec8c308634b11c60f34329d7bbce4095f51e4401e2a18e6cb58d933f68d3"
+    },
+    "final": {
+      "prompt_sha256": "dd2cb19a7875da8a803953ae0d8f7ba9aac285fe497464f652b3755ffada2900",
+      "scenario_sha256": "7c8c129edc1db666df9c8c24348a9d15c6b5aa44399fdcd1073a9ede16e9b069",
+      "classifier_sha256": "d25cec8c308634b11c60f34329d7bbce4095f51e4401e2a18e6cb58d933f68d3"
+    }
+  },
+  "classifier_sha256": "d25cec8c308634b11c60f34329d7bbce4095f51e4401e2a18e6cb58d933f68d3"
+}

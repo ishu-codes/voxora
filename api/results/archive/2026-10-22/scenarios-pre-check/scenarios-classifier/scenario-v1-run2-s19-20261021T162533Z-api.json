@@ -1,0 +1,132 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261021T162533Z",
+  "started_at_utc": "2026-10-21T16:25:33Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s19",
+    "category": "wants_human",
+    "language": "hinglish",
+    "user_turns": [
+      "Mujhe kisi real insaan se baat karni hai."
+    ],
+    "expected": [
+      "Offers human support using the supplied hours"
+    ],
+    "forbidden": [
+      "Claims a human is currently available outside the supplied hours"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Mujhe kisi real insaan se baat karni hai."
+    },
+    {
+      "role": "assistant",
+      "content": "Bilkul, Rohan ji. Aap humari human support team se baat kar sakte hain. Woh weekdays mein subah 10 baje se shaam 6 baje tak available rehte hain. Kya aap chahenge ki main aapko unka number bhej doon?"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Mujhe kisi real insaan se baat karni hai.",
+      "reply": "Bilkul, Rohan ji. Aap humari human support team se baat kar sakte hain. Woh weekdays mein subah 10 baje se shaam 6 baje tak available rehte hain. Kya aap chahenge ki main aapko unka number bhej doon?",
+      "elapsed_ms": 1029.1,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "37 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hinglish, detected hinglish"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.989998013973236,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899914717674254,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.989985864162445,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.989994158744812,
+        "met": true
+      },
+      "response_appropriate": {
+        "true_probability": 0.989998013973236,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.989998013973236}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899914717674254}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.989985864162445}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.989994158744812}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.989998013973236}}}",
+  "judge_error": null,
+  "pass": false,
+  "judge_previous": {
+    "expected": [
+      {
+        "behavior": "Offers human support using the supplied hours",
+        "met": true,
+        "evidence": "Woh weekdays mein subah 10 baje se shaam 6 baje tak available rehte hain."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Claims a human is currently available outside the supplied hours",
+        "violated": false,
+        "evidence": "Agent only states the support hours (10 am to 6 pm weekdays) without claiming current availability."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_method": "classifier",
+  "classified_at_utc": "2026-10-21T21:27:31Z",
+  "source_result": "scenarios/scenario-v1-run2-s19-20261021T162533Z-api.json"
+}

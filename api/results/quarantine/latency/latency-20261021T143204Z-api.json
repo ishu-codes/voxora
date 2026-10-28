@@ -1,0 +1,96 @@
+{
+  "kind": "latency",
+  "run_id": "latency-20261021T143204Z",
+  "started_at_utc": "2026-10-21T14:32:04Z",
+  "machine": "Linux-7.2.11-zen1-1-zen-x86_64-with-glibc2.44",
+  "network_region": "unknown (set BENCHMARK_NETWORK_REGION)",
+  "prompt_version": "v3",
+  "provider_combination": {
+    "stt": "sarvam/saaras:v3-realtime",
+    "llm": "openai-compatible/deepseek-v4-flash",
+    "tts": "sarvam/bulbul:v3"
+  },
+  "utterance_count": 20,
+  "warmup_runs": 3,
+  "repeats": 3,
+  "rows": [
+    {
+      "status": "ok",
+      "id": "en01",
+      "language": "en",
+      "reference": "Yes, this is Rohan speaking.",
+      "transcript": "Yes, this is Rohan speaking.",
+      "response": "Thank you, Rohan",
+      "stt_first_partial_ms": 324.1,
+      "stt_final_ms": 766.9,
+      "llm_first_token_ms": 5733.9,
+      "tts_first_audio_ms": 599.1,
+      "end_to_end_ms": 6334.5,
+      "tts_done_ms": 6348.3,
+      "audio_bytes": 35324,
+      "repeat": 1
+    },
+    {
+      "status": "error",
+      "id": "hi01",
+      "language": "hi",
+      "repeat": 1,
+      "error": "BenchmarkProviderError: Agent generated no TTS text after four empty-stream attempts."
+    },
+    {
+      "status": "error",
+      "id": "hg01",
+      "language": "hinglish",
+      "repeat": 1,
+      "error": "BenchmarkProviderError: Agent generated no TTS text after four empty-stream attempts."
+    },
+    {
+      "status": "ok",
+      "id": "en02",
+      "language": "en",
+      "reference": "I already paid my EMI last week.",
+      "transcript": "I already paid my EMI last week.",
+      "response": "Thank you for letting me know. I'm not able to check payments, but I can arrange a callback from our team on a weekday between ten in the morning and six in the evening.",
+      "stt_first_partial_ms": 414.3,
+      "stt_final_ms": 548.0,
+      "llm_first_token_ms": 2259.1,
+      "tts_first_audio_ms": 191.2,
+      "end_to_end_ms": 2491.8,
+      "tts_done_ms": 4126.2,
+      "audio_bytes": 379010,
+      "repeat": 1
+    },
+    {
+      "status": "ok",
+      "id": "hi02",
+      "language": "hi",
+      "reference": "मैंने अपनी ईएमआई कल ही भर दी है।",
+      "transcript": "मैंने अपनी ईएमआई कल ही भर दी है।",
+      "response": "धन्यवाद बताने के लिए। मैं भुगतान की पुष्टि नहीं कर सकती, पर सोमवार से शुक्रवार सुबह दस से शाम छह बजे तक हमारी टीम आपकी मदद कर सकती है। क्या आप कॉलबैक चाहेंगे?",
+      "stt_first_partial_ms": 347.7,
+      "stt_final_ms": 625.2,
+      "llm_first_token_ms": 2102.9,
+      "tts_first_audio_ms": 377.1,
+      "end_to_end_ms": 2774.6,
+      "tts_done_ms": 4696.4,
+      "audio_bytes": 468936,
+      "repeat": 1
+    },
+    {
+      "status": "ok",
+      "id": "hg02",
+      "language": "hinglish",
+      "reference": "Maine apni EMI kal hi bhar di hai.",
+      "transcript": "मैंने अपनी ईएमआई कल ही भर दी है।",
+      "response": "मैं भुगतान की पुष्टि नहीं कर सकती। सोमवार से शुक्रवार, सुबह दस बजे से शाम छह बजे तक हमारी सहायता टीम से बात कर सकते हैं।",
+      "stt_first_partial_ms": 546.3,
+      "stt_final_ms": 596.4,
+      "llm_first_token_ms": 1870.1,
+      "tts_first_audio_ms": 175.5,
+      "end_to_end_ms": 2249.4,
+      "tts_done_ms": 3668.7,
+      "audio_bytes": 350104,
+      "repeat": 1
+    }
+  ]
+}

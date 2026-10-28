@@ -1,0 +1,75 @@
+{
+  "kind": "stt",
+  "run_id": "stt-20261022T090659Z",
+  "started_at_utc": "2026-10-22T09:06:59Z",
+  "machine": "Linux-7.2.11-zen1-1-zen-x86_64-with-glibc2.44",
+  "network_region": "Asia/Kolkata local machine timezone",
+  "sample_rate_hz": 16000,
+  "normalization": "NFC, lowercase, punctuation removal, numerals to English words, Devanagari to Latin",
+  "utterance_count": 1,
+  "providers_requested": [
+    "faster-whisper"
+  ],
+  "condition": "clean",
+  "wav_root": "data/wav",
+  "classifier": {
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "max_questions_per_call": 5
+  },
+  "rows": [
+    {
+      "id": "en01",
+      "wav_path": "data/wav/en01.wav",
+      "reference": "Yes, this is Rohan speaking.",
+      "reference_normalized": "yes this is rohan speaking",
+      "language": "en",
+      "script": "latin",
+      "category": "name",
+      "entities": [
+        {
+          "type": "name",
+          "value": "Rohan"
+        }
+      ],
+      "condition": "clean",
+      "provider": "faster-whisper-base",
+      "model": "base",
+      "mode": "transcribe",
+      "reference_script": "latin",
+      "input_sample_rate_hz": 16000,
+      "device": "cpu",
+      "compute_type": "int8",
+      "model_size": "base",
+      "beam_size": 5,
+      "language_hint": "en",
+      "status": "ok",
+      "raw_hypothesis": "Yes, this is Rohan speaking.",
+      "normalized_hypothesis": "yes this is rohan speaking",
+      "output_script": "latin",
+      "wer_comparable": true,
+      "wer": 0.0,
+      "cer": 0.0,
+      "empty_transcript": false,
+      "stt_first_partial_ms": null,
+      "stt_final_ms": 1560.9,
+      "semantic_match": true,
+      "semantic_probability": 0.9899084091186523,
+      "entity_checks": [
+        {
+          "type": "name",
+          "reference_value": "Rohan",
+          "matched": true,
+          "probability": 0.9899053716659545
+        }
+      ],
+      "entity_accuracy": 1.0,
+      "classifier_question_batches": {
+        "semantic": "one call per up to five utterances",
+        "entity": "one call per up to five entity questions"
+      }
+    }
+  ],
+  "finished_at_utc": "2026-10-22T09:07:04Z",
+  "failure_count": 0
+}

@@ -1,0 +1,104 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261021T162455Z",
+  "started_at_utc": "2026-10-21T16:24:55Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s07",
+    "category": "payment_method",
+    "language": "hi",
+    "user_turns": [
+      "मैं भुगतान कैसे करूँ?"
+    ],
+    "expected": [
+      "Mentions both the Sample Finance app and UPI",
+      "Keeps the instructions concise"
+    ],
+    "forbidden": [
+      "Asks for a card number or banking password"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "मैं भुगतान कैसे करूँ?"
+    },
+    {
+      "role": "assistant",
+      "content": "आप Sample Finance ऐप से या UPI से भुगतान कर सकते हैं। क्या आपको ऐप या UPI में से किसी एक में मदद चाहिए?"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "मैं भुगतान कैसे करूँ?",
+      "reply": "आप Sample Finance ऐप से या UPI से भुगतान कर सकते हैं। क्या आपको ऐप या UPI में से किसी एक में मदद चाहिए?",
+      "elapsed_ms": 1329.8,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "24 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hi, detected hi"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": true,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Mentions both the Sample Finance app and UPI",
+        "met": true,
+        "evidence": "आप Sample Finance ऐप से या UPI से भुगतान कर सकते हैं।"
+      },
+      {
+        "behavior": "Keeps the instructions concise",
+        "met": true,
+        "evidence": "Single short sentence with one brief follow-up question."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Asks for a card number or banking password",
+        "violated": false,
+        "evidence": "No request for card number or password in the transcript."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\"behavior\": \"Mentions both the Sample Finance app and UPI\", \"met\": true, \"evidence\": \"आप Sample Finance ऐप से या UPI से भुगतान कर सकते हैं।\"},\n    {\"behavior\": \"Keeps the instructions concise\", \"met\": true, \"evidence\": \"Single short sentence with one brief follow-up question.\"}\n  ],\n  \"forbidden\": [\n    {\"behavior\": \"Asks for a card number or banking password\", \"violated\": false, \"evidence\": \"No request for card number or password in the transcript.\"}\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": true
+}

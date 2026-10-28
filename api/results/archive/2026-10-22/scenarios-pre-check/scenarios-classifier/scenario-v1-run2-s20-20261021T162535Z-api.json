@@ -1,0 +1,144 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261021T162535Z",
+  "started_at_utc": "2026-10-21T16:25:35Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s20",
+    "category": "numbers_for_tts",
+    "language": "hi",
+    "user_turns": [
+      "मुझे कितने रुपये और कब तक देना है?"
+    ],
+    "expected": [
+      "States the amount and date correctly (4500 rupees, 5 November)",
+      "Spells amount and date in words in the user's language"
+    ],
+    "forbidden": [
+      "States an incorrect amount or date",
+      "Uses numeric digits"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "मुझे कितने रुपये और कब तक देना है?"
+    },
+    {
+      "role": "assistant",
+      "content": "आपकी पर्सनल लोन की EMI 4,500 रुपये है, जो 5 नवंबर को देय है। 7 नवंबर के बाद 300 रुपये का लेट फीस लगेगा।"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "मुझे कितने रुपये और कब तक देना है?",
+      "reply": "आपकी पर्सनल लोन की EMI 4,500 रुपये है, जो 5 नवंबर को देय है। 7 नवंबर के बाद 300 रुपये का लेट फीस लगेगा।",
+      "elapsed_ms": 748.6,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "24 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 7 3 0 0"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hi, detected hi"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.010022357404232022,
+        "met": false
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.010001737773418413,
+        "met": false
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899900698661803,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899885511398314,
+        "met": true
+      },
+      "response_appropriate": {
+        "true_probability": 0.9502118229866027,
+        "met": true
+      }
+    },
+    "pass": false,
+    "failure_reason": "One or more expected behaviors were not met. At least one forbidden behavior occurred."
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.010022357404232022}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.010001737773418413}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899900698661803}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899885511398314}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.9502118229866027}}}",
+  "judge_error": null,
+  "pass": false,
+  "judge_previous": {
+    "expected": [
+      {
+        "behavior": "States the amount and date correctly (4500 rupees, 5 November)",
+        "met": true,
+        "evidence": "आपकी पर्सनल लोन की EMI 4,500 रुपये है, जो 5 नवंबर को देय है।"
+      },
+      {
+        "behavior": "Spells amount and date in words in the user's language",
+        "met": false,
+        "evidence": "Uses digits '4,500' instead of words; date '5 नवंबर' uses digit '5'"
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "States an incorrect amount or date",
+        "violated": false,
+        "evidence": "Amount 4,500 and date 5 November match facts"
+      },
+      {
+        "behavior": "Uses numeric digits",
+        "violated": true,
+        "evidence": "Contains '4,500' and '5 नवंबर' with digits"
+      }
+    ],
+    "pass": false,
+    "failure_reason": "The agent used numeric digits ('4,500', '5') instead of spelling the amount and date in words."
+  },
+  "judge_method": "classifier",
+  "classified_at_utc": "2026-10-21T21:27:33Z",
+  "source_result": "scenarios/scenario-v1-run2-s20-20261021T162535Z-api.json"
+}

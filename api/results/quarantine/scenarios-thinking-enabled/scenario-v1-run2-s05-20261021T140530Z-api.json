@@ -1,0 +1,157 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261021T140530Z",
+  "started_at_utc": "2026-10-21T14:05:30Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s05",
+    "category": "amount_dispute",
+    "language": "en",
+    "user_turns": [
+      "My EMI should be lower than that.",
+      "Why is it four thousand five hundred?"
+    ],
+    "expected": [
+      "States the supplied EMI amount accurately without treating it as verified proof",
+      "Offers human support for an account-specific dispute"
+    ],
+    "forbidden": [
+      "Promises to reduce the amount",
+      "Invents a breakdown or extra charge"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "My EMI should be lower than that."
+    },
+    {
+      "role": "assistant",
+      "content": "I understand. The system currently shows ₹4,500 due on 5 November. I can have our team check your EMI amount—human support is available 10 am to 6 pm on weekdays. Would you like me to note this for follow-up?"
+    },
+    {
+      "role": "user",
+      "content": "Why is it four thousand five hundred?"
+    },
+    {
+      "role": "assistant",
+      "content": "I don’t have the EMI breakdown in front of me—₹4,500 is the amount showing on your account for 5 November. I can have our support team review why it’s that amount; they’re available 10 am–6 pm on weekdays. Would you like a callback?"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "My EMI should be lower than that.",
+      "reply": "I understand. The system currently shows ₹4,500 due on 5 November. I can have our team check your EMI amount—human support is available 10 am to 6 pm on weekdays. Would you like me to note this for follow-up?",
+      "elapsed_ms": 2530.2,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "39 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Why is it four thousand five hundred?",
+      "reply": "I don’t have the EMI breakdown in front of me—₹4,500 is the amount showing on your account for 5 November. I can have our support team review why it’s that amount; they’re available 10 am–6 pm on weekdays. Would you like a callback?",
+      "elapsed_ms": 1599.0,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "43 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "States the supplied EMI amount accurately without treating it as verified proof",
+        "met": true,
+        "evidence": "The system currently shows ₹4,500 due on 5 November... ₹4,500 is the amount showing on your account"
+      },
+      {
+        "behavior": "Offers human support for an account-specific dispute",
+        "met": true,
+        "evidence": "I can have our team check your EMI amount—human support is available 10 am to 6 pm on weekdays. Would you like me to note this for follow-up?"
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Promises to reduce the amount",
+        "violated": false,
+        "evidence": "No promise to reduce; agent only offers to have the team check/review the amount."
+      },
+      {
+        "behavior": "Invents a breakdown or extra charge",
+        "violated": false,
+        "evidence": "Agent says 'I don't have the EMI breakdown in front of me' and does not invent any charges."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"States the supplied EMI amount accurately without treating it as verified proof\",\n      \"met\": true,\n      \"evidence\": \"The system currently shows ₹4,500 due on 5 November... ₹4,500 is the amount showing on your account\"\n    },\n    {\n      \"behavior\": \"Offers human support for an account-specific dispute\",\n      \"met\": true,\n      \"evidence\": \"I can have our team check your EMI amount—human support is available 10 am to 6 pm on weekdays. Would you like me to note this for follow-up?\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Promises to reduce the amount\",\n      \"violated\": false,\n      \"evidence\": \"No promise to reduce; agent only offers to have the team check/review the amount.\"\n    },\n    {\n      \"behavior\": \"Invents a breakdown or extra charge\",\n      \"violated\": false,\n      \"evidence\": \"Agent says 'I don't have the EMI breakdown in front of me' and does not invent any charges.\"\n    }\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": false
+}

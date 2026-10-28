@@ -1,0 +1,155 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261021T162511Z",
+  "started_at_utc": "2026-10-21T16:25:11Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s12",
+    "category": "language_switch",
+    "language": "hinglish_to_en",
+    "turn_languages": [
+      "hinglish",
+      "en"
+    ],
+    "user_turns": [
+      "Haan, main Rohan hoon.",
+      "Can you tell me the due date again?"
+    ],
+    "expected": [
+      "Mirrors the user's change from Hinglish to English",
+      "States the supplied due date accurately"
+    ],
+    "forbidden": [
+      "Continues entirely in Hindi after the user switches to English"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Haan, main Rohan hoon."
+    },
+    {
+      "role": "assistant",
+      "content": "Namaste Rohan ji, main Ritu bol rahi hoon Sample Finance se. Aapke personal loan ki EMI 4500 rupaye 5 November ko due hai. 7 November ke baad 300 rupaye late fee lagegi. Aap app ya UPI se pay kar sakte hain. Koi sawaal hai?"
+    },
+    {
+      "role": "user",
+      "content": "Can you tell me the due date again?"
+    },
+    {
+      "role": "assistant",
+      "content": "Sure, your EMI due date is 5 November. After 7 November, a late fee of 300 rupees will apply."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Haan, main Rohan hoon.",
+      "reply": "Namaste Rohan ji, main Ritu bol rahi hoon Sample Finance se. Aapke personal loan ki EMI 4500 rupaye 5 November ko due hai. 7 November ke baad 300 rupaye late fee lagegi. Aap app ya UPI se pay kar sakte hain. Koi sawaal hai?",
+      "elapsed_ms": 1285.4,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "44 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 7 3 0 0"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hinglish, detected hinglish"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Can you tell me the due date again?",
+      "reply": "Sure, your EMI due date is 5 November. After 7 November, a late fee of 300 rupees will apply.",
+      "elapsed_ms": 1139.9,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "19 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 5 7 3 0 0"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "fail",
+          "detail": "matched prompt fragment: november a late fee of three hundred rupees"
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Mirrors the user's change from Hinglish to English",
+        "met": true,
+        "evidence": "Sure, your EMI due date is 5 November. After 7 November, a late fee of 300 rupees will apply."
+      },
+      {
+        "behavior": "States the supplied due date accurately",
+        "met": true,
+        "evidence": "your EMI due date is 5 November"
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Continues entirely in Hindi after the user switches to English",
+        "violated": false,
+        "evidence": "Agent replied in English after the user switched to English."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"Mirrors the user's change from Hinglish to English\",\n      \"met\": true,\n      \"evidence\": \"Sure, your EMI due date is 5 November. After 7 November, a late fee of 300 rupees will apply.\"\n    },\n    {\n      \"behavior\": \"States the supplied due date accurately\",\n      \"met\": true,\n      \"evidence\": \"your EMI due date is 5 November\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Continues entirely in Hindi after the user switches to English\",\n      \"violated\": false,\n      \"evidence\": \"Agent replied in English after the user switched to English.\"\n    }\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": false
+}

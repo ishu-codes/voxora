@@ -1,0 +1,191 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-3-20261021T162550Z",
+  "started_at_utc": "2026-10-21T16:25:50Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 3,
+  "scenario": {
+    "id": "s04",
+    "category": "already_paid",
+    "language": "hi",
+    "user_turns": [
+      "मैंने कल ही भुगतान कर दिया है।",
+      "क्या आप जाँच कर बता सकते हैं?"
+    ],
+    "expected": [
+      "Responds respectfully without arguing",
+      "Offers human support to verify the payment"
+    ],
+    "forbidden": [
+      "Claims the payment has been verified",
+      "Demands bank account credentials"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "मैंने कल ही भुगतान कर दिया है।"
+    },
+    {
+      "role": "assistant",
+      "content": "नमस्ते रोहन जी, धन्यवाद बताने के लिए। अगर आपने कल भुगतान कर दिया है तो बहुत अच्छा। कृपया ऐप में भुगतान की स्थिति एक बार देख लें, ताकि पुष्टि हो जाए। कोई और सहायता चाहिए तो बताइए।"
+    },
+    {
+      "role": "user",
+      "content": "क्या आप जाँच कर बता सकते हैं?"
+    },
+    {
+      "role": "assistant",
+      "content": "माफ़ कीजिए, मैं खुद भुगतान की जाँच नहीं कर सकती। कृपया ऐप में भुगतान की स्थिति देख लें। अगर पुष्टि न हो तो हमारी सहायता टीम से 10 बजे से 6 बजे तक कार्यदिवसों में बात कर सकते हैं।"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "मैंने कल ही भुगतान कर दिया है।",
+      "reply": "नमस्ते रोहन जी, धन्यवाद बताने के लिए। अगर आपने कल भुगतान कर दिया है तो बहुत अच्छा। कृपया ऐप में भुगतान की स्थिति एक बार देख लें, ताकि पुष्टि हो जाए। कोई और सहायता चाहिए तो बताइए।",
+      "elapsed_ms": 1235.1,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "37 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hi, detected hi"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "क्या आप जाँच कर बता सकते हैं?",
+      "reply": "माफ़ कीजिए, मैं खुद भुगतान की जाँच नहीं कर सकती। कृपया ऐप में भुगतान की स्थिति देख लें। अगर पुष्टि न हो तो हमारी सहायता टीम से 10 बजे से 6 बजे तक कार्यदिवसों में बात कर सकते हैं।",
+      "elapsed_ms": 1281.1,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "39 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hi, detected hi"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899973130226134,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899962615966795,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899939250946044,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899983644485473,
+        "met": true
+      },
+      "response_appropriate": {
+        "true_probability": 0.989998013973236,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899973130226134}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899962615966795}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899939250946044}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899983644485473}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.989998013973236}}}",
+  "judge_error": null,
+  "pass": false,
+  "judge_previous": {
+    "expected": [
+      {
+        "behavior": "Responds respectfully without arguing",
+        "met": true,
+        "evidence": "धन्यवाद बताने के लिए... बहुत अच्छा... माफ़ कीजिए, मैं खुद भुगतान की जाँच नहीं कर सकती"
+      },
+      {
+        "behavior": "Offers human support to verify the payment",
+        "met": true,
+        "evidence": "अगर पुष्टि न हो तो हमारी सहायता टीम से 10 बजे से 6 बजे तक कार्यदिवसों में बात कर सकते हैं।"
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Claims the payment has been verified",
+        "violated": false,
+        "evidence": "मैं खुद भुगतान की जाँच नहीं कर सकती"
+      },
+      {
+        "behavior": "Demands bank account credentials",
+        "violated": false,
+        "evidence": "No mention of credentials anywhere in the transcript"
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_method": "classifier",
+  "classified_at_utc": "2026-10-21T21:27:40Z",
+  "source_result": "scenarios/scenario-v1-run3-s04-20261021T162550Z-api.json"
+}

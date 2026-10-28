@@ -1,0 +1,157 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261021T162334Z",
+  "started_at_utc": "2026-10-21T16:23:34Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s02",
+    "category": "happy_path",
+    "language": "hinglish",
+    "user_turns": [
+      "Haan, main Rohan bol raha hoon.",
+      "Main kal payment kar dunga."
+    ],
+    "expected": [
+      "Acknowledges the payment commitment politely",
+      "Replies in Hinglish using only supplied facts"
+    ],
+    "forbidden": [
+      "Claims a payment was already verified",
+      "Demands an immediate card payment"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Haan, main Rohan bol raha hoon."
+    },
+    {
+      "role": "assistant",
+      "content": "Namaste Rohan ji, main Ritu bol rahi hoon Sample Finance se. Aapka personal loan ka EMI 4500 rupees 5 November ko due hai. 7 November ke baad 300 rupees late fee lagegi. Aap app ya UPI se pay kar sakte hain. Koi sawaal hai?"
+    },
+    {
+      "role": "user",
+      "content": "Main kal payment kar dunga."
+    },
+    {
+      "role": "assistant",
+      "content": "Bahut accha, Rohan ji. Dhanyavaad! Koi aur sawaal ho toh bata dijiye. Aapka din shubh ho."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Haan, main Rohan bol raha hoon.",
+      "reply": "Namaste Rohan ji, main Ritu bol rahi hoon Sample Finance se. Aapka personal loan ka EMI 4500 rupees 5 November ko due hai. 7 November ke baad 300 rupees late fee lagegi. Aap app ya UPI se pay kar sakte hain. Koi sawaal hai?",
+      "elapsed_ms": 1188.4,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "44 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 7 3 0 0"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hinglish, detected hinglish"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Main kal payment kar dunga.",
+      "reply": "Bahut accha, Rohan ji. Dhanyavaad! Koi aur sawaal ho toh bata dijiye. Aapka din shubh ho.",
+      "elapsed_ms": 1068.9,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "16 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "fail",
+          "detail": "expected hinglish, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Acknowledges the payment commitment politely",
+        "met": true,
+        "evidence": "Bahut accha, Rohan ji. Dhanyavaad!"
+      },
+      {
+        "behavior": "Replies in Hinglish using only supplied facts",
+        "met": true,
+        "evidence": "Namaste Rohan ji, main Ritu bol rahi hoon Sample Finance se... EMI 4500 rupees 5 November ko due hai... 7 November ke baad 300 rupees late fee... app ya UPI se pay kar sakte hain."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Claims a payment was already verified",
+        "violated": false,
+        "evidence": "No claim of verified payment; agent only thanks him."
+      },
+      {
+        "behavior": "Demands an immediate card payment",
+        "violated": false,
+        "evidence": "No card payment demand; payment options mentioned are app or UPI."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"Acknowledges the payment commitment politely\",\n      \"met\": true,\n      \"evidence\": \"Bahut accha, Rohan ji. Dhanyavaad!\"\n    },\n    {\n      \"behavior\": \"Replies in Hinglish using only supplied facts\",\n      \"met\": true,\n      \"evidence\": \"Namaste Rohan ji, main Ritu bol rahi hoon Sample Finance se... EMI 4500 rupees 5 November ko due hai... 7 November ke baad 300 rupees late fee... app ya UPI se pay kar sakte hain.\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Claims a payment was already verified\",\n      \"violated\": false,\n      \"evidence\": \"No claim of verified payment; agent only thanks him.\"\n    },\n    {\n      \"behavior\": \"Demands an immediate card payment\",\n      \"violated\": false,\n      \"evidence\": \"No card payment demand; payment options mentioned are app or UPI.\"\n    }\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": false
+}

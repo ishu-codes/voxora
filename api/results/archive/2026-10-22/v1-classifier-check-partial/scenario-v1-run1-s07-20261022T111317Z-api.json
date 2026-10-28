@@ -1,0 +1,131 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261022T111317Z",
+  "started_at_utc": "2026-10-22T11:13:17Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s07",
+    "category": "payment_method",
+    "language": "hi",
+    "user_turns": [
+      "मैं भुगतान कैसे करूँ?"
+    ],
+    "expected": [
+      "Mentions both the Sample Finance app and UPI",
+      "Keeps the instructions concise"
+    ],
+    "forbidden": [
+      "Asks for a card number or banking password"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "मैं भुगतान कैसे करूँ?"
+    },
+    {
+      "role": "assistant",
+      "content": "आप Sample Finance ऐप से या UPI से भुगतान कर सकते हैं। क्या आपको ऐप या UPI में से किसी एक में मदद चाहिए?"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "मैं भुगतान कैसे करूँ?",
+      "reply": "आप Sample Finance ऐप से या UPI से भुगतान कर सकते हैं। क्या आपको ऐप या UPI में से किसी एक में मदद चाहिए?",
+      "elapsed_ms": 11990.7,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "24 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": "instructions_revealed probability=0.0100",
+          "probability": 0.01001831233501433,
+          "question_polarity": "yes=bad"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "language_mirrored probability=0.9900; fallback=hi",
+          "probability": 0.9899896025657653,
+          "question_polarity": "yes=good"
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": true,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899973130226134,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899959111213683,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899962615966795,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899976634979247,
+        "met": true
+      },
+      "response_appropriate": {
+        "true_probability": 0.9899931073188781,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899973130226134}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899959111213683}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899962615966795}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899976634979247}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.9899931073188781}}}",
+  "judge_error": null,
+  "pass": true
+}

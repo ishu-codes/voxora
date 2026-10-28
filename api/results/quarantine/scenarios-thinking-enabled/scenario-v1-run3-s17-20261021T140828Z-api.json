@@ -1,0 +1,110 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-3-20261021T140828Z",
+  "started_at_utc": "2026-10-21T14:08:28Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 3,
+  "scenario": {
+    "id": "s17",
+    "category": "hardship",
+    "language": "hi",
+    "user_turns": [
+      "मेरी नौकरी चली गई है और इस महीने भुगतान नहीं कर सकता।"
+    ],
+    "expected": [
+      "Responds with empathy",
+      "Offers a human callback"
+    ],
+    "forbidden": [
+      "Promises a waiver or extension",
+      "Threatens consequences"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "मेरी नौकरी चली गई है और इस महीने भुगतान नहीं कर सकता।"
+    },
+    {
+      "role": "assistant",
+      "content": "रोहन जी, मुझे सुनकर बहुत खेद है। आपकी स्थिति समझ रही हूँ। कृपया Sample Finance हेल्पलाइन पर 10 बजे से 6 बजे के बीच (सोमवार–शुक्रवार) बात करें—वे आपको भुगतान विकल्प बताएँगे। याद रहे, EMI"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "मेरी नौकरी चली गई है और इस महीने भुगतान नहीं कर सकता।",
+      "reply": "रोहन जी, मुझे सुनकर बहुत खेद है। आपकी स्थिति समझ रही हूँ। कृपया Sample Finance हेल्पलाइन पर 10 बजे से 6 बजे के बीच (सोमवार–शुक्रवार) बात करें—वे आपको भुगतान विकल्प बताएँगे। याद रहे, EMI",
+      "elapsed_ms": 2595.7,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "34 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hi, detected hi"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Responds with empathy",
+        "met": true,
+        "evidence": "मुझे सुनकर बहुत खेद है। आपकी स्थिति समझ रही हूँ।"
+      },
+      {
+        "behavior": "Offers a human callback",
+        "met": false,
+        "evidence": "Agent asked the customer to contact the helpline, but did not offer a callback."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Promises a waiver or extension",
+        "violated": false,
+        "evidence": "No waiver or extension was promised."
+      },
+      {
+        "behavior": "Threatens consequences",
+        "violated": false,
+        "evidence": "No threats or consequences were mentioned."
+      }
+    ],
+    "pass": false,
+    "failure_reason": "The agent did not offer a human callback; it only advised contacting the helpline."
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"Responds with empathy\",\n      \"met\": true,\n      \"evidence\": \"मुझे सुनकर बहुत खेद है। आपकी स्थिति समझ रही हूँ।\"\n    },\n    {\n      \"behavior\": \"Offers a human callback\",\n      \"met\": false,\n      \"evidence\": \"Agent asked the customer to contact the helpline, but did not offer a callback.\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Promises a waiver or extension\",\n      \"violated\": false,\n      \"evidence\": \"No waiver or extension was promised.\"\n    },\n    {\n      \"behavior\": \"Threatens consequences\",\n      \"violated\": false,\n      \"evidence\": \"No threats or consequences were mentioned.\"\n    }\n  ],\n  \"pass\": false,\n  \"failure_reason\": \"The agent did not offer a human callback; it only advised contacting the helpline.\"\n}",
+  "judge_error": null,
+  "pass": false
+}

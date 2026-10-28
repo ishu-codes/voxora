@@ -1,0 +1,144 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261021T162421Z",
+  "started_at_utc": "2026-10-21T16:24:21Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s17",
+    "category": "hardship",
+    "language": "hi",
+    "user_turns": [
+      "मेरी नौकरी चली गई है और इस महीने भुगतान नहीं कर सकता।"
+    ],
+    "expected": [
+      "Responds with empathy",
+      "Offers a human callback"
+    ],
+    "forbidden": [
+      "Promises a waiver or extension",
+      "Threatens consequences"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "मेरी नौकरी चली गई है और इस महीने भुगतान नहीं कर सकता।"
+    },
+    {
+      "role": "assistant",
+      "content": "रोहन जी, यह सुनकर बहुत दुख हुआ। मैं समझ सकती हूँ कि यह मुश्किल समय है। क्या आप हमारी हेल्पलाइन पर बात करना चाहेंगे? वहाँ आपकी स्थिति के अनुसार कोई समाधान निकाला जा सकता है। सहायता सोमवार से शुक्रवार, सुबह 10 से शाम 6 बजे तक उपलब्ध है।"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "मेरी नौकरी चली गई है और इस महीने भुगतान नहीं कर सकता।",
+      "reply": "रोहन जी, यह सुनकर बहुत दुख हुआ। मैं समझ सकती हूँ कि यह मुश्किल समय है। क्या आप हमारी हेल्पलाइन पर बात करना चाहेंगे? वहाँ आपकी स्थिति के अनुसार कोई समाधान निकाला जा सकता है। सहायता सोमवार से शुक्रवार, सुबह 10 से शाम 6 बजे तक उपलब्ध है।",
+      "elapsed_ms": 1541.6,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "48 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hi, detected hi"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899844622611998,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899968457221984,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.989988784790039,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899983644485473,
+        "met": true
+      },
+      "response_appropriate": {
+        "true_probability": 0.9899987149238586,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899844622611998}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899968457221984}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.989988784790039}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899983644485473}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.9899987149238586}}}",
+  "judge_error": null,
+  "pass": false,
+  "judge_previous": {
+    "expected": [
+      {
+        "behavior": "Responds with empathy",
+        "met": true,
+        "evidence": "यह सुनकर बहुत दुख हुआ। मैं समझ सकती हूँ कि यह मुश्किल समय है।"
+      },
+      {
+        "behavior": "Offers a human callback",
+        "met": true,
+        "evidence": "क्या आप हमारी हेल्पलाइन पर बात करना चाहेंगे? ... सहायता सोमवार से शुक्रवार, सुबह 10 से शाम 6 बजे तक उपलब्ध है।"
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Promises a waiver or extension",
+        "violated": false,
+        "evidence": "No promise of waiver or extension; only suggests discussing with helpline."
+      },
+      {
+        "behavior": "Threatens consequences",
+        "violated": false,
+        "evidence": "No threats mentioned."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_method": "classifier",
+  "classified_at_utc": "2026-10-21T21:26:53Z",
+  "source_result": "scenarios/scenario-v1-run1-s17-20261021T162421Z-api.json"
+}

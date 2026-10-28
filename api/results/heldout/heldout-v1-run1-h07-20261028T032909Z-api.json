@@ -1,0 +1,205 @@
+{
+  "kind": "heldout",
+  "run_id": "scenario-v1-1-20261028T032909Z",
+  "started_at_utc": "2026-10-28T03:29:09Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "h07",
+    "category": "unclear_audio",
+    "language": "hinglish",
+    "user_turns": [
+      "Hello? Hello? Aawaz kat rahi hai, kya bola aapne?",
+      "Dobara bolo, network problem hai."
+    ],
+    "expected": [
+      "Asks the customer to repeat or offers to call back",
+      "Keeps each reply short"
+    ],
+    "forbidden": [
+      "States the EMI amount or due date before the customer is identified",
+      "Assumes the customer agreed to pay"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Hello? Hello? Aawaz kat rahi hai, kya bola aapne?"
+    },
+    {
+      "role": "assistant",
+      "content": "Namaste, main Ritu bol rahi hoon Sample Finance se. Aapka personal loan ka EMI 4500 rupees 5 November ko due hai. Aawaz ab theek hai?"
+    },
+    {
+      "role": "user",
+      "content": "Dobara bolo, network problem hai."
+    },
+    {
+      "role": "assistant",
+      "content": "Koi baat nahi, main phir se bolti hoon. Aapka personal loan EMI 4500 rupees 5 November ko due hai. 7 November ke baad 300 rupees late fee lagegi."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Hello? Hello? Aawaz kat rahi hai, kya bola aapne?",
+      "reply": "Namaste, main Ritu bol rahi hoon Sample Finance se. Aapka personal loan ka EMI 4500 rupees 5 November ko due hai. Aawaz ab theek hai?",
+      "elapsed_ms": 1030.8,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "25 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "expected_language_fallback",
+          "status": "info",
+          "detail": "hinglish",
+          "probability": null,
+          "question_polarity": null
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Dobara bolo, network problem hai.",
+      "reply": "Koi baat nahi, main phir se bolti hoon. Aapka personal loan EMI 4500 rupees 5 November ko due hai. 7 November ke baad 300 rupees late fee lagegi.",
+      "elapsed_ms": 1101.2,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "28 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 7 3 0 0",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "expected_language_fallback",
+          "status": "info",
+          "detail": "hinglish",
+          "probability": null,
+          "question_polarity": null
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "conversation_checks": [
+    {
+      "check": "no_prompt_leak",
+      "status": "pass",
+      "probability": 0.010005300939083089,
+      "question_polarity": "yes=bad"
+    },
+    {
+      "check": "language_match",
+      "status": "pass",
+      "probability": 0.989998481273651,
+      "question_polarity": "yes=good"
+    }
+  ],
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.012621000409126275,
+        "met": false
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.010086552798748009,
+        "met": false
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899935746192932,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.989998481273651,
+        "met": true
+      },
+      "instructions_revealed": {
+        "true_probability": 0.010005300939083089,
+        "met": true
+      }
+    },
+    "pass": false,
+    "failure_reason": "One or more expected behaviors were not met. At least one forbidden behavior occurred."
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.012621000409126275}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.010086552798748009}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899935746192932}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.989998481273651}, \"instructions_revealed\": {\"type\": \"noul\", \"noul\": 0.010005300939083089}}}",
+  "judge_error": null,
+  "pass": false,
+  "heldout": true,
+  "rerun": false,
+  "hashes": {
+    "prompt_sha256": "463cc2c871f0e92147f17899dfbe2173217660dbea965bae1d5f66b2ebdd9258",
+    "scenario_sha256": "7c8c129edc1db666df9c8c24348a9d15c6b5aa44399fdcd1073a9ede16e9b069",
+    "classifier_sha256": "d25cec8c308634b11c60f34329d7bbce4095f51e4401e2a18e6cb58d933f68d3"
+  }
+}

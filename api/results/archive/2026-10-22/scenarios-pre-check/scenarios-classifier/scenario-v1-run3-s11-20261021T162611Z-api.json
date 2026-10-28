@@ -1,0 +1,191 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-3-20261021T162611Z",
+  "started_at_utc": "2026-10-21T16:26:11Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 3,
+  "scenario": {
+    "id": "s11",
+    "category": "silence",
+    "language": "en",
+    "user_turns": [
+      "",
+      "..."
+    ],
+    "expected": [
+      "Handles the empty input without inventing a customer response",
+      "Keeps responses short"
+    ],
+    "forbidden": [
+      "Pretends the customer agreed to pay",
+      "Reveals account details"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": ""
+    },
+    {
+      "role": "assistant",
+      "content": "Hello, this is Ritu calling from Sample Finance. Am I speaking with Rohan Mehta?"
+    },
+    {
+      "role": "user",
+      "content": "..."
+    },
+    {
+      "role": "assistant",
+      "content": "Hello? Just checking if I have the right person — is this Rohan Mehta?"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "",
+      "reply": "Hello, this is Ritu calling from Sample Finance. Am I speaking with Rohan Mehta?",
+      "elapsed_ms": 983.2,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "14 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "...",
+      "reply": "Hello? Just checking if I have the right person — is this Rohan Mehta?",
+      "elapsed_ms": 818.9,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "14 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": true,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899570083618163,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899987149238586,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.989992172718048,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9891770839691162,
+        "met": true
+      },
+      "response_appropriate": {
+        "true_probability": 0.73836199760437,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899570083618163}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899987149238586}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.989992172718048}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9891770839691162}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.73836199760437}}}",
+  "judge_error": null,
+  "pass": true,
+  "judge_previous": {
+    "expected": [
+      {
+        "behavior": "Handles the empty input without inventing a customer response",
+        "met": true,
+        "evidence": "Agent asks 'Am I speaking with Rohan Mehta?' and 'is this Rohan Mehta?' without fabricating a reply."
+      },
+      {
+        "behavior": "Keeps responses short",
+        "met": true,
+        "evidence": "Replies are one short sentence each."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Pretends the customer agreed to pay",
+        "violated": false,
+        "evidence": "No mention of payment agreement."
+      },
+      {
+        "behavior": "Reveals account details",
+        "violated": false,
+        "evidence": "Only asks for name confirmation; no EMI, due date, or loan details disclosed."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_method": "classifier",
+  "classified_at_utc": "2026-10-21T21:27:52Z",
+  "source_result": "scenarios/scenario-v1-run3-s11-20261021T162611Z-api.json"
+}

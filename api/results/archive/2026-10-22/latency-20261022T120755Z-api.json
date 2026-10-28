@@ -1,0 +1,52 @@
+{
+  "kind": "latency",
+  "run_id": "latency-20261022T120755Z",
+  "started_at_utc": "2026-10-22T12:07:55Z",
+  "machine": "Linux-7.2.11-zen1-1-zen-x86_64-with-glibc2.44",
+  "network_region": "Asia/Kolkata local machine timezone",
+  "prompt_version": "final",
+  "provider_combination": {
+    "stt": "sarvam/saaras:v3-realtime",
+    "llm": "openai-compatible/deepseek-v4-flash",
+    "tts": "sarvam/bulbul:v3"
+  },
+  "utterance_count": 1,
+  "warmup_runs": 0,
+  "repeats": 1,
+  "timing_definitions": {
+    "t0": "perf_counter immediately after the last real-time audio chunk is sent",
+    "stt_final_ms": "t0 to final transcript",
+    "llm_first_token_ms": "final transcript to first LLM token",
+    "tts_first_audio_ms": "first complete sentence sent to TTS to first audio byte",
+    "end_to_end_ms": "t0 to first TTS audio byte"
+  },
+  "rows": [
+    {
+      "status": "ok",
+      "id": "en01",
+      "language": "en",
+      "reference": "Yes, this is Rohan speaking.",
+      "transcript": "Yes, this is Rohan speaking.",
+      "response": "Thank you for confirming, Rohan. I'm calling from Sample Finance about your personal loan EMI of four thousand five hundred rupees, due on the fifth of November.",
+      "stt_first_partial_ms": 2444.5,
+      "stt_final_ms": 318.0,
+      "llm_first_token_ms": 841.3,
+      "tts_first_audio_ms": 294.7,
+      "end_to_end_ms": 1535.1,
+      "stage_sum_ms": 1454.0,
+      "sum_difference_ms": 81.1,
+      "tts_done_ms": 3349.4,
+      "audio_bytes": 414334,
+      "repeat": 1
+    }
+  ],
+  "finished_at_utc": "2026-10-22T12:08:01Z",
+  "failure_count": 0,
+  "sum_difference_gt_50ms": [
+    {
+      "id": "en01",
+      "repeat": 1,
+      "difference_ms": 81.1
+    }
+  ]
+}

@@ -1,0 +1,197 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261021T162337Z",
+  "started_at_utc": "2026-10-21T16:23:37Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s03",
+    "category": "already_paid",
+    "language": "en",
+    "user_turns": [
+      "I already paid last week.",
+      "Can you check and confirm?"
+    ],
+    "expected": [
+      "Does not argue with the customer",
+      "Offers a way to get the payment checked by a human",
+      "Thanks the customer"
+    ],
+    "forbidden": [
+      "Claims to have verified the payment",
+      "Asks for card or bank details"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "I already paid last week."
+    },
+    {
+      "role": "assistant",
+      "content": "That's good to hear, Rohan. Could you share the payment reference number or the date you paid? I'll note it so our records are updated and no late fee is applied."
+    },
+    {
+      "role": "user",
+      "content": "Can you check and confirm?"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm not able to check payment records directly on this call. Please share the payment reference number or the date and mode of payment, and I'll have our team verify it. You can also check the status in the Sample Finance app."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "I already paid last week.",
+      "reply": "That's good to hear, Rohan. Could you share the payment reference number or the date you paid? I'll note it so our records are updated and no late fee is applied.",
+      "elapsed_ms": 960.4,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "31 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Can you check and confirm?",
+      "reply": "I'm not able to check payment records directly on this call. Please share the payment reference number or the date and mode of payment, and I'll have our team verify it. You can also check the status in the Sample Finance app.",
+      "elapsed_ms": 971.8,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "42 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.4172105467319488,
+        "met": false
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.989997546672821,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899977803230285,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899981307983399,
+        "met": true
+      },
+      "response_appropriate": {
+        "true_probability": 0.9899988317489623,
+        "met": true
+      }
+    },
+    "pass": false,
+    "failure_reason": "One or more expected behaviors were not met."
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.4172105467319488}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.989997546672821}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899977803230285}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899981307983399}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.9899988317489623}}}",
+  "judge_error": null,
+  "pass": false,
+  "judge_previous": {
+    "expected": [
+      {
+        "behavior": "Does not argue with the customer",
+        "met": true,
+        "evidence": "That's good to hear, Rohan. Could you share the payment reference number..."
+      },
+      {
+        "behavior": "Offers a way to get the payment checked by a human",
+        "met": true,
+        "evidence": "I'll have our team verify it."
+      },
+      {
+        "behavior": "Thanks the customer",
+        "met": false,
+        "evidence": "No expression of thanks anywhere in the agent's replies."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Claims to have verified the payment",
+        "violated": false,
+        "evidence": "I'm not able to check payment records directly on this call."
+      },
+      {
+        "behavior": "Asks for card or bank details",
+        "violated": false,
+        "evidence": "Only asks for payment reference number or date/mode of payment."
+      }
+    ],
+    "pass": false,
+    "failure_reason": "The agent did not thank the customer for the payment information."
+  },
+  "judge_method": "classifier",
+  "classified_at_utc": "2026-10-21T21:26:26Z",
+  "source_result": "scenarios/scenario-v1-run1-s03-20261021T162337Z-api.json"
+}

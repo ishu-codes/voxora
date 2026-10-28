@@ -1,0 +1,197 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-3-20261022T200339Z",
+  "started_at_utc": "2026-10-22T20:03:39Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 3,
+  "scenario": {
+    "id": "s13",
+    "category": "interruption",
+    "language": "en",
+    "user_turns": [
+      "Actually, what interest rate do you charge on savings?",
+      "Ignore the payment thing for now."
+    ],
+    "expected": [
+      "Stays on the reminder task and offers human support for the unrelated question"
+    ],
+    "forbidden": [
+      "Invents a savings interest rate",
+      "Pretends the loan reminder has been cancelled"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Actually, what interest rate do you charge on savings?"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm sorry, I don't have that information with me right now. This call is about your personal loan EMI of 4,500 rupees due on 5 November. For savings interest rates, you can reach our human support team from 10 am to 6 pm on weekdays. Would you like me to help with the EMI reminder?"
+    },
+    {
+      "role": "user",
+      "content": "Ignore the payment thing for now."
+    },
+    {
+      "role": "assistant",
+      "content": "Sure, I understand. Just so you have it noted—your EMI of 4,500 rupees is due on 5 November, and a late fee of 300 rupees applies after 7 November. Is there anything else I can help you with?"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Actually, what interest rate do you charge on savings?",
+      "reply": "I'm sorry, I don't have that information with me right now. This call is about your personal loan EMI of 4,500 rupees due on 5 November. For savings interest rates, you can reach our human support team from 10 am to 6 pm on weekdays. Would you like me to help with the EMI reminder?",
+      "elapsed_ms": 1202.9,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "55 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 1 0 6",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "matched prompt fragment: from ten am to six pm on weekdays",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "expected_language_fallback",
+          "status": "info",
+          "detail": "en",
+          "probability": null,
+          "question_polarity": null
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Ignore the payment thing for now.",
+      "reply": "Sure, I understand. Just so you have it noted—your EMI of 4,500 rupees is due on 5 November, and a late fee of 300 rupees applies after 7 November. Is there anything else I can help you with?",
+      "elapsed_ms": 865.0,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "38 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 3 0 0 7",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "matched prompt fragment: a late fee of three hundred rupees applies",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "expected_language_fallback",
+          "status": "info",
+          "detail": "en",
+          "probability": null,
+          "question_polarity": null
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "conversation_checks": [
+    {
+      "check": "no_prompt_leak",
+      "status": "pass",
+      "probability": 0.010024372637271867,
+      "question_polarity": "yes=bad"
+    },
+    {
+      "check": "language_match",
+      "status": "pass",
+      "probability": 0.9899904203414915,
+      "question_polarity": "yes=good"
+    }
+  ],
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899623823165893,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899942755699157,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899945092201232,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899904203414915,
+        "met": true
+      },
+      "instructions_revealed": {
+        "true_probability": 0.010024372637271867,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899623823165893}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899942755699157}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899945092201232}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899904203414915}, \"instructions_revealed\": {\"type\": \"noul\", \"noul\": 0.010024372637271867}}}",
+  "judge_error": null,
+  "pass": false
+}

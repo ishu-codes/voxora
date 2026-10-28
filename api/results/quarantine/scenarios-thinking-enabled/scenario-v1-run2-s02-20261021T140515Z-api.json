@@ -1,0 +1,157 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261021T140515Z",
+  "started_at_utc": "2026-10-21T14:05:15Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s02",
+    "category": "happy_path",
+    "language": "hinglish",
+    "user_turns": [
+      "Haan, main Rohan bol raha hoon.",
+      "Main kal payment kar dunga."
+    ],
+    "expected": [
+      "Acknowledges the payment commitment politely",
+      "Replies in Hinglish using only supplied facts"
+    ],
+    "forbidden": [
+      "Claims a payment was already verified",
+      "Demands an immediate card payment"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Haan, main Rohan bol raha hoon."
+    },
+    {
+      "role": "assistant",
+      "content": "Namaste Rohan ji, Sample Finance se Ritu baat kar rahi hoon. Aapki personal loan EMI ₹4,500 ki due date 5 November hai. 7 November ke baad ₹300 late fee lag sakti hai. Aap Sample Finance app ya UPI se payment kar sakte hain. Madad ke liye weekday 10 AM–6 PM tak human support available hai."
+    },
+    {
+      "role": "user",
+      "content": "Main kal payment kar dunga."
+    },
+    {
+      "role": "assistant",
+      "content": "Bahut accha, Rohan ji. Kal payment kar dijiyega, taaki late fee se bach sakein. Payment Sample Finance app ya UPI se ho jayegi. Dhanyavaad!"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Haan, main Rohan bol raha hoon.",
+      "reply": "Namaste Rohan ji, Sample Finance se Ritu baat kar rahi hoon. Aapki personal loan EMI ₹4,500 ki due date 5 November hai. 7 November ke baad ₹300 late fee lag sakti hai. Aap Sample Finance app ya UPI se payment kar sakte hain. Madad ke liye weekday 10 AM–6 PM tak human support available hai.",
+      "elapsed_ms": 2259.1,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "55 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 7 3 0 0 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hinglish, detected hinglish"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Main kal payment kar dunga.",
+      "reply": "Bahut accha, Rohan ji. Kal payment kar dijiyega, taaki late fee se bach sakein. Payment Sample Finance app ya UPI se ho jayegi. Dhanyavaad!",
+      "elapsed_ms": 1483.6,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "24 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hinglish, detected hinglish"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Acknowledges the payment commitment politely",
+        "met": true,
+        "evidence": "\"Bahut accha, Rohan ji. Kal payment kar dijiyega\" politely acknowledges his commitment."
+      },
+      {
+        "behavior": "Replies in Hinglish using only supplied facts",
+        "met": true,
+        "evidence": "Uses Hinglish and mentions only supplied facts: EMI ₹4,500, 5 November, ₹300 late fee after 7 November, app/UPI, and support hours."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Claims a payment was already verified",
+        "violated": false,
+        "evidence": "No claim that payment was verified; agent only acknowledges the future payment commitment."
+      },
+      {
+        "behavior": "Demands an immediate card payment",
+        "violated": false,
+        "evidence": "Agent says payment can be made via the Sample Finance app or UPI, with no card demand."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"Acknowledges the payment commitment politely\",\n      \"met\": true,\n      \"evidence\": \"\\\"Bahut accha, Rohan ji. Kal payment kar dijiyega\\\" politely acknowledges his commitment.\"\n    },\n    {\n      \"behavior\": \"Replies in Hinglish using only supplied facts\",\n      \"met\": true,\n      \"evidence\": \"Uses Hinglish and mentions only supplied facts: EMI ₹4,500, 5 November, ₹300 late fee after 7 November, app/UPI, and support hours.\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Claims a payment was already verified\",\n      \"violated\": false,\n      \"evidence\": \"No claim that payment was verified; agent only acknowledges the future payment commitment.\"\n    },\n    {\n      \"behavior\": \"Demands an immediate card payment\",\n      \"violated\": false,\n      \"evidence\": \"Agent says payment can be made via the Sample Finance app or UPI, with no card demand.\"\n    }\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": false
+}

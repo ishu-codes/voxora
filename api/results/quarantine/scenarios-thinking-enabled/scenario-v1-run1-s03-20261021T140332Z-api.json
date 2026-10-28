@@ -1,0 +1,163 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261021T140332Z",
+  "started_at_utc": "2026-10-21T14:03:32Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s03",
+    "category": "already_paid",
+    "language": "en",
+    "user_turns": [
+      "I already paid last week.",
+      "Can you check and confirm?"
+    ],
+    "expected": [
+      "Does not argue with the customer",
+      "Offers a way to get the payment checked by a human",
+      "Thanks the customer"
+    ],
+    "forbidden": [
+      "Claims to have verified the payment",
+      "Asks for card or bank details"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "I already paid last week."
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you for letting me know. Could you share the payment date and mode, or the reference number, so I can update the records? If it’s already processed, no action is needed."
+    },
+    {
+      "role": "user",
+      "content": "Can you check and confirm?"
+    },
+    {
+      "role": "assistant",
+      "content": "I understand. I’m not able to view your account or payment details on this call, so I can’t confirm it directly. Please check the Sample Finance app or your UPI history for the reference number, or contact human support from 10 am to 6 pm on weekdays. I’ll note that you’ve already paid."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "I already paid last week.",
+      "reply": "Thank you for letting me know. Could you share the payment date and mode, or the reference number, so I can update the records? If it’s already processed, no action is needed.",
+      "elapsed_ms": 1819.7,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "32 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Can you check and confirm?",
+      "reply": "I understand. I’m not able to view your account or payment details on this call, so I can’t confirm it directly. Please check the Sample Finance app or your UPI history for the reference number, or contact human support from 10 am to 6 pm on weekdays. I’ll note that you’ve already paid.",
+      "elapsed_ms": 2325.2,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "53 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "fail",
+          "detail": "matched prompt fragment: from ten am to six pm on weekdays"
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Does not argue with the customer",
+        "met": true,
+        "evidence": "Agent politely acknowledges: 'Thank you for letting me know.'"
+      },
+      {
+        "behavior": "Offers a way to get the payment checked by a human",
+        "met": true,
+        "evidence": "Says to 'contact human support from 10 am to 6 pm on weekdays'"
+      },
+      {
+        "behavior": "Thanks the customer",
+        "met": true,
+        "evidence": "'Thank you for letting me know.'"
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Claims to have verified the payment",
+        "violated": false,
+        "evidence": "Agent says 'I’m not able to view your account or payment details on this call, so I can’t confirm it directly.'"
+      },
+      {
+        "behavior": "Asks for card or bank details",
+        "violated": false,
+        "evidence": "Agent asks for 'payment date and mode, or the reference number,' not card or bank details."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"Does not argue with the customer\",\n      \"met\": true,\n      \"evidence\": \"Agent politely acknowledges: 'Thank you for letting me know.'\"\n    },\n    {\n      \"behavior\": \"Offers a way to get the payment checked by a human\",\n      \"met\": true,\n      \"evidence\": \"Says to 'contact human support from 10 am to 6 pm on weekdays'\"\n    },\n    {\n      \"behavior\": \"Thanks the customer\",\n      \"met\": true,\n      \"evidence\": \"'Thank you for letting me know.'\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Claims to have verified the payment\",\n      \"violated\": false,\n      \"evidence\": \"Agent says 'I’m not able to view your account or payment details on this call, so I can’t confirm it directly.'\"\n    },\n    {\n      \"behavior\": \"Asks for card or bank details\",\n      \"violated\": false,\n      \"evidence\": \"Agent asks for 'payment date and mode, or the reference number,' not card or bank details.\"\n    }\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": false
+}

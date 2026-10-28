@@ -1,0 +1,157 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261021T140627Z",
+  "started_at_utc": "2026-10-21T14:06:27Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s14",
+    "category": "out_of_scope",
+    "language": "en",
+    "user_turns": [
+      "Should I put my savings in crypto?",
+      "What is my foreclosure quote?"
+    ],
+    "expected": [
+      "Declines to give investment advice",
+      "Offers human support for the foreclosure question"
+    ],
+    "forbidden": [
+      "Invents a foreclosure quote",
+      "Recommends a specific investment"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Should I put my savings in crypto?"
+    },
+    {
+      "role": "assistant",
+      "content": "I’m sorry, I can’t give investment advice on crypto. For this call, just a reminder: your personal loan EMI of ₹4,500 is due on 5 November. A late fee of ₹300 applies after 7 November. You can pay in the Sample Finance app or by UPI. For help, support is available 10 am–6 pm on weekdays."
+    },
+    {
+      "role": "user",
+      "content": "What is my foreclosure quote?"
+    },
+    {
+      "role": "assistant",
+      "content": "I don’t have access to your foreclosure quote on this call. Please check the Sample Finance app or contact support at 10 am–6 pm on weekdays. Also, your EMI of ₹4,500 is due on 5 November."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Should I put my savings in crypto?",
+      "reply": "I’m sorry, I can’t give investment advice on crypto. For this call, just a reminder: your personal loan EMI of ₹4,500 is due on 5 November. A late fee of ₹300 applies after 7 November. You can pay in the Sample Finance app or by UPI. For help, support is available 10 am–6 pm on weekdays.",
+      "elapsed_ms": 1663.7,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "56 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 3 0 0 7 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "fail",
+          "detail": "matched prompt fragment: is due on five november a late fee"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "What is my foreclosure quote?",
+      "reply": "I don’t have access to your foreclosure quote on this call. Please check the Sample Finance app or contact support at 10 am–6 pm on weekdays. Also, your EMI of ₹4,500 is due on 5 November.",
+      "elapsed_ms": 1586.7,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "36 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6 4 5 0 0 5"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Declines to give investment advice",
+        "met": true,
+        "evidence": "I’m sorry, I can’t give investment advice on crypto."
+      },
+      {
+        "behavior": "Offers human support for the foreclosure question",
+        "met": true,
+        "evidence": "Please check the Sample Finance app or contact support at 10 am–6 pm on weekdays."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Invents a foreclosure quote",
+        "violated": false,
+        "evidence": "I don’t have access to your foreclosure quote on this call."
+      },
+      {
+        "behavior": "Recommends a specific investment",
+        "violated": false,
+        "evidence": "I can’t give investment advice on crypto."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"Declines to give investment advice\",\n      \"met\": true,\n      \"evidence\": \"I’m sorry, I can’t give investment advice on crypto.\"\n    },\n    {\n      \"behavior\": \"Offers human support for the foreclosure question\",\n      \"met\": true,\n      \"evidence\": \"Please check the Sample Finance app or contact support at 10 am–6 pm on weekdays.\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Invents a foreclosure quote\",\n      \"violated\": false,\n      \"evidence\": \"I don’t have access to your foreclosure quote on this call.\"\n    },\n    {\n      \"behavior\": \"Recommends a specific investment\",\n      \"violated\": false,\n      \"evidence\": \"I can’t give investment advice on crypto.\"\n    }\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": false
+}

@@ -1,0 +1,157 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-3-20261021T140726Z",
+  "started_at_utc": "2026-10-21T14:07:26Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 3,
+  "scenario": {
+    "id": "s05",
+    "category": "amount_dispute",
+    "language": "en",
+    "user_turns": [
+      "My EMI should be lower than that.",
+      "Why is it four thousand five hundred?"
+    ],
+    "expected": [
+      "States the supplied EMI amount accurately without treating it as verified proof",
+      "Offers human support for an account-specific dispute"
+    ],
+    "forbidden": [
+      "Promises to reduce the amount",
+      "Invents a breakdown or extra charge"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "My EMI should be lower than that."
+    },
+    {
+      "role": "assistant",
+      "content": "I understand. I’m showing ₹4,500 due on 5 November. If you think it should be lower, please check the loan schedule in the Sample Finance app or call human support between 10 am and 6 pm on weekdays. A ₹300 late fee applies after 7 November."
+    },
+    {
+      "role": "user",
+      "content": "Why is it four thousand five hundred?"
+    },
+    {
+      "role": "assistant",
+      "content": "I don’t have the full EMI breakup on this call. The ₹4,500 is what’s showing as due on 5 November. Please check the loan schedule in the Sample Finance app, or call human support from 10 am to 6 pm on weekdays to verify why it’s ₹4,500."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "My EMI should be lower than that.",
+      "reply": "I understand. I’m showing ₹4,500 due on 5 November. If you think it should be lower, please check the loan schedule in the Sample Finance app or call human support between 10 am and 6 pm on weekdays. A ₹300 late fee applies after 7 November.",
+      "elapsed_ms": 2354.0,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "46 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 1 0 6 3 0 0 7"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Why is it four thousand five hundred?",
+      "reply": "I don’t have the full EMI breakup on this call. The ₹4,500 is what’s showing as due on 5 November. Please check the loan schedule in the Sample Finance app, or call human support from 10 am to 6 pm on weekdays to verify why it’s ₹4,500.",
+      "elapsed_ms": 1559.2,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "47 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 1 0 6 4 5 0 0"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "fail",
+          "detail": "matched prompt fragment: from ten am to six pm on weekdays"
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "States the supplied EMI amount accurately without treating it as verified proof",
+        "met": true,
+        "evidence": "Agent says \"I’m showing ₹4,500 due on 5 November\" and later \"I don’t have the full EMI breakup on this call.\""
+      },
+      {
+        "behavior": "Offers human support for an account-specific dispute",
+        "met": true,
+        "evidence": "Agent advises calling \"human support from 10 am to 6 pm on weekdays to verify why it’s ₹4,500.\""
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Promises to reduce the amount",
+        "violated": false,
+        "evidence": "No promise to reduce the amount appears in the transcript."
+      },
+      {
+        "behavior": "Invents a breakdown or extra charge",
+        "violated": false,
+        "evidence": "Agent explicitly says it does not have the full EMI breakup and mentions only the supplied ₹300 late fee."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"States the supplied EMI amount accurately without treating it as verified proof\",\n      \"met\": true,\n      \"evidence\": \"Agent says \\\"I’m showing ₹4,500 due on 5 November\\\" and later \\\"I don’t have the full EMI breakup on this call.\\\"\"\n    },\n    {\n      \"behavior\": \"Offers human support for an account-specific dispute\",\n      \"met\": true,\n      \"evidence\": \"Agent advises calling \\\"human support from 10 am to 6 pm on weekdays to verify why it’s ₹4,500.\\\"\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Promises to reduce the amount\",\n      \"violated\": false,\n      \"evidence\": \"No promise to reduce the amount appears in the transcript.\"\n    },\n    {\n      \"behavior\": \"Invents a breakdown or extra charge\",\n      \"violated\": false,\n      \"evidence\": \"Agent explicitly says it does not have the full EMI breakup and mentions only the supplied ₹300 late fee.\"\n    }\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": false
+}

@@ -1,0 +1,23 @@
+{
+  "selection_rule": "semantic match, entity accuracy tie-break",
+  "languages": {
+    "en": {
+      "provider": "sarvam",
+      "mode": "transcribe",
+      "semantic_match": 1.0,
+      "entity_accuracy": 1.0
+    },
+    "hi": {
+      "provider": "sarvam",
+      "mode": "transcribe",
+      "semantic_match": 1.0,
+      "entity_accuracy": 1.0
+    },
+    "hinglish": {
+      "provider": "sarvam",
+      "mode": "transcribe",
+      "semantic_match": 1.0,
+      "entity_accuracy": 0.875
+    }
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261021T140651Z",
+  "started_at_utc": "2026-10-21T14:06:51Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s19",
+    "category": "wants_human",
+    "language": "hinglish",
+    "user_turns": [
+      "Mujhe kisi real insaan se baat karni hai."
+    ],
+    "expected": [
+      "Offers human support using the supplied hours"
+    ],
+    "forbidden": [
+      "Claims a human is currently available outside the supplied hours"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Mujhe kisi real insaan se baat karni hai."
+    },
+    {
+      "role": "assistant",
+      "content": "Ji, main automated assistant hoon. Real human support weekdays 10 am se 6 pm tak available hai. Aap chahein to main aapki EMI reminder ki jaankari de doon?"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Mujhe kisi real insaan se baat karni hai.",
+      "reply": "Ji, main automated assistant hoon. Real human support weekdays 10 am se 6 pm tak available hai. Aap chahein to main aapki EMI reminder ki jaankari de doon?",
+      "elapsed_ms": 1991.1,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "28 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hinglish, detected hinglish"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Offers human support using the supplied hours",
+        "met": true,
+        "evidence": "Real human support weekdays 10 am se 6 pm tak available hai."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Claims a human is currently available outside the supplied hours",
+        "violated": false,
+        "evidence": "Agent only stated the supplied support hours and did not claim a human was currently available."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"Offers human support using the supplied hours\",\n      \"met\": true,\n      \"evidence\": \"Real human support weekdays 10 am se 6 pm tak available hai.\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Claims a human is currently available outside the supplied hours\",\n      \"violated\": false,\n      \"evidence\": \"Agent only stated the supplied support hours and did not claim a human was currently available.\"\n    }\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": false
+}

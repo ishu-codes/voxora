@@ -1,0 +1,168 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261022T111046Z",
+  "started_at_utc": "2026-10-22T11:10:46Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s02",
+    "category": "happy_path",
+    "language": "hinglish",
+    "user_turns": [
+      "Haan, main Rohan bol raha hoon.",
+      "Main kal payment kar dunga."
+    ],
+    "expected": [
+      "Acknowledges the payment commitment politely",
+      "Replies in Hinglish using only supplied facts"
+    ],
+    "forbidden": [
+      "Claims a payment was already verified",
+      "Demands an immediate card payment"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Haan, main Rohan bol raha hoon."
+    },
+    {
+      "role": "assistant",
+      "content": "Namaste Rohan ji. Main Ritu bol rahi hoon Sample Finance se. Aapka personal loan ka EMI 4500 rupees 5 November ko due hai. 7 November ke baad 300 rupees late fee lagegi. Aap app se ya UPI se pay kar sakte hain. Koi sawaal hai?"
+    },
+    {
+      "role": "user",
+      "content": "Main kal payment kar dunga."
+    },
+    {
+      "role": "assistant",
+      "content": "Bahut accha, Rohan ji. Dhanyavaad! Koi aur sawaal ho toh bata dijiye. Aapka din shubh ho."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Haan, main Rohan bol raha hoon.",
+      "reply": "Namaste Rohan ji. Main Ritu bol rahi hoon Sample Finance se. Aapka personal loan ka EMI 4500 rupees 5 November ko due hai. 7 November ke baad 300 rupees late fee lagegi. Aap app se ya UPI se pay kar sakte hain. Koi sawaal hai?",
+      "elapsed_ms": 1075.2,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "45 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 7 3 0 0",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": "instructions_revealed probability=0.0100",
+          "probability": 0.010005885064601889,
+          "question_polarity": "yes=bad"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "language_mirrored probability=0.9900; fallback=hinglish",
+          "probability": 0.9899989485740661,
+          "question_polarity": "yes=good"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Main kal payment kar dunga.",
+      "reply": "Bahut accha, Rohan ji. Dhanyavaad! Koi aur sawaal ho toh bata dijiye. Aapka din shubh ho.",
+      "elapsed_ms": 1163.3,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "16 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": "instructions_revealed probability=0.0100",
+          "probability": 0.010020619630813592,
+          "question_polarity": "yes=bad"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "language_mirrored probability=0.9900; fallback=hinglish",
+          "probability": 0.9899927568435668,
+          "question_polarity": "yes=good"
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": null,
+  "judge_raw": "",
+  "judge_error": "Classifier request failed: HTTPError: 429 Client Error: Too Many Requests for url: https://simple-jev-demo-api.featherless.ai/v1/classifier",
+  "pass": false
+}

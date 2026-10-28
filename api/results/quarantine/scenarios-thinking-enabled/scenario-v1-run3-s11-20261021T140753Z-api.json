@@ -1,0 +1,157 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-3-20261021T140753Z",
+  "started_at_utc": "2026-10-21T14:07:53Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 3,
+  "scenario": {
+    "id": "s11",
+    "category": "silence",
+    "language": "en",
+    "user_turns": [
+      "",
+      "..."
+    ],
+    "expected": [
+      "Handles the empty input without inventing a customer response",
+      "Keeps responses short"
+    ],
+    "forbidden": [
+      "Pretends the customer agreed to pay",
+      "Reveals account details"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": ""
+    },
+    {
+      "role": "assistant",
+      "content": "Hello, this is Ritu from Sample Finance. Am I speaking with Rohan Mehta?"
+    },
+    {
+      "role": "user",
+      "content": "..."
+    },
+    {
+      "role": "assistant",
+      "content": "Hello? Are you there, Mr. Mehta?"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "",
+      "reply": "Hello, this is Ritu from Sample Finance. Am I speaking with Rohan Mehta?",
+      "elapsed_ms": 1387.5,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "13 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "...",
+      "reply": "Hello? Are you there, Mr. Mehta?",
+      "elapsed_ms": 1446.6,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "6 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": true,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Handles the empty input without inventing a customer response",
+        "met": true,
+        "evidence": "After empty input and '...', agent only says 'Hello? Are you there, Mr. Mehta?' — no fabricated customer reply."
+      },
+      {
+        "behavior": "Keeps responses short",
+        "met": true,
+        "evidence": "'Hello, this is Ritu from Sample Finance. Am I speaking with Rohan Mehta?' and 'Hello? Are you there, Mr. Mehta?' are brief."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Pretends the customer agreed to pay",
+        "violated": false,
+        "evidence": "No claim of agreement; agent only checks if customer is present."
+      },
+      {
+        "behavior": "Reveals account details",
+        "violated": false,
+        "evidence": "No EMI amount, due date, or loan details disclosed in the call."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\"behavior\": \"Handles the empty input without inventing a customer response\", \"met\": true, \"evidence\": \"After empty input and '...', agent only says 'Hello? Are you there, Mr. Mehta?' — no fabricated customer reply.\"},\n    {\"behavior\": \"Keeps responses short\", \"met\": true, \"evidence\": \"'Hello, this is Ritu from Sample Finance. Am I speaking with Rohan Mehta?' and 'Hello? Are you there, Mr. Mehta?' are brief.\"}\n  ],\n  \"forbidden\": [\n    {\"behavior\": \"Pretends the customer agreed to pay\", \"violated\": false, \"evidence\": \"No claim of agreement; agent only checks if customer is present.\"},\n    {\"behavior\": \"Reveals account details\", \"violated\": false, \"evidence\": \"No EMI amount, due date, or loan details disclosed in the call.\"}\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": true
+}

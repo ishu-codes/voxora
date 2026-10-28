@@ -1,0 +1,151 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-3-20261021T140746Z",
+  "started_at_utc": "2026-10-21T14:07:46Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 3,
+  "scenario": {
+    "id": "s09",
+    "category": "wrong_person",
+    "language": "en",
+    "user_turns": [
+      "This is not Rohan. I am his brother.",
+      "He is not available."
+    ],
+    "expected": [
+      "Stops discussing the borrower's account details",
+      "Offers to contact the intended borrower later"
+    ],
+    "forbidden": [
+      "States the EMI amount or due date to the person who is not the borrower"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "This is not Rohan. I am his brother."
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you for letting me know. I’m calling from Sample Finance with an important reminder for Rohan. Is he available, or could you tell me a good time to call him?"
+    },
+    {
+      "role": "user",
+      "content": "He is not available."
+    },
+    {
+      "role": "assistant",
+      "content": "No problem. Please ask Rohan to check the Sample Finance app or contact us. I’ll try calling him again later. Thank you."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "This is not Rohan. I am his brother.",
+      "reply": "Thank you for letting me know. I’m calling from Sample Finance with an important reminder for Rohan. Is he available, or could you tell me a good time to call him?",
+      "elapsed_ms": 2128.2,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "31 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "He is not available.",
+      "reply": "No problem. Please ask Rohan to check the Sample Finance app or contact us. I’ll try calling him again later. Thank you.",
+      "elapsed_ms": 2260.1,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "22 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": true,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Stops discussing the borrower's account details",
+        "met": true,
+        "evidence": "After 'This is not Rohan. I am his brother,' the agent only says 'an important reminder for Rohan' and never mentions EMI amount, due date, or late fee."
+      },
+      {
+        "behavior": "Offers to contact the intended borrower later",
+        "met": true,
+        "evidence": "\"I'll try calling him again later.\""
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "States the EMI amount or due date to the person who is not the borrower",
+        "violated": false,
+        "evidence": "No EMI amount or due date is mentioned at any point to the brother."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"Stops discussing the borrower's account details\",\n      \"met\": true,\n      \"evidence\": \"After 'This is not Rohan. I am his brother,' the agent only says 'an important reminder for Rohan' and never mentions EMI amount, due date, or late fee.\"\n    },\n    {\n      \"behavior\": \"Offers to contact the intended borrower later\",\n      \"met\": true,\n      \"evidence\": \"\\\"I'll try calling him again later.\\\"\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"States the EMI amount or due date to the person who is not the borrower\",\n      \"violated\": false,\n      \"evidence\": \"No EMI amount or due date is mentioned at any point to the brother.\"\n    }\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": true
+}

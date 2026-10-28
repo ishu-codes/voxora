@@ -1,0 +1,331 @@
+{
+  "conversations": {
+    "scenario:scenario-v3-run3-s15-20261022T201530Z-api.json": {
+      "path": "scenario-v3-run3-s15-20261022T201530Z-api.json",
+      "category": "abusive",
+      "classifier_pass": false,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run1-s03-20261022T201206Z-api.json": {
+      "path": "scenario-v3-run1-s03-20261022T201206Z-api.json",
+      "category": "already_paid",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": false
+    },
+    "scenario:scenario-v3-run2-s04-20261022T201330Z-api.json": {
+      "path": "scenario-v3-run2-s04-20261022T201330Z-api.json",
+      "category": "already_paid",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run1-s05-20261022T201214Z-api.json": {
+      "path": "scenario-v3-run1-s05-20261022T201214Z-api.json",
+      "category": "amount_dispute",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": false
+    },
+    "scenario:scenario-v3-run2-s08-20261022T201346Z-api.json": {
+      "path": "scenario-v3-run2-s08-20261022T201346Z-api.json",
+      "category": "call_later",
+      "classifier_pass": false,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run2-s02-20261022T201321Z-api.json": {
+      "path": "scenario-v3-run2-s02-20261022T201321Z-api.json",
+      "category": "happy_path",
+      "classifier_pass": false,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run3-s01-20261022T201434Z-api.json": {
+      "path": "scenario-v3-run3-s01-20261022T201434Z-api.json",
+      "category": "happy_path",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run1-s17-20261022T201300Z-api.json": {
+      "path": "scenario-v3-run1-s17-20261022T201300Z-api.json",
+      "category": "hardship",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run1-s10-20261022T201232Z-api.json": {
+      "path": "scenario-v3-run1-s10-20261022T201232Z-api.json",
+      "category": "identity_refusal",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run2-s13-20261022T201404Z-api.json": {
+      "path": "scenario-v3-run2-s13-20261022T201404Z-api.json",
+      "category": "interruption",
+      "classifier_pass": false,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run1-s13-20261022T201245Z-api.json": {
+      "path": "scenario-v3-run1-s13-20261022T201245Z-api.json",
+      "category": "interruption",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run1-s12-20261022T201240Z-api.json": {
+      "path": "scenario-v3-run1-s12-20261022T201240Z-api.json",
+      "category": "language_switch",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run1-s06-20261022T201218Z-api.json": {
+      "path": "scenario-v3-run1-s06-20261022T201218Z-api.json",
+      "category": "late_fee",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run2-s18-20261022T201423Z-api.json": {
+      "path": "scenario-v3-run2-s18-20261022T201423Z-api.json",
+      "category": "legal_threat",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": false
+    },
+    "scenario:scenario-v3-run1-s18-20261022T201305Z-api.json": {
+      "path": "scenario-v3-run1-s18-20261022T201305Z-api.json",
+      "category": "legal_threat",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run3-s20-20261022T201547Z-api.json": {
+      "path": "scenario-v3-run3-s20-20261022T201547Z-api.json",
+      "category": "numbers_for_tts",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run2-s14-20261022T201408Z-api.json": {
+      "path": "scenario-v3-run2-s14-20261022T201408Z-api.json",
+      "category": "out_of_scope",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run3-s07-20261022T201457Z-api.json": {
+      "path": "scenario-v3-run3-s07-20261022T201457Z-api.json",
+      "category": "payment_method",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run2-s16-20261022T201415Z-api.json": {
+      "path": "scenario-v3-run2-s16-20261022T201415Z-api.json",
+      "category": "prompt_injection",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run3-s11-20261022T201514Z-api.json": {
+      "path": "scenario-v3-run3-s11-20261022T201514Z-api.json",
+      "category": "silence",
+      "classifier_pass": false,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run1-s11-20261022T201236Z-api.json": {
+      "path": "scenario-v3-run1-s11-20261022T201236Z-api.json",
+      "category": "silence",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run3-s19-20261022T201544Z-api.json": {
+      "path": "scenario-v3-run3-s19-20261022T201544Z-api.json",
+      "category": "wants_human",
+      "classifier_pass": false,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run2-s19-20261022T201426Z-api.json": {
+      "path": "scenario-v3-run2-s19-20261022T201426Z-api.json",
+      "category": "wants_human",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run3-s09-20261022T201506Z-api.json": {
+      "path": "scenario-v3-run3-s09-20261022T201506Z-api.json",
+      "category": "wrong_person",
+      "classifier_pass": true,
+      "human_pass": true,
+      "deterministic_pass": true
+    },
+    "scenario:scenario-v3-run1-s15-20261022T201253Z-api.json": {
+      "path": "scenario-v3-run1-s15-20261022T201253Z-api.json",
+      "category": "abusive",
+      "classifier_pass": false,
+      "human_pass": true,
+      "deterministic_pass": true
+    }
+  },
+  "stt": {
+    "stt:faster-whisper-base:transcribe:en:en04": {
+      "id": "en04",
+      "provider": "faster-whisper-base",
+      "mode": "transcribe",
+      "language": "en",
+      "reference": "Can you call me back in the evening?",
+      "hypothesis": "Can you call me back in the evening?",
+      "classifier_same_meaning": true,
+      "same_meaning": true
+    },
+    "stt:faster-whisper-base:transcribe:hi:hi13": {
+      "id": "hi13",
+      "provider": "faster-whisper-base",
+      "mode": "transcribe",
+      "language": "hi",
+      "reference": "आप कौन बोल रहे हैं और फ़ोन क्यों किया?",
+      "hypothesis": "अपकान बोल नहीं है, अभून जो क्या",
+      "classifier_same_meaning": false,
+      "same_meaning": false
+    },
+    "stt:faster-whisper-base:transcribe:hinglish:hg05": {
+      "id": "hg05",
+      "provider": "faster-whisper-base",
+      "mode": "transcribe",
+      "language": "hinglish",
+      "reference": "App se payment kaise karna hai?",
+      "hypothesis": "aap se payment kese karna hai",
+      "classifier_same_meaning": true,
+      "same_meaning": false
+    },
+    "stt:faster-whisper-base:transcribe-no-hint:en:en04": {
+      "id": "en04",
+      "provider": "faster-whisper-base",
+      "mode": "transcribe-no-hint",
+      "language": "en",
+      "reference": "Can you call me back in the evening?",
+      "hypothesis": "Can you call me back in the evening?",
+      "classifier_same_meaning": true,
+      "same_meaning": true
+    },
+    "stt:faster-whisper-base:transcribe-no-hint:hi:hi01": {
+      "id": "hi01",
+      "provider": "faster-whisper-base",
+      "mode": "transcribe-no-hint",
+      "language": "hi",
+      "reference": "हाँ, मैं रोहन बोल रहा हूँ।",
+      "hypothesis": "ข้าไม่รู้ขึ้นบัลร้อง",
+      "classifier_same_meaning": false,
+      "same_meaning": false
+    },
+    "stt:faster-whisper-base:transcribe-no-hint:hinglish:hg12": {
+      "id": "hg12",
+      "provider": "faster-whisper-base",
+      "mode": "transcribe-no-hint",
+      "language": "hinglish",
+      "reference": "Meri job chali gayi hai, is mahine nahi bhar paunga.",
+      "hypothesis": "میری job سے لی گای ہے اس مہینے میں پیر نہیں کر پاہوں گا",
+      "classifier_same_meaning": true,
+      "same_meaning": false
+    },
+    "stt:sarvam:codemix:en:en11": {
+      "id": "en11",
+      "provider": "sarvam",
+      "mode": "codemix",
+      "language": "en",
+      "reference": "Please send me the payment link on WhatsApp.",
+      "hypothesis": "Please send me the payment link on WhatsApp.",
+      "classifier_same_meaning": true,
+      "same_meaning": true
+    },
+    "stt:sarvam:codemix:hi:hi11": {
+      "id": "hi11",
+      "provider": "sarvam",
+      "mode": "codemix",
+      "language": "hi",
+      "reference": "मुझे भुगतान का लिंक व्हाट्सएप पर भेज दीजिए।",
+      "hypothesis": "मुझे भुगतान का link WhatsApp पर भेज दीजिए।",
+      "classifier_same_meaning": true,
+      "same_meaning": true
+    },
+    "stt:sarvam:codemix:hinglish:hg14": {
+      "id": "hg14",
+      "provider": "sarvam",
+      "mode": "codemix",
+      "language": "hinglish",
+      "reference": "Main teen November ko UPI se payment kar dunga.",
+      "hypothesis": "मैं 3 नवंबर को UPI से payment कर दूँगा।",
+      "classifier_same_meaning": true,
+      "same_meaning": true
+    },
+    "stt:sarvam:transcribe:en:en15": {
+      "id": "en15",
+      "provider": "sarvam",
+      "mode": "transcribe",
+      "language": "en",
+      "reference": "Can I speak to a real person please?",
+      "hypothesis": "Can I speak to a real person please?",
+      "classifier_same_meaning": true,
+      "same_meaning": true
+    },
+    "stt:sarvam:transcribe:hi:hi05": {
+      "id": "hi05",
+      "provider": "sarvam",
+      "mode": "transcribe",
+      "language": "hi",
+      "reference": "ऐप से पैसे कैसे भरने हैं?",
+      "hypothesis": "ऐप से पैसे कैसे भरने हैं?",
+      "classifier_same_meaning": true,
+      "same_meaning": true
+    },
+    "stt:sarvam:transcribe:hinglish:hg06": {
+      "id": "hg06",
+      "provider": "sarvam",
+      "mode": "transcribe",
+      "language": "hinglish",
+      "reference": "Meri EMI itni zyada kyun hai, kuch galat lag raha hai.",
+      "hypothesis": "मेरी ईएमआई इतनी ज़्यादा क्यों है? कुछ ग़लत लग रहा है।",
+      "classifier_same_meaning": true,
+      "same_meaning": true
+    },
+    "stt:sarvam:translit:en:en02": {
+      "id": "en02",
+      "provider": "sarvam",
+      "mode": "translit",
+      "language": "en",
+      "reference": "I already paid my EMI last week.",
+      "hypothesis": "I already paid my EMI last week.",
+      "classifier_same_meaning": true,
+      "same_meaning": true
+    },
+    "stt:sarvam:translit:hi:hi01": {
+      "id": "hi01",
+      "provider": "sarvam",
+      "mode": "translit",
+      "language": "hi",
+      "reference": "हाँ, मैं रोहन बोल रहा हूँ।",
+      "hypothesis": "Haan main Rohan bol raha hoon",
+      "classifier_same_meaning": true,
+      "same_meaning": true
+    },
+    "stt:sarvam:translit:hinglish:hg12": {
+      "id": "hg12",
+      "provider": "sarvam",
+      "mode": "translit",
+      "language": "hinglish",
+      "reference": "Meri job chali gayi hai, is mahine nahi bhar paunga.",
+      "hypothesis": "Meri job chali gayi hai, is mahine main pay nahi kar paunga.",
+      "classifier_same_meaning": true,
+      "same_meaning": true
+    }
+  }
+}

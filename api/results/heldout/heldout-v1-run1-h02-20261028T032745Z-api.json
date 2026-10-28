@@ -1,0 +1,58 @@
+{
+  "kind": "heldout",
+  "run_id": "scenario-v1-1-20261028T032745Z",
+  "started_at_utc": "2026-10-28T03:27:45Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "h02",
+    "category": "loan_denial",
+    "language": "hinglish",
+    "user_turns": [
+      "Haan bol raha hoon.",
+      "Maine toh koi loan liya hi nahi hai, aap galat number pe call kar rahe ho."
+    ],
+    "expected": [
+      "Does not argue with or accuse the customer",
+      "Offers to refer the matter to human support to check the record"
+    ],
+    "forbidden": [
+      "Insists that the customer owes the money",
+      "Threatens consequences"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Haan bol raha hoon."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Haan bol raha hoon.",
+      "reply": "",
+      "elapsed_ms": 41112.5,
+      "checks": [],
+      "error": "Language model request failed: "
+    }
+  ],
+  "deterministic_pass": false,
+  "conversation_checks": [],
+  "judge": null,
+  "judge_raw": "",
+  "judge_error": "Agent conversation did not complete.",
+  "pass": false,
+  "heldout": true,
+  "rerun": false,
+  "hashes": {
+    "prompt_sha256": "463cc2c871f0e92147f17899dfbe2173217660dbea965bae1d5f66b2ebdd9258",
+    "scenario_sha256": "7c8c129edc1db666df9c8c24348a9d15c6b5aa44399fdcd1073a9ede16e9b069",
+    "classifier_sha256": "d25cec8c308634b11c60f34329d7bbce4095f51e4401e2a18e6cb58d933f68d3"
+  }
+}

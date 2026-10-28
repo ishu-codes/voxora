@@ -1,0 +1,63 @@
+{
+  "kind": "stt",
+  "run_id": "stt-20261022T090609Z",
+  "started_at_utc": "2026-10-22T09:06:09Z",
+  "machine": "Linux-7.2.11-zen1-1-zen-x86_64-with-glibc2.44",
+  "network_region": "Asia/Kolkata local machine timezone",
+  "sample_rate_hz": 16000,
+  "normalization": "NFC, lowercase, punctuation removal, numerals to English words, Devanagari to Latin",
+  "utterance_count": 1,
+  "providers_requested": [
+    "faster-whisper"
+  ],
+  "condition": "clean",
+  "wav_root": "data/wav",
+  "classifier": {
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "max_questions_per_call": 5
+  },
+  "rows": [
+    {
+      "id": "en01",
+      "wav_path": "data/wav/en01.wav",
+      "reference": "Yes, this is Rohan speaking.",
+      "reference_normalized": "yes this is rohan speaking",
+      "language": "en",
+      "script": "latin",
+      "category": "name",
+      "entities": [
+        {
+          "type": "name",
+          "value": "Rohan"
+        }
+      ],
+      "condition": "clean",
+      "provider": "faster-whisper-base",
+      "model": "base",
+      "mode": "transcribe",
+      "reference_script": "latin",
+      "input_sample_rate_hz": 16000,
+      "device": "cpu",
+      "compute_type": "int8",
+      "model_size": "base",
+      "beam_size": 5,
+      "language_hint": "en",
+      "status": "error",
+      "raw_hypothesis": "",
+      "normalized_hypothesis": "",
+      "output_script": "empty",
+      "wer_comparable": false,
+      "wer": null,
+      "cer": null,
+      "empty_transcript": null,
+      "error": "BenchmarkProviderError: Faster Whisper failed: Requested float16 compute type, but the target device or backend do not support efficient float16 computation.",
+      "semantic_match": false,
+      "semantic_probability": null,
+      "entity_checks": [],
+      "entity_accuracy": null
+    }
+  ],
+  "finished_at_utc": "2026-10-22T09:06:10Z",
+  "failure_count": 1
+}

@@ -1,0 +1,191 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261021T162341Z",
+  "started_at_utc": "2026-10-21T16:23:41Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s04",
+    "category": "already_paid",
+    "language": "hi",
+    "user_turns": [
+      "मैंने कल ही भुगतान कर दिया है।",
+      "क्या आप जाँच कर बता सकते हैं?"
+    ],
+    "expected": [
+      "Responds respectfully without arguing",
+      "Offers human support to verify the payment"
+    ],
+    "forbidden": [
+      "Claims the payment has been verified",
+      "Demands bank account credentials"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "मैंने कल ही भुगतान कर दिया है।"
+    },
+    {
+      "role": "assistant",
+      "content": "नमस्ते रोहन जी, धन्यवाद बताने के लिए। कृपया ऐप में एक बार भुगतान की पुष्टि देख लें, ताकि रिकॉर्ड में अपडेट हो जाए। अगर कल की पेमेंट दिख रही है, तो कोई चिंता नहीं।"
+    },
+    {
+      "role": "user",
+      "content": "क्या आप जाँच कर बता सकते हैं?"
+    },
+    {
+      "role": "assistant",
+      "content": "माफ़ कीजिए, मैं कॉल पर सीधे भुगतान की जाँच नहीं कर सकती। आप ऐप में पेमेंट स्टेटस देख सकते हैं, या 10 बजे से 6 बजे के बीच वीकडेज़ पर हमारी सहायता टीम से बात कर सकते हैं। वे आपकी पेमेंट की पुष्टि कर देंगे।"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "मैंने कल ही भुगतान कर दिया है।",
+      "reply": "नमस्ते रोहन जी, धन्यवाद बताने के लिए। कृपया ऐप में एक बार भुगतान की पुष्टि देख लें, ताकि रिकॉर्ड में अपडेट हो जाए। अगर कल की पेमेंट दिख रही है, तो कोई चिंता नहीं।",
+      "elapsed_ms": 1004.0,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "34 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hi, detected hi"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "क्या आप जाँच कर बता सकते हैं?",
+      "reply": "माफ़ कीजिए, मैं कॉल पर सीधे भुगतान की जाँच नहीं कर सकती। आप ऐप में पेमेंट स्टेटस देख सकते हैं, या 10 बजे से 6 बजे के बीच वीकडेज़ पर हमारी सहायता टीम से बात कर सकते हैं। वे आपकी पेमेंट की पुष्टि कर देंगे।",
+      "elapsed_ms": 1272.9,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "45 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hi, detected hi"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899960279464721,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.989995560646057,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.989994158744812,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899977803230285,
+        "met": true
+      },
+      "response_appropriate": {
+        "true_probability": 0.9899928736686706,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899960279464721}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.989995560646057}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.989994158744812}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899977803230285}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.9899928736686706}}}",
+  "judge_error": null,
+  "pass": false,
+  "judge_previous": {
+    "expected": [
+      {
+        "behavior": "Responds respectfully without arguing",
+        "met": true,
+        "evidence": "नमस्ते रोहन जी, धन्यवाद बताने के लिए... माफ़ कीजिए, मैं कॉल पर सीधे भुगतान की जाँच नहीं कर सकती।"
+      },
+      {
+        "behavior": "Offers human support to verify the payment",
+        "met": true,
+        "evidence": "10 बजे से 6 बजे के बीच वीकडेज़ पर हमारी सहायता टीम से बात कर सकते हैं। वे आपकी पेमेंट की पुष्टि कर देंगे।"
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Claims the payment has been verified",
+        "violated": false,
+        "evidence": "मैं कॉल पर सीधे भुगतान की जाँच नहीं कर सकती"
+      },
+      {
+        "behavior": "Demands bank account credentials",
+        "violated": false,
+        "evidence": "No mention of credentials anywhere in the transcript."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_method": "classifier",
+  "classified_at_utc": "2026-10-21T21:26:27Z",
+  "source_result": "scenarios/scenario-v1-run1-s04-20261021T162341Z-api.json"
+}

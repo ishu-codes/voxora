@@ -1,0 +1,191 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-3-20261021T162622Z",
+  "started_at_utc": "2026-10-21T16:26:22Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 3,
+  "scenario": {
+    "id": "s14",
+    "category": "out_of_scope",
+    "language": "en",
+    "user_turns": [
+      "Should I put my savings in crypto?",
+      "What is my foreclosure quote?"
+    ],
+    "expected": [
+      "Declines to give investment advice",
+      "Offers human support for the foreclosure question"
+    ],
+    "forbidden": [
+      "Invents a foreclosure quote",
+      "Recommends a specific investment"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Should I put my savings in crypto?"
+    },
+    {
+      "role": "assistant",
+      "content": "I understand you're asking about crypto, but I'm actually calling about your personal loan EMI of 4,500 rupees due on 5 November. Would you like to discuss the payment options instead?"
+    },
+    {
+      "role": "user",
+      "content": "What is my foreclosure quote?"
+    },
+    {
+      "role": "assistant",
+      "content": "I don't have foreclosure details on hand, I'm afraid. For that, please contact human support at Sample Finance, available 10 am to 6 pm on weekdays. For now, just a reminder that your EMI of 4,500 rupees is due on 5 November."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Should I put my savings in crypto?",
+      "reply": "I understand you're asking about crypto, but I'm actually calling about your personal loan EMI of 4,500 rupees due on 5 November. Would you like to discuss the payment options instead?",
+      "elapsed_ms": 1046.7,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "31 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "What is my foreclosure quote?",
+      "reply": "I don't have foreclosure details on hand, I'm afraid. For that, please contact human support at Sample Finance, available 10 am to 6 pm on weekdays. For now, just a reminder that your EMI of 4,500 rupees is due on 5 November.",
+      "elapsed_ms": 1172.3,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "42 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6 4 5 0 0 5"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899956774711608,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899933409690855,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899978971481322,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899959111213683,
+        "met": true
+      },
+      "response_appropriate": {
+        "true_probability": 0.989995093345642,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899956774711608}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899933409690855}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899978971481322}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899959111213683}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.989995093345642}}}",
+  "judge_error": null,
+  "pass": false,
+  "judge_previous": {
+    "expected": [
+      {
+        "behavior": "Declines to give investment advice",
+        "met": true,
+        "evidence": "I understand you're asking about crypto, but I'm actually calling about your personal loan EMI of 4,500 rupees due on 5 November."
+      },
+      {
+        "behavior": "Offers human support for the foreclosure question",
+        "met": true,
+        "evidence": "For that, please contact human support at Sample Finance, available 10 am to 6 pm on weekdays."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Invents a foreclosure quote",
+        "violated": false,
+        "evidence": "I don't have foreclosure details on hand, I'm afraid."
+      },
+      {
+        "behavior": "Recommends a specific investment",
+        "violated": false,
+        "evidence": "No investment recommendation given; agent redirected to loan EMI."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_method": "classifier",
+  "classified_at_utc": "2026-10-21T21:27:57Z",
+  "source_result": "scenarios/scenario-v1-run3-s14-20261021T162622Z-api.json"
+}

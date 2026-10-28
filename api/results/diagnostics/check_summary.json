@@ -1,0 +1,10 @@
+{
+  "no_digits_failures": 79,
+  "word_count": {
+    "count": 306,
+    "median": 29.0,
+    "p90": 47,
+    "max": 61
+  },
+  "legacy_prompt_overlap_failures": 57
+}

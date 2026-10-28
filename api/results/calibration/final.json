@@ -1,0 +1,45 @@
+{
+  "overall": {
+    "sample_size": 40,
+    "agreement": 0.875,
+    "agreement_ci95": [
+      0.738878801611489,
+      0.945404997490546
+    ],
+    "kappa": 0.3750000000000002,
+    "kappa_ci95": [
+      -0.0810810810810818,
+      0.7872340425531912
+    ]
+  },
+  "conversations": {
+    "sample_size": 25,
+    "agreement": 0.88,
+    "agreement_ci95": [
+      0.7004420607907267,
+      0.9583318284955964
+    ],
+    "kappa": 0.0,
+    "kappa_ci95": [
+      0.0,
+      1.0
+    ],
+    "human_failures": 0,
+    "false_passes": 0,
+    "false_pass_rate": null,
+    "false_pass_rate_ci95": null
+  },
+  "stt": {
+    "sample_size": 15,
+    "agreement": 0.8666666666666667,
+    "agreement_ci95": [
+      0.6211801716767764,
+      0.9626387408969346
+    ],
+    "kappa": 0.5945945945945947,
+    "kappa_ci95": [
+      0.0,
+      1.0
+    ]
+  }
+}

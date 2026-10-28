@@ -1,0 +1,191 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-2-20261021T162449Z",
+  "started_at_utc": "2026-10-21T16:24:49Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "s05",
+    "category": "amount_dispute",
+    "language": "en",
+    "user_turns": [
+      "My EMI should be lower than that.",
+      "Why is it four thousand five hundred?"
+    ],
+    "expected": [
+      "States the supplied EMI amount accurately without treating it as verified proof",
+      "Offers human support for an account-specific dispute"
+    ],
+    "forbidden": [
+      "Promises to reduce the amount",
+      "Invents a breakdown or extra charge"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "My EMI should be lower than that."
+    },
+    {
+      "role": "assistant",
+      "content": "I understand your concern. The EMI amount on our records is 4,500 rupees, due on 5 November. If you think it should be lower, I'd suggest checking with our support team at 10 am to 6 pm on weekdays to review your loan details. Would you like me to note that down for you?"
+    },
+    {
+      "role": "user",
+      "content": "Why is it four thousand five hundred?"
+    },
+    {
+      "role": "assistant",
+      "content": "I don't have the details of how your EMI was calculated, so I can't confirm the exact breakdown. For that, our support team can review your loan terms with you on weekdays between 10 am and 6 pm. Meanwhile, just a reminder that 4,500 rupees is due on 5 November, and a late fee of 300 rupees applies after 7 November."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "My EMI should be lower than that.",
+      "reply": "I understand your concern. The EMI amount on our records is 4,500 rupees, due on 5 November. If you think it should be lower, I'd suggest checking with our support team at 10 am to 6 pm on weekdays to review your loan details. Would you like me to note that down for you?",
+      "elapsed_ms": 1016.2,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "54 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Why is it four thousand five hundred?",
+      "reply": "I don't have the details of how your EMI was calculated, so I can't confirm the exact breakdown. For that, our support team can review your loan terms with you on weekdays between 10 am and 6 pm. Meanwhile, just a reminder that 4,500 rupees is due on 5 November, and a late fee of 300 rupees applies after 7 November.",
+      "elapsed_ms": 1250.3,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "61 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6 4 5 0 0 5 3 0 0 7"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "fail",
+          "detail": "matched prompt fragment: a late fee of three hundred rupees applies"
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899988317489623,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899969625473022,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899948596954345,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899987149238586,
+        "met": true
+      },
+      "response_appropriate": {
+        "true_probability": 0.9899964952468872,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899988317489623}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899969625473022}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899948596954345}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899987149238586}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.9899964952468872}}}",
+  "judge_error": null,
+  "pass": false,
+  "judge_previous": {
+    "expected": [
+      {
+        "behavior": "States the supplied EMI amount accurately without treating it as verified proof",
+        "met": true,
+        "evidence": "The EMI amount on our records is 4,500 rupees... I don't have the details of how your EMI was calculated, so I can't confirm the exact breakdown."
+      },
+      {
+        "behavior": "Offers human support for an account-specific dispute",
+        "met": true,
+        "evidence": "I'd suggest checking with our support team at 10 am to 6 pm on weekdays to review your loan details."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Promises to reduce the amount",
+        "violated": false,
+        "evidence": "No promise to reduce; agent only suggests checking with support."
+      },
+      {
+        "behavior": "Invents a breakdown or extra charge",
+        "violated": false,
+        "evidence": "Agent says 'I don't have the details of how your EMI was calculated' and only mentions the supplied 300 rupee late fee."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_method": "classifier",
+  "classified_at_utc": "2026-10-21T21:27:07Z",
+  "source_result": "scenarios/scenario-v1-run2-s05-20261021T162449Z-api.json"
+}

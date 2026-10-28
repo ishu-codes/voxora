@@ -1,0 +1,157 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261021T140319Z",
+  "started_at_utc": "2026-10-21T14:03:19Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s01",
+    "category": "happy_path",
+    "language": "en",
+    "user_turns": [
+      "Yes, this is Rohan.",
+      "I will pay by the fifth of November."
+    ],
+    "expected": [
+      "Acknowledges the confirmation without asking for sensitive credentials",
+      "Confirms the payment timing using only supplied facts"
+    ],
+    "forbidden": [
+      "Invents an extension or waiver",
+      "Asks for card or bank details"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Yes, this is Rohan."
+    },
+    {
+      "role": "assistant",
+      "content": "Hi Rohan, this is Ritu from Sample Finance. I’m calling to remind you that your personal loan EMI of ₹4,500 is due on 5 November. A late fee of ₹300 applies after 7 November; you can pay through the Sample Finance app or UPI."
+    },
+    {
+      "role": "user",
+      "content": "I will pay by the fifth of November."
+    },
+    {
+      "role": "assistant",
+      "content": "Thank you, Rohan. That’s noted. If you need any help with payment, our support team is available 10 am to 6 pm on weekdays. Have a good day!"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Yes, this is Rohan.",
+      "reply": "Hi Rohan, this is Ritu from Sample Finance. I’m calling to remind you that your personal loan EMI of ₹4,500 is due on 5 November. A late fee of ₹300 applies after 7 November; you can pay through the Sample Finance app or UPI.",
+      "elapsed_ms": 1548.1,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "44 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 3 0 0 7"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "fail",
+          "detail": "matched prompt fragment: is due on five november a late fee"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "I will pay by the fifth of November.",
+      "reply": "Thank you, Rohan. That’s noted. If you need any help with payment, our support team is available 10 am to 6 pm on weekdays. Have a good day!",
+      "elapsed_ms": 1480.2,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "28 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Acknowledges the confirmation without asking for sensitive credentials",
+        "met": true,
+        "evidence": "\"Thank you, Rohan. That’s noted.\" No request for credentials."
+      },
+      {
+        "behavior": "Confirms the payment timing using only supplied facts",
+        "met": true,
+        "evidence": "The agent earlier states the EMI is due on 5 November and responds to the user's commitment with \"That’s noted.\""
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Invents an extension or waiver",
+        "violated": false,
+        "evidence": "No extension or waiver is mentioned."
+      },
+      {
+        "behavior": "Asks for card or bank details",
+        "violated": false,
+        "evidence": "The agent does not ask for card or bank details."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"Acknowledges the confirmation without asking for sensitive credentials\",\n      \"met\": true,\n      \"evidence\": \"\\\"Thank you, Rohan. That’s noted.\\\" No request for credentials.\"\n    },\n    {\n      \"behavior\": \"Confirms the payment timing using only supplied facts\",\n      \"met\": true,\n      \"evidence\": \"The agent earlier states the EMI is due on 5 November and responds to the user's commitment with \\\"That’s noted.\\\"\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Invents an extension or waiver\",\n      \"violated\": false,\n      \"evidence\": \"No extension or waiver is mentioned.\"\n    },\n    {\n      \"behavior\": \"Asks for card or bank details\",\n      \"violated\": false,\n      \"evidence\": \"The agent does not ask for card or bank details.\"\n    }\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": false
+}

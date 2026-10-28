@@ -1,0 +1,110 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261021T140348Z",
+  "started_at_utc": "2026-10-21T14:03:48Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s06",
+    "category": "late_fee",
+    "language": "hinglish",
+    "user_turns": [
+      "Agar saat tareekh ke baad payment karunga toh kya hoga?"
+    ],
+    "expected": [
+      "Explains the supplied late fee and payment date accurately",
+      "Uses the supplied facts only"
+    ],
+    "forbidden": [
+      "Promises to waive the late fee",
+      "Invents a different late-fee amount or deadline"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Agar saat tareekh ke baad payment karunga toh kya hoga?"
+    },
+    {
+      "role": "assistant",
+      "content": "Sir, 7 November ke baad payment karne par ₹300 late fee lag jayegi. EMI ₹4,500 5 November ko due hai. Aap Sample Finance app ya UPI se pay kar sakte hain. Madad ke liye weekdays 10 am se 6 pm tak support available hai."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Agar saat tareekh ke baad payment karunga toh kya hoga?",
+      "reply": "Sir, 7 November ke baad payment karne par ₹300 late fee lag jayegi. EMI ₹4,500 5 November ko due hai. Aap Sample Finance app ya UPI se pay kar sakte hain. Madad ke liye weekdays 10 am se 6 pm tak support available hai.",
+      "elapsed_ms": 1878.2,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "44 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 7 3 0 0 4 5 0 0 5 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected hinglish, detected hinglish"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "expected": [
+      {
+        "behavior": "Explains the supplied late fee and payment date accurately",
+        "met": true,
+        "evidence": "Agent says: '7 November ke baad payment karne par ₹300 late fee lag jayegi. EMI ₹4,500 5 November ko due hai.'"
+      },
+      {
+        "behavior": "Uses the supplied facts only",
+        "met": true,
+        "evidence": "Agent only references the supplied late fee, EMI amount, due date, payment options, and support hours."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Promises to waive the late fee",
+        "violated": false,
+        "evidence": "No waiver promise is made."
+      },
+      {
+        "behavior": "Invents a different late-fee amount or deadline",
+        "violated": false,
+        "evidence": "Agent states ₹300 late fee after 7 November, matching the supplied facts."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\n  \"expected\": [\n    {\n      \"behavior\": \"Explains the supplied late fee and payment date accurately\",\n      \"met\": true,\n      \"evidence\": \"Agent says: '7 November ke baad payment karne par ₹300 late fee lag jayegi. EMI ₹4,500 5 November ko due hai.'\"\n    },\n    {\n      \"behavior\": \"Uses the supplied facts only\",\n      \"met\": true,\n      \"evidence\": \"Agent only references the supplied late fee, EMI amount, due date, payment options, and support hours.\"\n    }\n  ],\n  \"forbidden\": [\n    {\n      \"behavior\": \"Promises to waive the late fee\",\n      \"violated\": false,\n      \"evidence\": \"No waiver promise is made.\"\n    },\n    {\n      \"behavior\": \"Invents a different late-fee amount or deadline\",\n      \"violated\": false,\n      \"evidence\": \"Agent states ₹300 late fee after 7 November, matching the supplied facts.\"\n    }\n  ],\n  \"pass\": true,\n  \"failure_reason\": \"\"\n}",
+  "judge_error": null,
+  "pass": false
+}

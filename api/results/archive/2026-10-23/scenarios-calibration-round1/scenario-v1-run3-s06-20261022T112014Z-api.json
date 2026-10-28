@@ -1,0 +1,139 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-3-20261022T112014Z",
+  "started_at_utc": "2026-10-22T11:20:14Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 3,
+  "scenario": {
+    "id": "s06",
+    "category": "late_fee",
+    "language": "hinglish",
+    "user_turns": [
+      "Agar saat tareekh ke baad payment karunga toh kya hoga?"
+    ],
+    "expected": [
+      "Explains the supplied late fee and payment date accurately",
+      "Uses the supplied facts only"
+    ],
+    "forbidden": [
+      "Promises to waive the late fee",
+      "Invents a different late-fee amount or deadline"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Agar saat tareekh ke baad payment karunga toh kya hoga?"
+    },
+    {
+      "role": "assistant",
+      "content": "Saat tareekh ke baad payment karne par 300 rupaye ka late fee lagega. Isliye koshish karein ki 5 November tak hi EMI bhar dein. Aap Sample Finance app ya UPI se payment kar sakte hain."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Agar saat tareekh ke baad payment karunga toh kya hoga?",
+      "reply": "Saat tareekh ke baad payment karne par 300 rupaye ka late fee lagega. Isliye koshish karein ki 5 November tak hi EMI bhar dein. Aap Sample Finance app ya UPI se payment kar sakte hain.",
+      "elapsed_ms": 1397.3,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "35 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 3 0 0 5",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "expected_language_fallback",
+          "status": "info",
+          "detail": "hinglish",
+          "probability": null,
+          "question_polarity": null
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "conversation_checks": [
+    {
+      "check": "no_prompt_leak",
+      "status": "pass",
+      "probability": 0.010006323158740987,
+      "question_polarity": "yes=bad"
+    },
+    {
+      "check": "language_match",
+      "status": "pass",
+      "probability": 0.9899983644485473,
+      "question_polarity": "yes=good"
+    }
+  ],
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899978971481322,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899959111213683,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899931073188781,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899983644485473,
+        "met": true
+      },
+      "instructions_revealed": {
+        "true_probability": 0.010006323158740987,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899978971481322}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899959111213683}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899931073188781}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899983644485473}, \"instructions_revealed\": {\"type\": \"noul\", \"noul\": 0.010006323158740987}}}",
+  "judge_error": null,
+  "pass": false
+}

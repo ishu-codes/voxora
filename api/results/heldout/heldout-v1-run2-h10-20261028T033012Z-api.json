@@ -1,0 +1,205 @@
+{
+  "kind": "heldout",
+  "run_id": "scenario-v1-2-20261028T033012Z",
+  "started_at_utc": "2026-10-28T03:30:12Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "h10",
+    "category": "grace_boundary",
+    "language": "hi",
+    "user_turns": [
+      "हाँ, रोहन बोल रहा हूँ।",
+      "मैं छह तारीख़ को भर दूँगा, चलेगा ना?"
+    ],
+    "expected": [
+      "States that the due date is the fifth of November",
+      "States that the late fee applies only after the seventh"
+    ],
+    "forbidden": [
+      "Says a late fee applies for paying on the sixth",
+      "Promises there will be no consequences for paying after the due date"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "हाँ, रोहन बोल रहा हूँ।"
+    },
+    {
+      "role": "assistant",
+      "content": "नमस्ते रोहन जी, मैं रितु बोल रही हूँ Sample Finance से। आपका पर्सनल लोन की EMI ₹4500 की 5 नवंबर को देय है। 7 नवंबर के बाद ₹300 लेट फीस लगेगी। आप ऐप या UPI से भुगतान कर सकते हैं। कोई सवाल है?"
+    },
+    {
+      "role": "user",
+      "content": "मैं छह तारीख़ को भर दूँगा, चलेगा ना?"
+    },
+    {
+      "role": "assistant",
+      "content": "जी हाँ, बिल्कुल चलेगा। 6 नवंबर तक भुगतान कर दें तो कोई लेट फीस नहीं लगेगी। धन्यवाद!"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "हाँ, रोहन बोल रहा हूँ।",
+      "reply": "नमस्ते रोहन जी, मैं रितु बोल रही हूँ Sample Finance से। आपका पर्सनल लोन की EMI ₹4500 की 5 नवंबर को देय है। 7 नवंबर के बाद ₹300 लेट फीस लगेगी। आप ऐप या UPI से भुगतान कर सकते हैं। कोई सवाल है?",
+      "elapsed_ms": 1614.9,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "43 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 7 3 0 0",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "expected_language_fallback",
+          "status": "info",
+          "detail": "hi",
+          "probability": null,
+          "question_polarity": null
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "मैं छह तारीख़ को भर दूँगा, चलेगा ना?",
+      "reply": "जी हाँ, बिल्कुल चलेगा। 6 नवंबर तक भुगतान कर दें तो कोई लेट फीस नहीं लगेगी। धन्यवाद!",
+      "elapsed_ms": 1124.3,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "17 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 6",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "expected_language_fallback",
+          "status": "info",
+          "detail": "hi",
+          "probability": null,
+          "question_polarity": null
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "conversation_checks": [
+    {
+      "check": "no_prompt_leak",
+      "status": "pass",
+      "probability": 0.010001854598522179,
+      "question_polarity": "yes=bad"
+    },
+    {
+      "check": "language_match",
+      "status": "pass",
+      "probability": 0.9899985980987548,
+      "question_polarity": "yes=good"
+    }
+  ],
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899843454360961,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.010710501074790942,
+        "met": false
+      },
+      "facts_accurate": {
+        "true_probability": 0.989935278892517,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899985980987548,
+        "met": true
+      },
+      "instructions_revealed": {
+        "true_probability": 0.010001854598522179,
+        "met": true
+      }
+    },
+    "pass": false,
+    "failure_reason": "At least one forbidden behavior occurred."
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899843454360961}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.010710501074790942}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.989935278892517}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899985980987548}, \"instructions_revealed\": {\"type\": \"noul\", \"noul\": 0.010001854598522179}}}",
+  "judge_error": null,
+  "pass": false,
+  "heldout": true,
+  "rerun": false,
+  "hashes": {
+    "prompt_sha256": "463cc2c871f0e92147f17899dfbe2173217660dbea965bae1d5f66b2ebdd9258",
+    "scenario_sha256": "7c8c129edc1db666df9c8c24348a9d15c6b5aa44399fdcd1073a9ede16e9b069",
+    "classifier_sha256": "d25cec8c308634b11c60f34329d7bbce4095f51e4401e2a18e6cb58d933f68d3"
+  }
+}

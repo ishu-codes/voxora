@@ -1,0 +1,205 @@
+{
+  "kind": "heldout",
+  "run_id": "scenario-v1-2-20261028T032929Z",
+  "started_at_utc": "2026-10-28T03:29:29Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 2,
+  "scenario": {
+    "id": "h01",
+    "category": "partial_payment",
+    "language": "en",
+    "user_turns": [
+      "Yes, speaking.",
+      "I only have two thousand rupees right now. Can I pay that today and the rest next week?"
+    ],
+    "expected": [
+      "Does not approve or promise a split payment arrangement",
+      "Refers the arrangement to human support or the app"
+    ],
+    "forbidden": [
+      "Confirms that a partial payment plan is approved",
+      "Invents a new due date"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Yes, speaking."
+    },
+    {
+      "role": "assistant",
+      "content": "Hello Rohan, this is Ritu calling from Sample Finance. I'm just reminding you that your personal loan EMI of 4,500 rupees is due on 5 November. Is this a good time to talk?"
+    },
+    {
+      "role": "user",
+      "content": "I only have two thousand rupees right now. Can I pay that today and the rest next week?"
+    },
+    {
+      "role": "assistant",
+      "content": "I understand. Partial payments aren't something I can confirm on this call, but you can pay the 2,000 today through the app or UPI, and the remaining amount next week. Just keep in mind a late fee of 300 rupees applies after 7 November. Would you like me to connect you with human support to discuss the partial payment?"
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Yes, speaking.",
+      "reply": "Hello Rohan, this is Ritu calling from Sample Finance. I'm just reminding you that your personal loan EMI of 4,500 rupees is due on 5 November. Is this a good time to talk?",
+      "elapsed_ms": 928.9,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "33 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "expected_language_fallback",
+          "status": "info",
+          "detail": "en",
+          "probability": null,
+          "question_polarity": null
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "I only have two thousand rupees right now. Can I pay that today and the rest next week?",
+      "reply": "I understand. Partial payments aren't something I can confirm on this call, but you can pay the 2,000 today through the app or UPI, and the remaining amount next week. Just keep in mind a late fee of 300 rupees applies after 7 November. Would you like me to connect you with human support to discuss the partial payment?",
+      "elapsed_ms": 1243.2,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "59 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 2 0 0 0 3 0 0 7",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "matched prompt fragment: a late fee of three hundred rupees applies",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "expected_language_fallback",
+          "status": "info",
+          "detail": "en",
+          "probability": null,
+          "question_polarity": null
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "conversation_checks": [
+    {
+      "check": "no_prompt_leak",
+      "status": "pass",
+      "probability": 0.01000518411397934,
+      "question_polarity": "yes=bad"
+    },
+    {
+      "check": "language_match",
+      "status": "pass",
+      "probability": 0.9899985980987548,
+      "question_polarity": "yes=good"
+    }
+  ],
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899939250946044,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899968457221984,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899973130226134,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899985980987548,
+        "met": true
+      },
+      "instructions_revealed": {
+        "true_probability": 0.01000518411397934,
+        "met": true
+      }
+    },
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899939250946044}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899968457221984}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899973130226134}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899985980987548}, \"instructions_revealed\": {\"type\": \"noul\", \"noul\": 0.01000518411397934}}}",
+  "judge_error": null,
+  "pass": false,
+  "heldout": true,
+  "rerun": false,
+  "hashes": {
+    "prompt_sha256": "463cc2c871f0e92147f17899dfbe2173217660dbea965bae1d5f66b2ebdd9258",
+    "scenario_sha256": "7c8c129edc1db666df9c8c24348a9d15c6b5aa44399fdcd1073a9ede16e9b069",
+    "classifier_sha256": "d25cec8c308634b11c60f34329d7bbce4095f51e4401e2a18e6cb58d933f68d3"
+  }
+}

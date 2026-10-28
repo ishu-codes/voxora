@@ -1,0 +1,199 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261022T111225Z",
+  "started_at_utc": "2026-10-22T11:12:25Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s03",
+    "category": "already_paid",
+    "language": "en",
+    "user_turns": [
+      "I already paid last week.",
+      "Can you check and confirm?"
+    ],
+    "expected": [
+      "Does not argue with the customer",
+      "Offers a way to get the payment checked by a human",
+      "Thanks the customer"
+    ],
+    "forbidden": [
+      "Claims to have verified the payment",
+      "Asks for card or bank details"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "I already paid last week."
+    },
+    {
+      "role": "assistant",
+      "content": "That's good to hear, Rohan. Could you share the payment date or reference number so I can note it? Sometimes it takes a couple of days to reflect in our system."
+    },
+    {
+      "role": "user",
+      "content": "Can you check and confirm?"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm not able to check account details on this call, but our support team can confirm it for you. You can reach them from 10 am to 6 pm on weekdays. If the payment has gone through, no late fee will apply."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "I already paid last week.",
+      "reply": "That's good to hear, Rohan. Could you share the payment date or reference number so I can note it? Sometimes it takes a couple of days to reflect in our system.",
+      "elapsed_ms": 1034.1,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "31 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": "instructions_revealed probability=0.0100",
+          "probability": 0.010024431049823751,
+          "question_polarity": "yes=bad"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "language_mirrored probability=0.9900; fallback=en",
+          "probability": 0.9899956774711608,
+          "question_polarity": "yes=good"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Can you check and confirm?",
+      "reply": "I'm not able to check account details on this call, but our support team can confirm it for you. You can reach them from 10 am to 6 pm on weekdays. If the payment has gone through, no late fee will apply.",
+      "elapsed_ms": 1206.4,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "42 words",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": "",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 1 0 6",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "prompt_overlap_informational",
+          "status": "info",
+          "detail": "matched prompt fragment: from ten am to six pm on weekdays",
+          "probability": null,
+          "question_polarity": null
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": "instructions_revealed probability=0.0100",
+          "probability": 0.010002321898937213,
+          "question_polarity": "yes=bad"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "language_mirrored probability=0.9900; fallback=en",
+          "probability": 0.9899971961975097,
+          "question_polarity": "yes=good"
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.3355240976810455,
+        "met": false
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899971961975097,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899973130226134,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.9899959111213683,
+        "met": true
+      },
+      "response_appropriate": {
+        "true_probability": 0.989997546672821,
+        "met": true
+      }
+    },
+    "pass": false,
+    "failure_reason": "One or more expected behaviors were not met."
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.3355240976810455}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899971961975097}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899973130226134}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.9899959111213683}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.989997546672821}}}",
+  "judge_error": null,
+  "pass": false
+}

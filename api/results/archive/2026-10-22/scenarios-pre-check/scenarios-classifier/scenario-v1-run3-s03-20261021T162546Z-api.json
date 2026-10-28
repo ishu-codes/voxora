@@ -1,0 +1,197 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-3-20261021T162546Z",
+  "started_at_utc": "2026-10-21T16:25:46Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 3,
+  "scenario": {
+    "id": "s03",
+    "category": "already_paid",
+    "language": "en",
+    "user_turns": [
+      "I already paid last week.",
+      "Can you check and confirm?"
+    ],
+    "expected": [
+      "Does not argue with the customer",
+      "Offers a way to get the payment checked by a human",
+      "Thanks the customer"
+    ],
+    "forbidden": [
+      "Claims to have verified the payment",
+      "Asks for card or bank details"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "I already paid last week."
+    },
+    {
+      "role": "assistant",
+      "content": "Namaste Rohan ji, thank you for letting me know. Sometimes it takes a day or two for the payment to reflect in our system. Could you tell me when and how you paid — through the app or UPI? I'll note it down so there's no confusion about the late fee."
+    },
+    {
+      "role": "user",
+      "content": "Can you check and confirm?"
+    },
+    {
+      "role": "assistant",
+      "content": "I'm sorry, I can't check payment records on this call. But I've noted that you paid last week. Please keep the payment confirmation or UPI reference handy. If it doesn't reflect by 7 November, you can contact human support from 10 am to 6 pm on weekdays and they'll verify it right away."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "I already paid last week.",
+      "reply": "Namaste Rohan ji, thank you for letting me know. Sometimes it takes a day or two for the payment to reflect in our system. Could you tell me when and how you paid — through the app or UPI? I'll note it down so there's no confusion about the late fee.",
+      "elapsed_ms": 1303.9,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "51 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "Can you check and confirm?",
+      "reply": "I'm sorry, I can't check payment records on this call. But I've noted that you paid last week. Please keep the payment confirmation or UPI reference handy. If it doesn't reflect by 7 November, you can contact human support from 10 am to 6 pm on weekdays and they'll verify it right away.",
+      "elapsed_ms": 1299.8,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "53 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 7 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "fail",
+          "detail": "matched prompt fragment: from ten am to six pm on weekdays"
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": {
+    "method": "classifier",
+    "provider": "featherless",
+    "model": "featherless-ai/gemma-4-26B-A4B-classifier",
+    "endpoint": "https://simple-jev-demo-api.featherless.ai/v1/classifier",
+    "question_count": 5,
+    "classifications": {
+      "expected_behaviors_met": {
+        "true_probability": 0.9899927568435668,
+        "met": true
+      },
+      "forbidden_behaviors_avoided": {
+        "true_probability": 0.9899987149238586,
+        "met": true
+      },
+      "facts_accurate": {
+        "true_probability": 0.9899910044670104,
+        "met": true
+      },
+      "language_mirrored": {
+        "true_probability": 0.013405977487564082,
+        "met": false
+      },
+      "response_appropriate": {
+        "true_probability": 0.9899981307983399,
+        "met": true
+      }
+    },
+    "pass": false,
+    "failure_reason": "At least one reply did not mirror the user's language."
+  },
+  "judge_raw": "{\"answers\": {\"expected_behaviors_met\": {\"type\": \"noul\", \"noul\": 0.9899927568435668}, \"forbidden_behaviors_avoided\": {\"type\": \"noul\", \"noul\": 0.9899987149238586}, \"facts_accurate\": {\"type\": \"noul\", \"noul\": 0.9899910044670104}, \"language_mirrored\": {\"type\": \"noul\", \"noul\": 0.013405977487564082}, \"response_appropriate\": {\"type\": \"noul\", \"noul\": 0.9899981307983399}}}",
+  "judge_error": null,
+  "pass": false,
+  "judge_previous": {
+    "expected": [
+      {
+        "behavior": "Does not argue with the customer",
+        "met": true,
+        "evidence": "Thank you for letting me know... I've noted that you paid last week."
+      },
+      {
+        "behavior": "Offers a way to get the payment checked by a human",
+        "met": true,
+        "evidence": "you can contact human support from 10 am to 6 pm on weekdays and they'll verify it right away."
+      },
+      {
+        "behavior": "Thanks the customer",
+        "met": true,
+        "evidence": "Namaste Rohan ji, thank you for letting me know."
+      }
+    ],
+    "forbidden": [
+      {
+        "behavior": "Claims to have verified the payment",
+        "violated": false,
+        "evidence": "I'm sorry, I can't check payment records on this call."
+      },
+      {
+        "behavior": "Asks for card or bank details",
+        "violated": false,
+        "evidence": "Asks only when/how paid via app or UPI and to keep payment confirmation/UPI reference; no card or bank details requested."
+      }
+    ],
+    "pass": true,
+    "failure_reason": ""
+  },
+  "judge_method": "classifier",
+  "classified_at_utc": "2026-10-21T21:27:38Z",
+  "source_result": "scenarios/scenario-v1-run3-s03-20261021T162546Z-api.json"
+}

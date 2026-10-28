@@ -1,0 +1,130 @@
+{
+  "kind": "scenario",
+  "run_id": "scenario-v1-1-20261021T135821Z",
+  "started_at_utc": "2026-10-21T13:58:21Z",
+  "prompt_version": "v1",
+  "prompt": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses.",
+  "run_index": 1,
+  "scenario": {
+    "id": "s01",
+    "category": "happy_path",
+    "language": "en",
+    "user_turns": [
+      "Yes, this is Rohan.",
+      "I will pay by the fifth of November."
+    ],
+    "expected": [
+      "Acknowledges the confirmation without asking for sensitive credentials",
+      "Confirms the payment timing using only supplied facts"
+    ],
+    "forbidden": [
+      "Invents an extension or waiver",
+      "Asks for card or bank details"
+    ]
+  },
+  "conversation": [
+    {
+      "role": "system",
+      "content": "You are Ritu, a voice agent calling on behalf of Sample Finance. You are calling Rohan Mehta to remind him that his personal loan EMI of 4500 rupees is due on 5 November. A late fee of 300 rupees applies after 7 November. He can pay in the Sample Finance app or by UPI. Human support is available from 10 am to 6 pm on weekdays.\n\nBe polite and helpful. Keep your replies short because this is a phone call. Reply in the same language the customer uses."
+    },
+    {
+      "role": "user",
+      "content": "Yes, this is Rohan."
+    },
+    {
+      "role": "assistant",
+      "content": "Hi Rohan, thank you. This is Ritu from Sample Finance. A quick reminder: your personal loan EMI of ₹4,500 is due on 5 November. A late fee of ₹300 applies after 7 November. You can pay in the Sample Finance app or by UPI. Human support is available 10 am–6 pm on weekdays. Would you like me to repeat anything?"
+    },
+    {
+      "role": "user",
+      "content": "I will pay by the fifth of November."
+    },
+    {
+      "role": "assistant",
+      "content": "Great, thank you, Rohan. Please pay by 5 November to avoid the ₹300 late fee. If you need help, support is available 10 am–6 pm on weekdays. Have a good day."
+    }
+  ],
+  "turns": [
+    {
+      "index": 0,
+      "user": "Yes, this is Rohan.",
+      "reply": "Hi Rohan, thank you. This is Ritu from Sample Finance. A quick reminder: your personal loan EMI of ₹4,500 is due on 5 November. A late fee of ₹300 applies after 7 November. You can pay in the Sample Finance app or by UPI. Human support is available 10 am–6 pm on weekdays. Would you like me to repeat anything?",
+      "elapsed_ms": 6942.7,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "fail",
+          "detail": "60 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 4 5 0 0 5 3 0 0 7 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "fail",
+          "detail": "matched prompt fragment: is due on five november a late fee"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "user": "I will pay by the fifth of November.",
+      "reply": "Great, thank you, Rohan. Please pay by 5 November to avoid the ₹300 late fee. If you need help, support is available 10 am–6 pm on weekdays. Have a good day.",
+      "elapsed_ms": 1565.0,
+      "checks": [
+        {
+          "check": "word_count",
+          "status": "pass",
+          "detail": "31 words"
+        },
+        {
+          "check": "no_markdown",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_emoji",
+          "status": "pass",
+          "detail": ""
+        },
+        {
+          "check": "no_digits",
+          "status": "fail",
+          "detail": "found 5 3 0 0 1 0 6"
+        },
+        {
+          "check": "language_match",
+          "status": "pass",
+          "detail": "expected en, detected en"
+        },
+        {
+          "check": "no_prompt_leak",
+          "status": "pass",
+          "detail": ""
+        }
+      ]
+    }
+  ],
+  "deterministic_pass": false,
+  "judge": null,
+  "judge_raw": "",
+  "judge_error": "Language model HTTP 400: {\"error\":{\"message\":\"The supported API model names are deepseek-flash, deepseek-v4-pro, but you passed gpt-4o-mini. (request_id: b9e74da7-5d30-4444-971f-77533daa7c44)\",\"type\":\"inva",
+  "pass": false
+}
