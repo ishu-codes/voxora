@@ -76,7 +76,9 @@ class SarvamSTT:
         try:
             self._ws = await websockets.connect(
                 self._url(),
-                additional_headers={"api-subscription-key": self._settings.sarvam_api_key},
+                additional_headers={
+                    "api-subscription-key": self._settings.sarvam_api_key
+                },
                 max_size=None,
                 open_timeout=10,
                 ping_interval=20,
@@ -113,7 +115,10 @@ class SarvamSTT:
                     exc.reason or "-",
                 )
                 await self._events.put(
-                    {"event": "__closed__", "message": f"connection closed ({exc.code})"}
+                    {
+                        "event": "__closed__",
+                        "message": f"connection closed ({exc.code})",
+                    }
                 )
         except Exception as exc:  # pragma: no cover - defensive
             if not self._closing:
@@ -148,7 +153,9 @@ class SarvamSTT:
                 await self._on_partial(text)
             return
         if event == "session.begin":
-            logger.info("%s stt session begin config=%s", self._tag, message.get("config"))
+            logger.info(
+                "%s stt session begin config=%s", self._tag, message.get("config")
+            )
             return
         if event == "session.end":
             logger.info(
@@ -189,7 +196,9 @@ class SarvamSTT:
         except Exception as exc:
             logger.error("%s stt speech_start failed: %s", self._tag, exc)
             await self._reset()
-            raise ProviderError("stt", f"Could not start Sarvam transcription: {exc}") from exc
+            raise ProviderError(
+                "stt", f"Could not start Sarvam transcription: {exc}"
+            ) from exc
 
     async def push_audio(self, pcm: bytes) -> None:
         if not pcm or not self._active or self._error is not None:
@@ -242,13 +251,21 @@ class SarvamSTT:
         while True:
             remaining = deadline - loop.time()
             if remaining <= 0:
-                logger.error("%s stt final timed out after %.1fs", self._tag, self._settings.stt_timeout_s)
+                logger.error(
+                    "%s stt final timed out after %.1fs",
+                    self._tag,
+                    self._settings.stt_timeout_s,
+                )
                 await self._reset()
                 raise ProviderError("stt", "Sarvam transcription timed out.")
             try:
                 message = await asyncio.wait_for(self._events.get(), timeout=remaining)
             except asyncio.TimeoutError:
-                logger.error("%s stt final timed out after %.1fs", self._tag, self._settings.stt_timeout_s)
+                logger.error(
+                    "%s stt final timed out after %.1fs",
+                    self._tag,
+                    self._settings.stt_timeout_s,
+                )
                 await self._reset()
                 raise ProviderError("stt", "Sarvam transcription timed out.")
 
@@ -257,7 +274,8 @@ class SarvamSTT:
                 logger.error("%s stt socket stopped while awaiting final", self._tag)
                 await self._reset()
                 raise ProviderError(
-                    "stt", f"Sarvam speech recognition stopped: {message.get('message', '')}"
+                    "stt",
+                    f"Sarvam speech recognition stopped: {message.get('message', '')}",
                 )
             if event == "error":
                 if message.get("is_fatal"):
@@ -265,10 +283,14 @@ class SarvamSTT:
                     logger.error("%s stt fatal error: %s", self._tag, detail)
                     await self._reset()
                     raise ProviderError("stt", f"Sarvam transcription failed: {detail}")
-                logger.warning("%s stt non-fatal error: %s", self._tag, message.get("message"))
+                logger.warning(
+                    "%s stt non-fatal error: %s", self._tag, message.get("message")
+                )
                 continue
             if event != "transcript.final":
-                logger.debug("%s stt ignoring event while awaiting final: %s", self._tag, event)
+                logger.debug(
+                    "%s stt ignoring event while awaiting final: %s", self._tag, event
+                )
                 continue
             try:
                 final_idx = int(message.get("utterance_idx", -1))

@@ -1,4 +1,4 @@
-"""Generate RESUME_NUMBERS.md from raw result JSON files."""
+"""Generate NUMBERS.md from raw result JSON files."""
 
 from __future__ import annotations
 
@@ -158,7 +158,7 @@ def generate(root: Path = ROOT) -> None:
         "| --- | ---: | --- |",
     ]
     lines.extend(f"| {name} | {value} | {source} |" for name, value, source in rows)
-    (root / "RESUME_NUMBERS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    (root / "NUMBERS.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(json.dumps({"values": rows}, indent=2))
 
 

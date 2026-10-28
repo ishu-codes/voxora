@@ -73,7 +73,9 @@ class SarvamTTS:
         try:
             self._ws = await websockets.connect(
                 self._url(),
-                additional_headers={"api-subscription-key": self._settings.sarvam_api_key},
+                additional_headers={
+                    "api-subscription-key": self._settings.sarvam_api_key
+                },
                 max_size=None,
                 open_timeout=10,
                 ping_interval=20,
@@ -82,11 +84,13 @@ class SarvamTTS:
         except Exception as exc:
             self._ws = None
             logger.error("%s tts connect failed: %s", self._tag, exc)
-            raise ProviderError("tts", f"Could not connect to Sarvam speech synthesis: {exc}") from exc
+            raise ProviderError(
+                "tts", f"Could not connect to Sarvam speech synthesis: {exc}"
+            ) from exc
 
         config: dict[str, object] = {
             "speaker": speaker,
-            "language_code": self._settings.tts_language,
+            # "language_code": self._settings.tts_language,
             "pace": self._settings.tts_speed,
             "speech_sample_rate": str(self._settings.tts_sample_rate),
             "output_audio_codec": "linear16",
@@ -101,7 +105,9 @@ class SarvamTTS:
         except Exception as exc:
             logger.error("%s tts configure failed: %s", self._tag, exc)
             await self._close_socket()
-            raise ProviderError("tts", f"Could not configure Sarvam speech synthesis: {exc}") from exc
+            raise ProviderError(
+                "tts", f"Could not configure Sarvam speech synthesis: {exc}"
+            ) from exc
         self._speaker = speaker
         logger.info("%s tts connected", self._tag)
 
@@ -119,7 +125,9 @@ class SarvamTTS:
             raise ProviderError("tts", "Sarvam speech synthesis is not connected.")
         await self._ws.send(json.dumps(payload))
 
-    async def _stream(self, text: str, voice: str | None = None) -> AsyncIterator[bytes]:
+    async def _stream(
+        self, text: str, voice: str | None = None
+    ) -> AsyncIterator[bytes]:
         speaker = (voice or self._settings.tts_voice).strip()
         async with self._connect_lock:
             if self._dirty:
@@ -150,7 +158,9 @@ class SarvamTTS:
                 try:
                     raw = await asyncio.wait_for(self._ws.recv(), timeout=remaining)
                 except asyncio.TimeoutError as exc:
-                    raise ProviderError("tts", "Sarvam speech synthesis timed out.") from exc
+                    raise ProviderError(
+                        "tts", "Sarvam speech synthesis timed out."
+                    ) from exc
 
                 try:
                     message = json.loads(raw)
@@ -185,9 +195,13 @@ class SarvamTTS:
                         )
                         return
                 elif kind == "error":
-                    detail = str((message.get("data") or {}).get("message", "unknown error"))
+                    detail = str(
+                        (message.get("data") or {}).get("message", "unknown error")
+                    )
                     logger.error("%s tts error: %s", self._tag, detail[:200])
-                    raise ProviderError("tts", f"Sarvam speech synthesis failed: {detail[:200]}")
+                    raise ProviderError(
+                        "tts", f"Sarvam speech synthesis failed: {detail[:200]}"
+                    )
         except asyncio.CancelledError:
             self._dirty = True
             logger.info(
@@ -201,7 +215,9 @@ class SarvamTTS:
         except websockets.ConnectionClosed as exc:
             self._dirty = True
             logger.warning("%s tts socket closed: %s", self._tag, exc)
-            raise ProviderError("tts", f"Sarvam speech synthesis stopped: {exc}") from exc
+            raise ProviderError(
+                "tts", f"Sarvam speech synthesis stopped: {exc}"
+            ) from exc
         finally:
             if self._dirty:
                 # The next call must start from a clean socket; there is no

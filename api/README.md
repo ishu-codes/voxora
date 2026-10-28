@@ -3,7 +3,7 @@
 This harness evaluates the voice agent with recorded audio, classifier-based
 semantic scoring, noise conditions, conversation scenarios, and a live demo.
 Generated metrics live in [REPORT.md](REPORT.md) and
-[RESUME_NUMBERS.md](RESUME_NUMBERS.md); this section documents how to reproduce
+[NUMBERS.md](NUMBERS.md); this section documents how to reproduce
 them.
 
 ## Benchmark package layout
@@ -32,7 +32,7 @@ them.
   complete.
 - The held-out pass rate is 0/30 for v1 and 14/30 for the final prompt.
 - Headline values and their report sources are in
-  [RESUME_NUMBERS.md](RESUME_NUMBERS.md:1).
+  [NUMBERS.md](NUMBERS.md:1).
 
 ## Classifier usage
 
