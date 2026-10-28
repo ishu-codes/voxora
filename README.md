@@ -1,5 +1,7 @@
 # Voxora
 
+![Voxora voice agent benchmark](docs/banner.png)
+
 **From speech to intelligence and back, in real time.**
 
 Voxora is a low-latency, real-time voice AI agent. You speak through your
