@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Voxora benchmark demo</title>
+    <style>
+      body { font: 16px/1.5 system-ui, sans-serif; max-width: 760px; margin: 40px auto; padding: 0 20px; background: #f6f4ee; color: #17211b; }
+      main { background: white; border: 1px solid #d8d4c8; border-radius: 16px; padding: 24px; }
+      label { display: block; margin: 12px 0 4px; font-weight: 650; }
+      input, select, button { font: inherit; padding: 9px 12px; border-radius: 8px; border: 1px solid #a9a595; }
+      button { cursor: pointer; background: #174936; color: white; border: 0; margin: 8px 8px 8px 0; }
+      button.secondary { background: #5e665f; }
+      #status { min-height: 24px; color: #4a574e; }
+      article { border-top: 1px solid #dfddd5; margin-top: 18px; padding-top: 14px; }
+      .agent { color: #174936; }
+      .metrics { font-size: 13px; color: #5e665f; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Voxora benchmark demo</h1>
+      <p>Live microphone conversation using the selected benchmark providers.</p>
+      <label for="code">Demo passcode</label>
+      <input id="code" type="password" autocomplete="off" />
+      <label for="language">Language</label>
+      <select id="language">
+        <option value="en">English</option>
+        <option value="hi">Hindi</option>
+        <option value="hinglish">Hinglish</option>
+      </select>
+      <div>
+        <button id="start">Start demo</button>
+        <button id="stop" class="secondary">Stop</button>
+      </div>
+      <div id="status">Disconnected.</div>
+      <article id="conversation"></article>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

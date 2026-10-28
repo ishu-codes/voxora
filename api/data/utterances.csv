@@ -1,0 +1,46 @@
+id,wav_path,reference_text,language,script,category,entities
+en01,data/wav/en01.wav,"Yes, this is Rohan speaking.",en,latin,name,name=Rohan
+en02,data/wav/en02.wav,I already paid my EMI last week.,en,latin,other,
+en03,data/wav/en03.wav,I will pay four thousand five hundred rupees by the fifth of November.,en,latin,amount,amount=four thousand five hundred;date=fifth of November
+en04,data/wav/en04.wav,Can you call me back in the evening?,en,latin,other,
+en05,data/wav/en05.wav,How do I pay through the app?,en,latin,other,
+en06,data/wav/en06.wav,"My EMI should be less than that, why is it four thousand five hundred?",en,latin,amount,amount=four thousand five hundred
+en07,data/wav/en07.wav,What happens if I pay after the seventh?,en,latin,date,date=seventh
+en08,data/wav/en08.wav,"I can pay on Friday, not before that.",en,latin,date,date=Friday
+en09,data/wav/en09.wav,I do not want to talk about this right now.,en,latin,refusal,
+en10,data/wav/en10.wav,Is there a late fee of three hundred rupees?,en,latin,amount,amount=three hundred
+en11,data/wav/en11.wav,Please send me the payment link on WhatsApp.,en,latin,other,
+en12,data/wav/en12.wav,"I lost my job, so I cannot pay this month.",en,latin,other,
+en13,data/wav/en13.wav,Who are you and why are you calling me?,en,latin,smalltalk,
+en14,data/wav/en14.wav,I will pay on the third of November using UPI.,en,latin,date,date=third of November
+en15,data/wav/en15.wav,Can I speak to a real person please?,en,latin,other,
+hi01,data/wav/hi01.wav,"हाँ, मैं रोहन बोल रहा हूँ।",hi,devanagari,name,name=रोहन
+hi02,data/wav/hi02.wav,मैंने अपनी ईएमआई कल ही भर दी है।,hi,devanagari,other,
+hi03,data/wav/hi03.wav,मैं पाँच नवंबर तक चार हज़ार पाँच सौ रुपये जमा कर दूँगा।,hi,devanagari,amount,amount=चार हज़ार पाँच सौ;date=पाँच नवंबर
+hi04,data/wav/hi04.wav,आप मुझे शाम को दोबारा फ़ोन कर लीजिए।,hi,devanagari,other,
+hi05,data/wav/hi05.wav,ऐप से पैसे कैसे भरने हैं?,hi,devanagari,other,
+hi06,data/wav/hi06.wav,मेरी किस्त इतनी ज़्यादा क्यों है?,hi,devanagari,amount,amount=इतनी ज़्यादा
+hi07,data/wav/hi07.wav,सात तारीख़ के बाद भरूँगा तो क्या होगा?,hi,devanagari,date,date=सात तारीख़
+hi08,data/wav/hi08.wav,"मैं शुक्रवार को पैसे दे पाऊँगा, उससे पहले नहीं।",hi,devanagari,date,date=शुक्रवार
+hi09,data/wav/hi09.wav,अभी मुझे इस बारे में बात नहीं करनी।,hi,devanagari,refusal,
+hi10,data/wav/hi10.wav,क्या देरी का जुर्माना तीन सौ रुपये है?,hi,devanagari,amount,amount=तीन सौ
+hi11,data/wav/hi11.wav,मुझे भुगतान का लिंक व्हाट्सएप पर भेज दीजिए।,hi,devanagari,other,
+hi12,data/wav/hi12.wav,"मेरी नौकरी चली गई है, इस महीने नहीं भर पाऊँगा।",hi,devanagari,other,
+hi13,data/wav/hi13.wav,आप कौन बोल रहे हैं और फ़ोन क्यों किया?,hi,devanagari,smalltalk,
+hi14,data/wav/hi14.wav,मैं तीन नवंबर को यूपीआई से भुगतान कर दूँगा।,hi,devanagari,date,date=तीन नवंबर
+hi15,data/wav/hi15.wav,क्या मैं किसी असली इंसान से बात कर सकता हूँ?,hi,devanagari,other,
+hg01,data/wav/hg01.wav,"Haan, main Rohan bol raha hoon.",hinglish,latin,name,name=Rohan
+hg02,data/wav/hg02.wav,Maine apni EMI kal hi bhar di hai.,hinglish,latin,other,
+hg03,data/wav/hg03.wav,Main paanch November tak chaar hazaar paanch sau rupaye de dunga.,hinglish,latin,amount,amount=chaar hazaar paanch sau;date=paanch November
+hg04,data/wav/hg04.wav,Aap mujhe shaam ko wapas call kar lijiye.,hinglish,latin,other,
+hg05,data/wav/hg05.wav,App se payment kaise karna hai?,hinglish,latin,other,
+hg06,data/wav/hg06.wav,"Meri EMI itni zyada kyun hai, kuch galat lag raha hai.",hinglish,latin,amount,amount=itni zyada
+hg07,data/wav/hg07.wav,Agar saat tareekh ke baad bharunga toh kya hoga?,hinglish,latin,date,date=saat tareekh
+hg08,data/wav/hg08.wav,"Main Friday ko pay kar paunga, usse pehle nahi.",hinglish,latin,date,date=Friday
+hg09,data/wav/hg09.wav,Abhi mujhe is baare mein baat nahi karni.,hinglish,latin,refusal,
+hg10,data/wav/hg10.wav,Kya late fee teen sau rupaye hai?,hinglish,latin,amount,amount=teen sau
+hg11,data/wav/hg11.wav,Payment ka link WhatsApp pe bhej do.,hinglish,latin,other,
+hg12,data/wav/hg12.wav,"Meri job chali gayi hai, is mahine nahi bhar paunga.",hinglish,latin,other,
+hg13,data/wav/hg13.wav,Aap kaun bol rahe ho aur call kyun kiya?,hinglish,latin,smalltalk,
+hg14,data/wav/hg14.wav,Main teen November ko UPI se payment kar dunga.,hinglish,latin,date,date=teen November
+hg15,data/wav/hg15.wav,Kya main kisi real insaan se baat kar sakta hoon?,hinglish,latin,other,

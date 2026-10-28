@@ -15,5 +15,9 @@ wheels/
 # Storage
 storage/
 
+# Generated local benchmark artifacts
+data/models/
+data/wav_noisy/
+
 # Unnecessary files
 */results.md

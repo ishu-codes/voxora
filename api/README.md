@@ -1,3 +1,176 @@
+# Voxora extended benchmark
+
+This harness evaluates the voice agent with recorded audio, classifier-based
+semantic scoring, noise conditions, conversation scenarios, and a live demo.
+Generated metrics live in [REPORT.md](REPORT.md) and
+[RESUME_NUMBERS.md](RESUME_NUMBERS.md); this section documents how to reproduce
+them.
+
+## Benchmark package layout
+
+- `bench/runners/` contains executable benchmark workflows and data generation.
+- `bench/analysis/` derives reports, provider selections, and prompt decisions
+  from saved results.
+- `bench/evaluation/` contains deterministic scoring, STT metrics, and the
+  classifier judge.
+- `bench/providers/` contains STT, TTS, and LLM provider adapters.
+- `bench/utils/` contains shared audio, normalization, and persistence helpers.
+- `bench/datasets/` loads scenario, prompt, and utterance metadata.
+- `bench/core/` owns typed configuration and path resolution.
+- `bench/docs/` contains benchmark changelogs.
+
+## Current results
+
+- Clean and five degraded audio conditions each contain 225 provider/mode rows
+  with zero recorded request errors.
+- The official latency run contains 100 measured turns with zero failures after
+  five discarded warmups.
+- Training-scenario pass rates are 7/60 for v1, 43/60 for v2, 55/60 for v3,
+  and 50/60 for v4. The selected final prompt is v3.
+- Final classifier calibration measured 87.5% overall agreement, 88.0%
+  conversation agreement, and no false passes. The held-out evaluation is
+  complete.
+- The held-out pass rate is 0/30 for v1 and 14/30 for the final prompt.
+- Headline values and their report sources are in
+  [RESUME_NUMBERS.md](RESUME_NUMBERS.md:1).
+
+## Classifier usage
+
+The benchmark uses `api/classification/classifier.py` with the model and endpoint
+configured in `config.yaml`. It sends a text state and named questions in JSON.
+Noul questions return a probability that the answer is true. Scenario judging
+sends five questions per conversation: expected behaviors, forbidden behaviors,
+fact accuracy, instruction leakage, and language mirroring. Instruction leakage
+uses `yes=bad`; the other four use `yes=good`. STT semantic questions use
+`yes=good`, as do entity questions. At most five questions are sent per call.
+
+## Run speech-to-text
+
+```bash
+uv run python -m bench.runners.run_stt \
+  --providers sarvam faster-whisper faster-whisper-nohint \
+  --modes transcribe codemix translit \
+  --wav-dir data/wav --condition clean
+uv run python -m bench.analysis.best_providers
+```
+
+Faster Whisper uses the local `base` model, beam size five, `float16` on
+available CUDA hardware, and `int8` on CPU. The model is cached under
+`data/models/faster-whisper`. Sarvam and Faster Whisper use the same `en` or
+`hi` language hint policy, followed by a separate no-hint Whisper condition.
+The OpenAI Whisper API adapter remains available but is reported as not run
+when `WHISPER_API_KEY` is absent.
+
+WER and CER are calculated only when detected output script equals reference
+script. Devanagari, Latin, mixed, and empty scripts are detected from Unicode
+ranges. Non-comparable rows remain in results with `wer_comparable=false`.
+Classifier semantic and entity metrics are calculated for all successful rows,
+including cross-script output.
+
+Entity annotations are stored in `data/utterances.csv`. Amount, date, and name
+accuracy are the share of classifier entity questions answered true.
+
+## Run noise tests
+
+```bash
+uv run python -m bench.runners.make_noisy
+uv run python -m bench.runners.run_noise
+```
+
+The generator creates clean, phone, pink-noise at twenty, ten, and five dB SNR,
+and three-speaker babble at ten dB SNR. It uses a fixed seed. Phone audio is
+band-limited, mu-law round-tripped, and saved at 8 kHz. Sarvam is sent the 8 kHz
+phone audio with a matching declared rate; Faster Whisper receives a 16 kHz
+upsampled copy because the local model path normalizes it to 16 kHz.
+
+## Run scenarios
+
+```bash
+uv run python -m bench.runners.run_scenarios --version v1 --runs 3
+uv run python -m bench.runners.run_scenarios --version v2 --runs 3
+uv run python -m bench.runners.run_scenarios --version v3 --runs 3
+uv run python -m bench.runners.run_scenarios --version v4 --runs 3
+uv run python -m bench.analysis.decisions
+uv run python -m bench.runners.run_scenarios --heldout --runs 3
+```
+
+Prompts v1–v3 remain unchanged. `DECISIONS.md` applies the specified selection
+rule and copies the winner to `prompts/agent_final.txt`. The training scenarios
+were used to write the prompts. Held-out evaluation occurs only after
+calibration is complete.
+
+The forty-word, digit, markdown, and emoji checks remain deterministic. The
+digit check covers every Unicode `Nd` digit. Prompt overlap is informational;
+instruction leakage and language mirroring are classifier questions stored with
+each conversation result. Diagnostic evidence is in `results/diagnostics/`.
+
+## Run latency
+
+```bash
+uv run python -m bench.runners.run_latency
+```
+
+The official run discards five warmups and measures twenty-five mixed-language
+utterances four times. Each audio stream is paced at real time in 100 ms chunks.
+`t0` is the instant after the last audio chunk is sent.
+
+- `stt_final_ms`: `t0` to final transcript.
+- `llm_first_token_ms`: final transcript to first LLM token.
+- `tts_first_audio_ms`: first complete sentence sent to TTS to first audio byte.
+- `end_to_end_ms`: `t0` to first TTS audio byte.
+
+The runner records the stage sum and flags turns whose difference exceeds fifty
+milliseconds. The difference includes assembling the first complete sentence
+after the first token and scheduling or network gaps between stages. A 100-turn
+sample makes p95 depend on the five slowest turns.
+
+## Run the demo
+
+```bash
+export DEMO_CODE=choose-a-passcode
+uv run uvicorn demo.app:app --host 127.0.0.1 --port 8000
+```
+
+Open `http://127.0.0.1:8000`. The microphone is captured by an AudioWorklet,
+downsampled to mono PCM16 at 16 kHz, sent over WebSocket, and played back with
+the TTS sample rate. Speech onset stops playback and cancels the active turn.
+Keys stay on the server. Sessions are capped at three minutes, with hourly
+per-IP and daily session caps controlled by `DEMO_SESSIONS_PER_IP_HOUR` and
+`DEMO_DAILY_SESSION_CAP`.
+
+For Google Cloud Run, review `demo/deploy.sh`. It refuses to proceed without an
+authenticated `gcloud` project, enables only one instance, keeps the request
+timeout above the session cap, and reads secrets from Secret Manager.
+
+```bash
+chmod +x demo/deploy.sh
+./demo/deploy.sh
+```
+
+## Limitations
+
+- English, Hindi, and Hinglish cells contain fifteen training utterances each.
+- There are twenty training scenarios and ten held-out scenarios, each run three
+  times per prompt version.
+- Official latency uses one hundred turns after five warmups.
+- The classifier is a model. Human calibration measured 87.5% overall
+  agreement, but the conversation sample contained no human failures, so the
+  false-pass rate could not be estimated from that sample.
+- Prompts were developed against the training scenarios, so their pass rate is a
+  training score.
+- No results cover real phone calls or concurrent users.
+- Faster Whisper `base` is a small model and may underperform on code-mixed
+  speech and Devanagari output.
+
+## Assumptions
+
+- The downloaded recordings in `data/wav` remain the source of truth.
+- The machine has no CUDA-capable device, so Faster Whisper runs with `int8`.
+- Optional Faster Whisper `small` is not run when the base benchmark already
+  exceeds the available run window.
+- An exact prompt-selection tie is resolved by choosing the earlier version
+  identifier; this is recorded in `DECISIONS.md`.
+
 # Voxora API
 
 FastAPI backend for Voxora, a low-latency streaming voice agent. It owns

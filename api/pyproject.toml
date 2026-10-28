@@ -3,11 +3,17 @@ name = "voxora-api"
 version = "0.1.0"
 description = "Real-time, low-latency voice AI backend for Voxora"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi[standard]>=0.141.0",
+    "faster-whisper>=1.2.0",
     "httpx>=0.28.0",
+    "jiwer>=3.1.0",
+    "pandas>=2.2.0",
     "python-dotenv>=1.2.0",
+    "pyyaml>=6.0.0",
+    "requests>=2.34.2",
+    "scipy>=1.14.0",
     "websockets>=15.0",
 ]
 
@@ -15,9 +21,14 @@ dependencies = [
 dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
+    "sounddevice>=0.5.0",
+    "soundfile>=0.13.0",
 ]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 filterwarnings = ["ignore::DeprecationWarning"]
+markers = [
+    "integration: requires live providers and a locally started server",
+]

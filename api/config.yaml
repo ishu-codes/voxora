@@ -1,0 +1,78 @@
+# Benchmark configuration. Secrets belong in the environment, never here.
+benchmark:
+  name: "Voxora EMI voice-agent benchmark"
+  sample_rate_hz: 16000
+  max_concurrency: 1
+  websocket_connection_spacing_s: 2.0
+  retries:
+    attempts: 6
+    base_delay_s: 1.0
+    max_delay_s: 30.0
+  latency:
+    warmup_runs: 5
+    repeats: 4
+    utterance_count: 25
+  scenarios:
+    runs_per_version: 3
+    prompt_versions: ["v1", "v2", "v3"]
+
+providers:
+  stt:
+    provider: "sarvam"
+    model: "saaras:v3-realtime"
+    language: "auto"
+    stream_type: "fast"
+    modes: ["transcribe", "codemix", "translit"]
+    timeout_s: 30
+
+  whisper:
+    enabled: false
+    provider: "openai"
+    model: "whisper-1"
+    base_url: "https://api.openai.com/v1"
+    language: "auto"
+    timeout_s: 60
+
+  faster_whisper:
+    model: "base"
+    beam_size: 5
+    download_root: "data/models/faster-whisper"
+
+  llm:
+    provider: "openai-compatible"
+    model: "deepseek-v4-flash"
+    base_url: "https://api.openai.com/v1"
+    temperature: 0.3
+    max_tokens: 320
+    timeout_s: 60
+    thinking: "disabled"
+
+  classification:
+    provider: "featherless"
+    model: "featherless-ai/gemma-4-26B-A4B-classifier"
+    endpoint: "https://simple-jev-demo-api.featherless.ai/v1/classifier"
+
+  tts:
+    provider: "sarvam"
+    model: "bulbul:v3"
+    speaker: "ritu"
+    sample_rate_hz: 22050
+    pace: 1.0
+    temperature: 0.6
+    timeout_s: 60
+
+audio:
+  convert_with: "ffmpeg"
+  encoding: "pcm_s16le"
+  channels: 1
+  sample_rate_hz: 16000
+
+environment:
+  sarvam_api_key: "SARVAM_API_KEY"
+  sarvam_ws_url: "SARVAM_WS_URL"
+  llm_api_key: "LLM_API_KEY"
+  llm_base_url: "LLM_BASE_URL"
+  llm_model: "LLM_MODEL"
+  whisper_api_key: "WHISPER_API_KEY"
+  whisper_base_url: "WHISPER_BASE_URL"
+  network_region: "BENCHMARK_NETWORK_REGION"
