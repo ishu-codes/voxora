@@ -8,16 +8,16 @@ them.
 
 ## Benchmark package layout
 
-- `bench/runners/` contains executable benchmark workflows and data generation.
-- `bench/analysis/` derives reports, provider selections, and prompt decisions
+- `src/bench/runners/` contains executable benchmark workflows and data generation.
+- `src/bench/analysis/` derives reports, provider selections, and prompt decisions
   from saved results.
-- `bench/evaluation/` contains deterministic scoring, STT metrics, and the
+- `src/bench/evaluation/` contains deterministic scoring, STT metrics, and the
   classifier judge.
-- `bench/providers/` contains STT, TTS, and LLM provider adapters.
-- `bench/utils/` contains shared audio, normalization, and persistence helpers.
-- `bench/datasets/` loads scenario, prompt, and utterance metadata.
-- `bench/core/` owns typed configuration and path resolution.
-- `bench/docs/` contains benchmark changelogs.
+- `src/bench/providers/` contains STT, TTS, and LLM provider adapters.
+- `src/bench/utils/` contains shared audio, normalization, and persistence helpers.
+- `src/bench/datasets/` loads scenario, prompt, and utterance metadata.
+- `src/bench/core/` owns typed configuration and path resolution.
+- `src/bench/docs/` contains benchmark changelogs.
 
 ## Current results
 
@@ -36,7 +36,7 @@ them.
 
 ## Classifier usage
 
-The benchmark uses `api/classification/classifier.py` with the model and endpoint
+The benchmark uses `api/src/classification/classifier.py` with the model and endpoint
 configured in `config.yaml`. It sends a text state and named questions in JSON.
 Noul questions return a probability that the answer is true. Scenario judging
 sends five questions per conversation: expected behaviors, forbidden behaviors,
@@ -47,16 +47,16 @@ uses `yes=bad`; the other four use `yes=good`. STT semantic questions use
 ## Run speech-to-text
 
 ```bash
-uv run python -m bench.runners.run_stt \
+PYTHONPATH=src uv run python -m bench.runners.run_stt \
   --providers sarvam faster-whisper faster-whisper-nohint \
   --modes transcribe codemix translit \
   --wav-dir data/wav --condition clean
-uv run python -m bench.analysis.best_providers
+PYTHONPATH=src uv run python -m bench.analysis.best_providers
 ```
 
 Faster Whisper uses the local `base` model, beam size five, `float16` on
 available CUDA hardware, and `int8` on CPU. The model is cached under
-`data/models/faster-whisper`. Sarvam and Faster Whisper use the same `en` or
+`src/data/models/faster-whisper`. Sarvam and Faster Whisper use the same `en` or
 `hi` language hint policy, followed by a separate no-hint Whisper condition.
 The OpenAI Whisper API adapter remains available but is reported as not run
 when `WHISPER_API_KEY` is absent.
@@ -67,14 +67,14 @@ ranges. Non-comparable rows remain in results with `wer_comparable=false`.
 Classifier semantic and entity metrics are calculated for all successful rows,
 including cross-script output.
 
-Entity annotations are stored in `data/utterances.csv`. Amount, date, and name
+Entity annotations are stored in `src/data/utterances.csv`. Amount, date, and name
 accuracy are the share of classifier entity questions answered true.
 
 ## Run noise tests
 
 ```bash
-uv run python -m bench.runners.make_noisy
-uv run python -m bench.runners.run_noise
+PYTHONPATH=src uv run python -m bench.runners.make_noisy
+PYTHONPATH=src uv run python -m bench.runners.run_noise
 ```
 
 The generator creates clean, phone, pink-noise at twenty, ten, and five dB SNR,
@@ -86,12 +86,12 @@ upsampled copy because the local model path normalizes it to 16 kHz.
 ## Run scenarios
 
 ```bash
-uv run python -m bench.runners.run_scenarios --version v1 --runs 3
-uv run python -m bench.runners.run_scenarios --version v2 --runs 3
-uv run python -m bench.runners.run_scenarios --version v3 --runs 3
-uv run python -m bench.runners.run_scenarios --version v4 --runs 3
-uv run python -m bench.analysis.decisions
-uv run python -m bench.runners.run_scenarios --heldout --runs 3
+PYTHONPATH=src uv run python -m bench.runners.run_scenarios --version v1 --runs 3
+PYTHONPATH=src uv run python -m bench.runners.run_scenarios --version v2 --runs 3
+PYTHONPATH=src uv run python -m bench.runners.run_scenarios --version v3 --runs 3
+PYTHONPATH=src uv run python -m bench.runners.run_scenarios --version v4 --runs 3
+PYTHONPATH=src uv run python -m bench.analysis.decisions
+PYTHONPATH=src uv run python -m bench.runners.run_scenarios --heldout --runs 3
 ```
 
 Prompts v1–v3 remain unchanged. `DECISIONS.md` applies the specified selection
@@ -107,7 +107,7 @@ each conversation result. Diagnostic evidence is in `results/diagnostics/`.
 ## Run latency
 
 ```bash
-uv run python -m bench.runners.run_latency
+PYTHONPATH=src uv run python -m bench.runners.run_latency
 ```
 
 The official run discards five warmups and measures twenty-five mixed-language
@@ -128,7 +128,7 @@ sample makes p95 depend on the five slowest turns.
 
 ```bash
 export DEMO_CODE=choose-a-passcode
-uv run uvicorn demo.app:app --host 127.0.0.1 --port 8000
+PYTHONPATH=src uv run uvicorn demo.app:app --host 127.0.0.1 --port 8000
 ```
 
 Open `http://127.0.0.1:8000`. The microphone is captured by an AudioWorklet,
@@ -138,13 +138,13 @@ Keys stay on the server. Sessions are capped at three minutes, with hourly
 per-IP and daily session caps controlled by `DEMO_SESSIONS_PER_IP_HOUR` and
 `DEMO_DAILY_SESSION_CAP`.
 
-For Google Cloud Run, review `demo/deploy.sh`. It refuses to proceed without an
+For Google Cloud Run, review `src/demo/deploy.sh`. It refuses to proceed without an
 authenticated `gcloud` project, enables only one instance, keeps the request
 timeout above the session cap, and reads secrets from Secret Manager.
 
 ```bash
-chmod +x demo/deploy.sh
-./demo/deploy.sh
+chmod +x src/demo/deploy.sh
+./src/demo/deploy.sh
 ```
 
 ## Limitations
@@ -164,7 +164,7 @@ chmod +x demo/deploy.sh
 
 ## Assumptions
 
-- The downloaded recordings in `data/wav` remain the source of truth.
+- The downloaded recordings in `src/data/wav` remain the source of truth.
 - The machine has no CUDA-capable device, so Faster Whisper runs with `int8`.
 - Optional Faster Whisper `small` is not run when the base benchmark already
   exceeds the available run window.
@@ -241,8 +241,9 @@ Rate limits apply across WebSocket reconnects. The server HMACs the caller IP,
 user agent and coarse browser signals into pseudonymous bucket keys; raw device
 signals are not retained in logs. The defaults allow one concurrent session per
 device, five connection attempts per ten minutes, ten sessions per hour, thirty
-shared-key turns per hour and one hundred per day. BYOK sessions still obey
-connection, concurrency and session-duration limits.
+shared-key turns per hour and one hundred per day. Every session also obeys
+connection, concurrency, provider-turn, usage-budget and session-duration
+limits. The API has no rate-limit bypass.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -283,40 +284,25 @@ server-derived IP quotas as a second layer.
 | `DELETE` | `/api/v1/voice/metrics` | Reset the in-memory metrics registry |
 | `WS` | `/api/v1/voice/ws` | Real-time voice session |
 
-## Bring-your-own keys
+## Provider credentials
 
-The server can run on shared platform keys with a per-session trial
-(`PLATFORM_MAX_TURNS`, default 20). A browser may instead send a `configure`
-frame as the first WebSocket message:
+The backend uses credentials from its server environment. WebSocket clients
+cannot replace Sarvam or LLM keys through a configure frame. The optional
+`configure` frame supplies coarse browser signals for abuse controls, and audio
+sent immediately after connecting is buffered briefly.
 
-```json
-{
-  "type": "configure",
-  "byok": {
-    "sarvam_api_key": "sk_...",
-    "openai_api_key": "sk-...",
-    "openai_base_url": "https://api.deepseek.com",
-    "openai_model": "deepseek-chat"
-  }
-}
-```
-
-The bundled web client does not use this backend WebSocket for complete BYOK
-settings. It calls Sarvam STT/TTS and the LLM directly from the browser. The
-configure-frame path remains available to API clients; platform-trial browser
-sessions always use the rate-limited backend pipeline.
-
-Keys are held in memory for that socket only and are never logged. Supplying
-both a Sarvam key and an OpenAI-compatible endpoint removes the trial limit.
-Audio sent before the `configure` frame is buffered briefly, so capture can
-start immediately.
+All backend sessions use the same rate limits. No client-supplied key or
+frontend BYOK mode removes or bypasses a backend quota.
 
 ## Voice catalog
 
 `GET /api/v1/voice/voices` returns the speaker list for the configured Bulbul
 version, a valid default speaker, and the supported language codes. The browser
 caches it for a day and sends `{"type":"voice","voice":"ritu"}` when the user
-picks a different speaker.
+picks a different speaker. Voice names, gender, descriptions, model mappings,
+languages, and cache metadata live in
+`src/voice/catalog/voices.json`. The API validates and caches this file during
+startup; restart the process after changing it.
 
 ## WebSocket protocol
 
@@ -416,9 +402,8 @@ user data and set `LOG_LEVEL=WARNING` if that is not acceptable.
   runtime on close; `GET /api/v1/voice/metrics` aggregates latency across turns.
 - **No raw audio logging.** Logs and metric records contain identifiers,
   timings and text — never audio samples.
-- **Secrets are not exposed.** Platform keys stay in the server environment.
-  Browser-supplied BYOK keys live only in that socket's private provider bundle,
-  are never written to disk, and are never included in `/config` or logs.
+- **Secrets are not exposed.** Provider keys stay in the server environment.
+  WebSocket clients cannot supply replacement provider keys.
 
 Before a public deployment, add authentication, per-user rate limits and TLS
 (WebSocket `wss://`); these are intentionally out of scope for this MVP.
@@ -440,7 +425,7 @@ latency. Replay a 16 kHz mono WAV so Sarvam receives real speech:
 
 ```bash
 ./run.sh bench --wav sample_16k_mono.wav --turns 10 --barge-in
-python -m scripts.benchmark --wav sample_16k_mono.wav --turns 10 --server-metrics
+PYTHONPATH=src python -m scripts.benchmark --wav sample_16k_mono.wav --turns 10 --server-metrics
 ```
 
 Report results together with the Sarvam model, LLM model, network conditions and
@@ -460,21 +445,44 @@ needs no network or API keys; Sarvam sockets are replaced with in-memory fakes.
 ## Layout
 
 ```
-src/voice/
-  config.py          # env-driven settings
-  audio.py           # PCM helpers (no numpy)
-  vad.py             # VAD protocol + EnergyVAD
-  sentence.py        # token stream -> speakable phrases
-  metrics.py         # latency registry + percentiles
-  session.py         # per-connection history
-  transport.py       # bounded WebSocket writer + test transport
-  pipeline.py        # cancellable VAD -> STT -> LLM -> TTS orchestration
-  router.py          # FastAPI routes and socket loop
-  providers/
-    base.py          # provider protocols and errors
-    stt.py           # Sarvam Saaras streaming STT
-    llm.py           # OpenAI-compatible streaming LLM + demo responder
-    tts.py           # Sarvam Bulbul streaming TTS
-scripts/
-  benchmark.py       # reproducible latency + interruption benchmark
+src/
+  bench/             # benchmark providers, runners, scoring, and reports
+  classification/    # conversation classifier client
+  data/              # recordings, transcripts, and scenarios
+  demo/              # benchmark demo and deployment assets
+  prompts/           # agent and classifier prompts
+  results/           # generated benchmark results
+  scripts/
+    benchmark.py     # reproducible latency + interruption benchmark
+  tests/             # backend and benchmark tests
+  tools/             # calibration and recording utilities
+  voice/
+    audio/
+      processing.py  # PCM helpers without numpy
+      sentence.py    # token stream -> speakable phrases
+      vad.py         # VAD protocol + EnergyVAD
+    catalog/
+      voices.py      # validated runtime catalog loader
+      voices.json    # voice, model, language, and cache metadata
+    controller/
+      router.py      # FastAPI HTTP and WebSocket endpoints
+    core/
+      config.py      # environment-driven settings
+      metrics.py     # latency registry + percentiles
+    providers/
+      base.py        # provider protocols and errors
+      stt.py         # Sarvam Saaras streaming STT
+      llm.py         # OpenAI-compatible streaming LLM + demo responder
+      tts.py         # Sarvam Bulbul streaming TTS
+    runtime/
+      pipeline.py    # cancellable VAD -> STT -> LLM -> TTS orchestration
+      session.py     # per-connection history
+      transport.py   # bounded WebSocket writer + test transport
+    security/
+      rate_limit.py  # identity, connection, usage, and session limits
+    services/
+      provider_bundle.py # provider construction and lifecycle
+      voice.py           # configuration, session, and control-frame services
+config.yaml          # benchmark configuration
+main.py              # FastAPI application entry point
 ```

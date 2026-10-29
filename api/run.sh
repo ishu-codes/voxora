@@ -7,6 +7,7 @@ BASE_URL_API="$BASE_URL/api/v1"
 
 PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 API_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$API_DIR"
 
 install() {
     # Runtime deps plus the pytest development group.
@@ -19,7 +20,7 @@ activate() {
     fi
     # shellcheck disable=SC1091
     source .venv/bin/activate
-    export PYTHONPATH="$API_DIR:$PROJECT_ROOT:$PYTHONPATH"
+    export PYTHONPATH="$API_DIR:$API_DIR/src:$PROJECT_ROOT:$PYTHONPATH"
 }
 
 case "$1" in

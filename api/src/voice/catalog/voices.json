@@ -1,0 +1,513 @@
+{
+  "provider": "sarvam",
+  "kind": "audio",
+  "cache_ttl_seconds": 86400,
+  "default_model": "bulbul:v3",
+  "languages": ["bn-IN", "en-IN", "gu-IN", "hi-IN", "kn-IN", "ml-IN", "mr-IN", "od-IN", "pa-IN", "ta-IN", "te-IN"],
+  "models": {
+    "bulbul:v2": {
+      "voices": [
+        {
+          "id": "anushka",
+          "name": "Anushka",
+          "gender": "female",
+          "description": "Warm and expressive"
+        },
+        {
+          "id": "manisha",
+          "name": "Manisha",
+          "gender": "female",
+          "description": "Clear and confident"
+        },
+        {
+          "id": "vidya",
+          "name": "Vidya",
+          "gender": "female",
+          "description": "Calm and articulate"
+        },
+        {
+          "id": "arya",
+          "name": "Arya",
+          "gender": "female",
+          "description": "Bright and friendly"
+        },
+        {
+          "id": "abhilash",
+          "name": "Abhilash",
+          "gender": "male",
+          "description": "Rich and conversational"
+        },
+        {
+          "id": "karun",
+          "name": "Karun",
+          "gender": "male",
+          "description": "Smooth and composed"
+        },
+        {
+          "id": "hitesh",
+          "name": "Hitesh",
+          "gender": "male",
+          "description": "Warm and clear"
+        }
+      ]
+    },
+    "bulbul:v3": {
+      "voices": [
+        {
+          "id": "shubh",
+          "name": "Shubh",
+          "gender": "male",
+          "description": "Warm and versatile"
+        },
+        {
+          "id": "aditya",
+          "name": "Aditya",
+          "gender": "male",
+          "description": "Clear and composed"
+        },
+        {
+          "id": "ritu",
+          "name": "Ritu",
+          "gender": "female",
+          "description": "Expressive and friendly"
+        },
+        {
+          "id": "priya",
+          "name": "Priya",
+          "gender": "female",
+          "description": "Bright and approachable"
+        },
+        {
+          "id": "neha",
+          "name": "Neha",
+          "gender": "female",
+          "description": "Conversational and warm"
+        },
+        {
+          "id": "rahul",
+          "name": "Rahul",
+          "gender": "male",
+          "description": "Confident and clear"
+        },
+        {
+          "id": "pooja",
+          "name": "Pooja",
+          "gender": "female",
+          "description": "Friendly and expressive"
+        },
+        {
+          "id": "rohan",
+          "name": "Rohan",
+          "gender": "male",
+          "description": "Calm and reassuring"
+        },
+        {
+          "id": "simran",
+          "name": "Simran",
+          "gender": "female",
+          "description": "Natural and engaging"
+        },
+        {
+          "id": "kavya",
+          "name": "Kavya",
+          "gender": "female",
+          "description": "Energetic and bright"
+        },
+        {
+          "id": "amit",
+          "name": "Amit",
+          "gender": "male",
+          "description": "Steady and trustworthy"
+        },
+        {
+          "id": "dev",
+          "name": "Dev",
+          "gender": "male",
+          "description": "Deep and composed"
+        },
+        {
+          "id": "ishita",
+          "name": "Ishita",
+          "gender": "female",
+          "description": "Clear and helpful"
+        },
+        {
+          "id": "shreya",
+          "name": "Shreya",
+          "gender": "female",
+          "description": "Warm and polished"
+        },
+        {
+          "id": "ratan",
+          "name": "Ratan",
+          "gender": "male",
+          "description": "Rich and expressive"
+        },
+        {
+          "id": "varun",
+          "name": "Varun",
+          "gender": "male",
+          "description": "Confident and dynamic"
+        },
+        {
+          "id": "manan",
+          "name": "Manan",
+          "gender": "male",
+          "description": "Friendly and relaxed"
+        },
+        {
+          "id": "sumit",
+          "name": "Sumit",
+          "gender": "male",
+          "description": "Practical and clear"
+        },
+        {
+          "id": "roopa",
+          "name": "Roopa",
+          "gender": "female",
+          "description": "Gentle and expressive"
+        },
+        {
+          "id": "kabir",
+          "name": "Kabir",
+          "gender": "male",
+          "description": "Warm and conversational"
+        },
+        {
+          "id": "aayan",
+          "name": "Aayan",
+          "gender": "male",
+          "description": "Young and lively"
+        },
+        {
+          "id": "ashutosh",
+          "name": "Ashutosh",
+          "gender": "male",
+          "description": "Thoughtful and measured"
+        },
+        {
+          "id": "advait",
+          "name": "Advait",
+          "gender": "male",
+          "description": "Calm and articulate"
+        },
+        {
+          "id": "anand",
+          "name": "Anand",
+          "gender": "male",
+          "description": "Warm and reassuring"
+        },
+        {
+          "id": "tanya",
+          "name": "Tanya",
+          "gender": "female",
+          "description": "Bright and conversational"
+        },
+        {
+          "id": "tarun",
+          "name": "Tarun",
+          "gender": "male",
+          "description": "Energetic and clear"
+        },
+        {
+          "id": "sunny",
+          "name": "Sunny",
+          "gender": "male",
+          "description": "Upbeat and friendly"
+        },
+        {
+          "id": "mani",
+          "name": "Mani",
+          "gender": "male",
+          "description": "Smooth and expressive"
+        },
+        {
+          "id": "gokul",
+          "name": "Gokul",
+          "gender": "male",
+          "description": "Clear and grounded"
+        },
+        {
+          "id": "vijay",
+          "name": "Vijay",
+          "gender": "male",
+          "description": "Confident and warm"
+        },
+        {
+          "id": "shruti",
+          "name": "Shruti",
+          "gender": "female",
+          "description": "Soft and clear"
+        },
+        {
+          "id": "suhani",
+          "name": "Suhani",
+          "gender": "female",
+          "description": "Lively and expressive"
+        },
+        {
+          "id": "mohit",
+          "name": "Mohit",
+          "gender": "male",
+          "description": "Friendly and casual"
+        },
+        {
+          "id": "kavitha",
+          "name": "Kavitha",
+          "gender": "female",
+          "description": "Warm and articulate"
+        },
+        {
+          "id": "rehan",
+          "name": "Rehan",
+          "gender": "male",
+          "description": "Young and conversational"
+        },
+        {
+          "id": "soham",
+          "name": "Soham",
+          "gender": "male",
+          "description": "Calm and thoughtful"
+        },
+        {
+          "id": "rupali",
+          "name": "Rupali",
+          "gender": "female",
+          "description": "Bright and engaging"
+        }
+      ]
+    },
+    "bulbul:v4": {
+      "voices": [
+        {
+          "id": "shubh_en_narration",
+          "name": "Shubh En Narration",
+          "gender": "male",
+          "description": "Warm English narrator"
+        },
+        {
+          "id": "shubh_en_narration_gentle",
+          "name": "Shubh En Narration Gentle",
+          "gender": "male",
+          "description": "Gentle English narrator"
+        },
+        {
+          "id": "shubh_en_audiobook",
+          "name": "Shubh En Audiobook",
+          "gender": "male",
+          "description": "English audiobook voice"
+        },
+        {
+          "id": "shubh_en_ads",
+          "name": "Shubh En Ads",
+          "gender": "male",
+          "description": "Energetic English ads"
+        },
+        {
+          "id": "shubh_en_recovery",
+          "name": "Shubh En Recovery",
+          "gender": "male",
+          "description": "Calm English support"
+        },
+        {
+          "id": "shubh_en_sports",
+          "name": "Shubh En Sports",
+          "gender": "male",
+          "description": "Excited English sports"
+        },
+        {
+          "id": "simran_en_conversation",
+          "name": "Simran En Conversation",
+          "gender": "female",
+          "description": "Natural English conversation"
+        },
+        {
+          "id": "simran_en_customer",
+          "name": "Simran En Customer",
+          "gender": "female",
+          "description": "Helpful English support"
+        },
+        {
+          "id": "simran_en_edtech",
+          "name": "Simran En Edtech",
+          "gender": "female",
+          "description": "Clear English teaching"
+        },
+        {
+          "id": "simran_en_sales",
+          "name": "Simran En Sales",
+          "gender": "female",
+          "description": "Confident English sales"
+        },
+        {
+          "id": "simran_en_therapist",
+          "name": "Simran En Therapist",
+          "gender": "female",
+          "description": "Calm English therapy"
+        },
+        {
+          "id": "ishita_en_customer",
+          "name": "Ishita En Customer",
+          "gender": "female",
+          "description": "Friendly English support"
+        },
+        {
+          "id": "ishita_en_medical",
+          "name": "Ishita En Medical",
+          "gender": "female",
+          "description": "Clear English medical"
+        },
+        {
+          "id": "ishita_en_social",
+          "name": "Ishita En Social",
+          "gender": "female",
+          "description": "Lively English social"
+        },
+        {
+          "id": "ishita_en_stories",
+          "name": "Ishita En Stories",
+          "gender": "female",
+          "description": "Expressive English stories"
+        },
+        {
+          "id": "neha_en_customer",
+          "name": "Neha En Customer",
+          "gender": "female",
+          "description": "Warm English support"
+        },
+        {
+          "id": "neha_en_latenight",
+          "name": "Neha En Latenight",
+          "gender": "female",
+          "description": "Relaxed English late night"
+        },
+        {
+          "id": "ritu_en_edtech",
+          "name": "Ritu En Edtech",
+          "gender": "female",
+          "description": "Bright English teaching"
+        },
+        {
+          "id": "ritu_en_medical",
+          "name": "Ritu En Medical",
+          "gender": "female",
+          "description": "Clear English medical"
+        },
+        {
+          "id": "ritu_en_reels",
+          "name": "Ritu En Reels",
+          "gender": "female",
+          "description": "Energetic English reels"
+        },
+        {
+          "id": "rohan_en_recovery",
+          "name": "Rohan En Recovery",
+          "gender": "male",
+          "description": "Calm English support"
+        },
+        {
+          "id": "dev_en_conversational",
+          "name": "Dev En Conversational",
+          "gender": "male",
+          "description": "Natural English conversation"
+        },
+        {
+          "id": "varun_en_ads",
+          "name": "Varun En Ads",
+          "gender": "male",
+          "description": "Bold English ads"
+        },
+        {
+          "id": "sanchita_en_companion",
+          "name": "Sanchita En Companion",
+          "gender": "female",
+          "description": "Warm English companion"
+        },
+        {
+          "id": "shalini_en_companion",
+          "name": "Shalini En Companion",
+          "gender": "female",
+          "description": "Friendly English companion"
+        },
+        {
+          "id": "aparna_en_companion",
+          "name": "Aparna En Companion",
+          "gender": "female",
+          "description": "Gentle English companion"
+        },
+        {
+          "id": "aditi_en_stories",
+          "name": "Aditi En Stories",
+          "gender": "female",
+          "description": "Playful English stories"
+        },
+        {
+          "id": "roopa_en_conversational",
+          "name": "Roopa En Conversational",
+          "gender": "female",
+          "description": "Natural English conversation"
+        },
+        {
+          "id": "shubh_enhi_companion",
+          "name": "Shubh Enhi Companion",
+          "gender": "male",
+          "description": "Warm English-Hindi companion"
+        },
+        {
+          "id": "simran_enhi_companion",
+          "name": "Simran Enhi Companion",
+          "gender": "female",
+          "description": "Warm English-Hindi companion"
+        },
+        {
+          "id": "ishita_enhi_customer",
+          "name": "Ishita Enhi Customer",
+          "gender": "female",
+          "description": "Helpful English-Hindi support"
+        },
+        {
+          "id": "pooja_hi_conversational",
+          "name": "Pooja Hi Conversational",
+          "gender": "female",
+          "description": "Natural Hindi conversation"
+        },
+        {
+          "id": "aditya_hi_conversational",
+          "name": "Aditya Hi Conversational",
+          "gender": "male",
+          "description": "Natural Hindi conversation"
+        },
+        {
+          "id": "ritu_hi_conversation",
+          "name": "Ritu Hi Conversation",
+          "gender": "female",
+          "description": "Friendly Hindi conversation"
+        },
+        {
+          "id": "shreya_hi_conversational",
+          "name": "Shreya Hi Conversational",
+          "gender": "female",
+          "description": "Warm Hindi conversation"
+        },
+        {
+          "id": "simran_hi_conversation",
+          "name": "Simran Hi Conversation",
+          "gender": "female",
+          "description": "Natural Hindi conversation"
+        },
+        {
+          "id": "kavya_hi_conversational",
+          "name": "Kavya Hi Conversational",
+          "gender": "female",
+          "description": "Bright Hindi conversation"
+        },
+        {
+          "id": "aayan_hi_conversational",
+          "name": "Aayan Hi Conversational",
+          "gender": "male",
+          "description": "Young Hindi conversation"
+        }
+      ]
+    }
+  }
+}

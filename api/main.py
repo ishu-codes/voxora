@@ -16,12 +16,13 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from src.voice.config import settings
-from src.voice.rate_limit import StrictRateLimiter
-from src.voice.router import ProviderBundle, shutdown_providers
-from src.voice.router import router as voice_router
+from src.voice.catalog import load_catalog
+from src.voice.controller import router as voice_router
+from src.voice.core.config import settings
+from src.voice.security.rate_limit import StrictRateLimiter
+from src.voice.services.provider_bundle import ProviderBundle, shutdown_providers
 
 logging.basicConfig(
     level=getattr(logging, settings.log_level, logging.INFO),
@@ -32,6 +33,13 @@ logger = logging.getLogger("voxora")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    catalog = load_catalog()
+    models = catalog["models"]
+    logger.info(
+        "voice catalog loaded models=%s voices=%d",
+        ", ".join(models),
+        sum(len(model["voices"]) for model in models.values()),
+    )
     app.state.voice_providers = ProviderBundle.build(settings)
     app.state.rate_limiter = StrictRateLimiter(settings)
     bundle: ProviderBundle = app.state.voice_providers

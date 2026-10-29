@@ -10,7 +10,7 @@ from urllib.parse import urlencode
 
 import websockets
 
-from ..config import SAMPLE_RATE, Settings
+from ..core.config import SAMPLE_RATE, Settings
 from .base import PartialCallback, ProviderError
 
 logger = logging.getLogger(__name__)

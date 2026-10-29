@@ -13,7 +13,7 @@ from typing import AsyncIterator
 
 import httpx
 
-from ..config import Settings
+from ..core.config import Settings
 from .base import ProviderError, provider_http_error
 
 logger = logging.getLogger(__name__)

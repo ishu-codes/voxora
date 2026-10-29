@@ -11,7 +11,7 @@ from urllib.parse import urlencode
 
 import websockets
 
-from ..config import Settings
+from ..core.config import Settings
 from .base import ProviderError
 
 logger = logging.getLogger(__name__)

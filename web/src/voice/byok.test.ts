@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { hasUnlimitedVoiceSettings } from "../lib/voice-settings.ts";
+import {
+  hasUnlimitedVoiceSettings,
+  toConfigurePayload,
+} from "../lib/voice-settings.ts";
 import { DirectSentenceChunker } from "./byok.ts";
 
 test("direct BYOK chunker streams speakable sentences", () => {
@@ -42,4 +45,30 @@ test("only complete BYOK settings select the direct-client path", () => {
     }),
     false,
   );
+});
+
+test("configure payload never includes browser provider keys", () => {
+  const payload = toConfigurePayload({
+    installation_id: "device-1",
+    screen_width: 1440,
+    screen_height: 900,
+    viewport_width: 1280,
+    viewport_height: 800,
+    pixel_ratio: 1,
+    color_depth: 24,
+    timezone: "Asia/Kolkata",
+    language: "en-IN",
+    platform: "Linux",
+    hardware_concurrency: 8,
+    device_memory: 8,
+    touch_points: 0,
+    webdriver: false,
+  });
+  const serialized = JSON.stringify(payload);
+
+  assert.equal("byok" in payload, false);
+  assert.equal(serialized.includes("sarvam_api_key"), false);
+  assert.equal(serialized.includes("openai_api_key"), false);
+  assert.equal(serialized.includes("api-subscription-key"), false);
+  assert.equal(serialized.includes("Authorization"), false);
 });

@@ -89,12 +89,6 @@ export type ConnectionStatus =
 export type ClientEvent =
   | {
       type: "configure";
-      byok: {
-        sarvam_api_key: string;
-        openai_api_key: string;
-        openai_base_url: string;
-        openai_model: string;
-      };
       client?: {
         installation_id: string;
         screen_width: number;

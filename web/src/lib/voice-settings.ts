@@ -1,7 +1,8 @@
 /**
  * Provider settings are intentionally browser-local: this prototype has no
  * accounts, so there is no server-side place to own a user's credentials.
- * They are sent to the API only as the first frame of a voice session.
+ * They are used only for direct browser-to-provider requests. They are never
+ * included in WebSocket frames sent to the Voxora API.
  */
 
 import type { ClientFingerprint } from "./device-fingerprint";
@@ -82,18 +83,9 @@ export function hasUnlimitedVoiceSettings(settings: VoiceSettings): boolean {
   );
 }
 
-export function toConfigurePayload(
-  settings: VoiceSettings,
-  client?: ClientFingerprint,
-) {
+export function toConfigurePayload(client?: ClientFingerprint) {
   return {
     type: "configure" as const,
-    byok: {
-      sarvam_api_key: settings.sarvamApiKey,
-      openai_api_key: settings.openaiApiKey,
-      openai_base_url: settings.openaiBaseUrl,
-      openai_model: settings.openaiModel,
-    },
     ...(client ? { client } : {}),
   };
 }

@@ -27,7 +27,8 @@ dev = [
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-testpaths = ["tests"]
+testpaths = ["src/tests"]
+pythonpath = [".", "src"]
 filterwarnings = ["ignore::DeprecationWarning"]
 markers = [
     "integration: requires live providers and a locally started server",

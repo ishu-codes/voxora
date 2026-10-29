@@ -1603,7 +1603,7 @@ export function useVoiceSession() {
       if (wsRef.current !== ws) return;
       ws.send(
         JSON.stringify(
-          toConfigurePayload(loadVoiceSettings(), collectClientFingerprint()),
+          toConfigurePayload(collectClientFingerprint()),
         ),
       );
     };
