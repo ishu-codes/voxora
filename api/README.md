@@ -239,11 +239,15 @@ straight to the browser without a decode step.
 
 Rate limits apply across WebSocket reconnects. The server HMACs the caller IP,
 user agent and coarse browser signals into pseudonymous bucket keys; raw device
-signals are not retained in logs. The defaults allow one concurrent session per
-device, five connection attempts per ten minutes, ten sessions per hour, thirty
-shared-key turns per hour and one hundred per day. Every session also obeys
-connection, concurrency, provider-turn, usage-budget and session-duration
-limits. The API has no rate-limit bypass.
+signals are not retained in logs. Shared-platform usage defaults to 10 queries
+per rolling hour. The quota is enforced against both the device identity and
+the caller IP, so changing a browser fingerprint does not reset the IP's
+allowance. Every session also obeys connection, concurrency, provider-turn,
+usage-budget and session-duration limits.
+
+`ALLOWED_UNLIMITED` is a comma-separated list of IP addresses or CIDR ranges
+that bypass rate limits. It is empty by default and should contain only trusted
+operator addresses.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -251,10 +255,11 @@ limits. The API has no rate-limit bypass.
 | `REQUIRE_BROWSER_CLIENT` | `true` | Reject curl, WebDriver and incomplete browser handshakes |
 | `RATE_LIMIT_SECRET` | generated | HMAC key for device/IP fingerprints |
 | `TRUST_PROXY_HEADERS` | `false` | Trust proxy-supplied client IP headers |
+| `ALLOWED_UNLIMITED` | none | Comma-separated IPs/CIDRs that bypass all limits |
 | `RATE_LIMIT_IDENTITY_ATTEMPTS_10M` | `5` | Connection attempts per identity |
 | `RATE_LIMIT_IDENTITY_SESSIONS_HOUR` | `10` | Sessions per identity per hour |
-| `RATE_LIMIT_PLATFORM_TURNS_HOUR` | `30` | Shared-key turns per identity per hour |
-| `RATE_LIMIT_PLATFORM_TURNS_DAY` | `100` | Shared-key turns per identity per day |
+| `RATE_LIMIT_PLATFORM_TURNS_HOUR` | `10` | Shared-key queries per device and IP per hour |
+| `RATE_LIMIT_PLATFORM_TURNS_DAY` | `240` | Shared-key queries per device and IP per day |
 | `RATE_LIMIT_STT_CHARS_HOUR` / `_DAY` | `30000` / `120000` | Final transcript characters |
 | `RATE_LIMIT_LLM_CHARS_HOUR` / `_DAY` | `30000` / `120000` | Generated response characters |
 | `RATE_LIMIT_LLM_TOKENS_HOUR` / `_DAY` | `8000` / `32000` | Approximate generated tokens |
@@ -291,8 +296,11 @@ cannot replace Sarvam or LLM keys through a configure frame. The optional
 `configure` frame supplies coarse browser signals for abuse controls, and audio
 sent immediately after connecting is buffered briefly.
 
-All backend sessions use the same rate limits. No client-supplied key or
-frontend BYOK mode removes or bypasses a backend quota.
+Backend sessions use the strict shared-platform limits above. The browser BYOK
+path calls the user's providers directly and never opens the backend voice
+socket, so it is not subject to the shared-platform query quota. When the free
+quota is exhausted, the web client shows the reset time and a link to settings
+for adding provider keys.
 
 ## Voice catalog
 

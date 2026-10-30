@@ -108,8 +108,8 @@ export default function SettingsPage() {
               Platform trial
             </div>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              No setup. Uses Voxora&apos;s shared keys and is limited to a small
-              number of turns per session.
+              No setup. Uses Voxora&apos;s shared keys and includes 10 free
+              queries per rolling hour across sessions.
             </p>
           </div>
 
@@ -280,9 +280,9 @@ export default function SettingsPage() {
         </form>
 
         <p className="mt-6 text-xs leading-5 text-muted-foreground">
-          Keys are saved in this browser&apos;s local storage and sent to the
-          Voxora server only as part of your voice session. The server does not
-          save them. Anyone with access to this browser profile can read them.
+          Keys are saved in this browser&apos;s local storage and sent directly
+          to your selected providers. They are not sent to Voxora. Anyone with
+          access to this browser profile can read them.
         </p>
       </main>
     </div>

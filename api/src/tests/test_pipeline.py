@@ -10,6 +10,7 @@ from src.voice.core.config import FRAME_BYTES, Settings
 from src.voice.core.metrics import MetricsRegistry
 from src.voice.runtime.pipeline import VoicePipeline
 from src.voice.runtime.transport import CollectingTransport
+from src.voice.security.rate_limit import RateLimitDecision
 
 
 def _frame(amplitude: float) -> bytes:
@@ -480,8 +481,12 @@ async def test_platform_turn_limit_blocks_extra_turns():
 async def test_cross_session_turn_guard_blocks_generation():
     pipeline, transport = _pipeline(FakeSTT(), FakeLLM(["unused"]), FakeAudioTTS(1))
 
-    async def guard() -> str:
-        return "Voice usage limit reached for this device."
+    async def guard() -> RateLimitDecision:
+        return RateLimitDecision.deny(
+            "Voice usage limit reached for this device.",
+            120,
+            code="trial_exhausted",
+        )
 
     pipeline.turn_guard = guard
     await _speak(pipeline)
@@ -489,7 +494,9 @@ async def test_cross_session_turn_guard_blocks_generation():
     await _await_turn(pipeline)
 
     errors = transport.of_type("error")
-    assert errors and errors[0]["stage"] == "rate_limit"
+    assert errors and errors[0]["stage"] == "quota"
+    assert errors[0]["code"] == "trial_exhausted"
+    assert errors[0]["retry_after_s"] == 120
     assert transport.of_type("assistant.done") == []
     assert pipeline.session.turn_count == 0
     await pipeline.close()

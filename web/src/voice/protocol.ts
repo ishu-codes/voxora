@@ -20,7 +20,11 @@ export type ReadyEvent = {
     voice?: string;
   };
   vad: { name: string; threshold: number; end_silence_ms: number };
-  platform?: { limited: boolean; turn_limit: number | null };
+  platform?: {
+    limited: boolean;
+    turn_limit: number | null;
+    window_seconds?: number | null;
+  };
   targets: {
     first_audio_p50_ms: number;
     first_audio_p95_ms: number;
@@ -67,6 +71,9 @@ export type ServerEvent =
       message: string;
       recoverable: boolean;
       retry_after_s?: number;
+      code?: string;
+      limit?: number;
+      remaining?: number;
     }
   | { type: "pong" };
 

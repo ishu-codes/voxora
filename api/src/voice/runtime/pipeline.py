@@ -22,6 +22,7 @@ from ..core.config import FRAME_BYTES, SAMPLE_RATE, Settings
 from ..core.metrics import MetricsRegistry
 from ..core.metrics import registry as default_registry
 from ..providers.base import LLMProvider, ProviderError, STTProvider, TTSProvider
+from ..security.rate_limit import RateLimitDecision
 from .session import VoiceSession
 from .transport import Transport
 
@@ -59,7 +60,9 @@ class VoicePipeline:
         metrics: MetricsRegistry | None = None,
         session: VoiceSession | None = None,
         turn_limit: int | None = None,
-        turn_guard: Callable[[], Awaitable[str | None]] | None = None,
+        turn_guard: Callable[
+            [], Awaitable[RateLimitDecision | str | None]
+        ] | None = None,
         usage_guard: Callable[[str, int, int], Awaitable[str | None]] | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -96,6 +99,7 @@ class VoicePipeline:
         self._state = "idle"
         self._last_level_at = 0.0
         self._closed = False
+        self._accepting_audio = True
         self._tts_prewarm_task: asyncio.Task[None] | None = None
 
     # ------------------------------------------------------------------ setup
@@ -141,6 +145,7 @@ class VoicePipeline:
             "platform": {
                 "limited": self.turn_limit is not None,
                 "turn_limit": self.turn_limit,
+                "window_seconds": 60 * 60 if self.turn_limit is not None else None,
             },
             "targets": {
                 "first_audio_p50_ms": 700,
@@ -172,7 +177,7 @@ class VoicePipeline:
     # ------------------------------------------------------------ audio input
 
     async def feed_audio(self, data: bytes) -> None:
-        if not data or self._closed:
+        if not data or self._closed or not self._accepting_audio:
             return
         self._frame_buffer.extend(data)
         while len(self._frame_buffer) >= FRAME_BYTES:
@@ -304,6 +309,37 @@ class VoicePipeline:
                 }
             )
             self._schedule_tts_prewarm()
+            if self.turn_guard is not None:
+                guard_result = await self.turn_guard()
+                if isinstance(guard_result, str):
+                    decision = RateLimitDecision.deny(
+                        guard_result,
+                        60 * 60,
+                        code="trial_exhausted",
+                    )
+                elif guard_result is not None and not guard_result.allowed:
+                    decision = guard_result
+                else:
+                    decision = None
+                if decision is not None:
+                    await self.transport.send(
+                        {
+                            "type": "error",
+                            "turn_id": self._label(generation),
+                            "stage": "quota",
+                            "code": decision.code or "trial_exhausted",
+                            "message": decision.message,
+                            "retry_after_s": decision.retry_after_s,
+                            "limit": self.settings.rate_limit_platform_turns_hour,
+                            "recoverable": False,
+                        }
+                    )
+                    await self._set_state("listening", generation)
+                    # Stop accepting audio immediately even if a malicious
+                    # client ignores the quota event. This prevents repeat STT
+                    # calls until the browser closes or reconnects.
+                    self._accepting_audio = False
+                    return
             if (
                 self.turn_limit is not None
                 and self.session.turn_count >= self.turn_limit
@@ -313,30 +349,20 @@ class VoicePipeline:
                         "type": "error",
                         "turn_id": self._label(generation),
                         "stage": "quota",
+                        "code": "trial_exhausted",
                         "message": (
                             "The shared platform trial has reached its turn limit. "
                             "Add your Sarvam key and an OpenAI-compatible endpoint "
                             "in Settings to keep talking without platform limits."
                         ),
+                        "retry_after_s": 60 * 60,
+                        "limit": self.turn_limit,
                         "recoverable": False,
                     }
                 )
                 await self._set_state("listening", generation)
+                self._accepting_audio = False
                 return
-            if self.turn_guard is not None:
-                denied = await self.turn_guard()
-                if denied:
-                    await self.transport.send(
-                        {
-                            "type": "error",
-                            "turn_id": self._label(generation),
-                            "stage": "rate_limit",
-                            "message": denied,
-                            "recoverable": False,
-                        }
-                    )
-                    await self._set_state("listening", generation)
-                    return
             await self._consume_usage("stt", chars=len(text))
             self.session.add("user", text)
             self.session.turn_count += 1

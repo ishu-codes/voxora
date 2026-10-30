@@ -7,6 +7,7 @@ endpoint (DeepSeek, Groq, Ollama, vLLM) speaks the same protocol.
 
 from __future__ import annotations
 
+import ipaddress
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -44,6 +45,12 @@ def _env_bool(name: str, default: bool) -> bool:
     return raw in {"1", "true", "yes", "on"}
 
 
+def _env_csv(name: str, default: str = "") -> tuple[str, ...]:
+    return tuple(
+        item.strip() for item in _env(name, default).split(",") if item.strip()
+    )
+
+
 DEFAULT_SYSTEM_PROMPT = (
     "You are Voxora, a friendly real-time voice assistant. Your replies are "
     "spoken aloud, so answer in plain conversational language. Never use "
@@ -58,6 +65,7 @@ class Settings:
     app_name: str = "Voxora"
     version: str = "0.1.0"
     cors_origins: tuple[str, ...] = ("http://localhost:3000",)
+    allowed_unlimited: tuple[str, ...] = ()
 
     # Sarvam connection
     sarvam_api_key: str = ""
@@ -102,7 +110,7 @@ class Settings:
     # Platform keys are shared, so anonymous sessions get a bounded trial.
     # Sessions that bring a Sarvam key plus an OpenAI-compatible endpoint do
     # not use this limit.
-    platform_max_turns: int = 20
+    platform_max_turns: int = 10
 
     # Strict abuse controls. These are evaluated across WebSocket sessions,
     # unlike platform_max_turns which applies to one connection.
@@ -115,8 +123,10 @@ class Settings:
     rate_limit_identity_attempts_10m: int = 5
     rate_limit_identity_sessions_hour: int = 10
     rate_limit_identity_sessions_day: int = 20
-    rate_limit_platform_turns_hour: int = 30
-    rate_limit_platform_turns_day: int = 100
+    rate_limit_platform_turns_hour: int = 10
+    # A rolling hourly quota naturally caps a continuously active caller at 240
+    # turns over 24 hours. Keep the wider window aligned with that bound.
+    rate_limit_platform_turns_day: int = 240
     rate_limit_stt_chars_hour: int = 30_000
     rate_limit_stt_chars_day: int = 120_000
     rate_limit_llm_chars_hour: int = 30_000
@@ -132,16 +142,27 @@ class Settings:
     log_level: str = "INFO"
     store_recent_turns: int = 500
 
+    def ip_is_unlimited(self, value: str) -> bool:
+        """Return true when a caller IP is explicitly exempted by the operator."""
+        try:
+            address = ipaddress.ip_address(value)
+        except ValueError:
+            return False
+        for entry in self.allowed_unlimited:
+            try:
+                if address in ipaddress.ip_network(entry, strict=False):
+                    return True
+            except ValueError:
+                continue
+        return False
+
     @classmethod
     def from_env(cls) -> "Settings":
-        origins = tuple(
-            origin.strip()
-            for origin in _env("CORS_ORIGINS", "http://localhost:3000").split(",")
-            if origin.strip()
-        )
+        origins = _env_csv("CORS_ORIGINS", "http://localhost:3000")
         return cls(
             app_name=_env("APP_NAME", "Voxora"),
             cors_origins=origins or ("http://localhost:3000",),
+            allowed_unlimited=_env_csv("ALLOWED_UNLIMITED"),
             sarvam_api_key=_env("SARVAM_API_KEY"),
             sarvam_ws_url=_env("SARVAM_WS_URL", "wss://api.sarvam.ai").rstrip("/"),
             stt_model=_env("STT_MODEL", "saaras:v3-realtime"),
@@ -171,7 +192,7 @@ class Settings:
             vad_max_utterance_ms=_env_int("VAD_MAX_UTTERANCE_MS", 30_000),
             max_history_messages=_env_int("MAX_HISTORY_MESSAGES", 24),
             max_output_queue=_env_int("MAX_OUTPUT_QUEUE", 256),
-            platform_max_turns=_env_int("PLATFORM_MAX_TURNS", 20),
+            platform_max_turns=_env_int("PLATFORM_MAX_TURNS", 10),
             rate_limit_enabled=_env_bool("RATE_LIMIT_ENABLED", True),
             require_browser_client=_env_bool("REQUIRE_BROWSER_CLIENT", True),
             rate_limit_secret=_env("RATE_LIMIT_SECRET"),
@@ -188,10 +209,10 @@ class Settings:
                 "RATE_LIMIT_IDENTITY_SESSIONS_DAY", 20
             ),
             rate_limit_platform_turns_hour=_env_int(
-                "RATE_LIMIT_PLATFORM_TURNS_HOUR", 30
+                "RATE_LIMIT_PLATFORM_TURNS_HOUR", 10
             ),
             rate_limit_platform_turns_day=_env_int(
-                "RATE_LIMIT_PLATFORM_TURNS_DAY", 100
+                "RATE_LIMIT_PLATFORM_TURNS_DAY", 240
             ),
             rate_limit_stt_chars_hour=_env_int(
                 "RATE_LIMIT_STT_CHARS_HOUR", 30_000

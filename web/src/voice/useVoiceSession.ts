@@ -70,6 +70,11 @@ export type VoiceSessionState = {
 
 export type LocalVadStatus = "off" | "loading" | "active" | "fallback";
 
+export type QuotaExhaustedState = {
+  limit: number;
+  retryAt: number;
+};
+
 const WS_URL_OVERRIDE = process.env.NEXT_PUBLIC_VOICE_WS;
 
 function fallbackVoice(voiceId: string | undefined): VoiceOption | null {
@@ -131,6 +136,9 @@ export function useVoiceSession() {
   const clearMessages = useConversationStore((state) => state.clearMessages);
   const [level, setLevel] = useState(IDLE_LEVEL);
   const [error, setError] = useState<string | null>(null);
+  const [quotaExhausted, setQuotaExhausted] =
+    useState<QuotaExhaustedState | null>(null);
+  const [quotaNoticeDismissed, setQuotaNoticeDismissed] = useState(false);
   const [muted, setMuted] = useState(false);
   const [vadStatus, setVadStatus] = useState<LocalVadStatus>("off");
   const [diagnostics, setDiagnostics] = useState<TurnDiagnostics[]>([]);
@@ -215,6 +223,16 @@ export function useVoiceSession() {
     return () =>
       window.speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
+
+  useEffect(() => {
+    if (!quotaExhausted) return;
+    const delay = Math.max(0, quotaExhausted.retryAt - Date.now());
+    const timer = window.setTimeout(() => {
+      setQuotaExhausted(null);
+      setQuotaNoticeDismissed(false);
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [quotaExhausted]);
 
   const options = useMemo<VoiceOption[]>(() => {
     const kind = ready?.tts.kind ?? catalog?.kind;
@@ -779,10 +797,9 @@ export function useVoiceSession() {
       const settings = byokSettingsRef.current;
       const collectedFrames = directUtteranceRef.current;
       directUtteranceRef.current = [];
-      const frames =
-        vadAudio?.length
-          ? [float32ToPcm16(vadAudio)]
-          : collectedFrames;
+      const frames = vadAudio?.length
+        ? [float32ToPcm16(vadAudio)]
+        : collectedFrames;
       if (
         !activeRef.current ||
         !byokRef.current ||
@@ -1203,6 +1220,21 @@ export function useVoiceSession() {
           break;
         }
         case "error":
+          if (event.stage === "quota" || event.code === "trial_exhausted") {
+            fatalConnectionRef.current = true;
+            const retryAfter =
+              typeof event.retry_after_s === "number"
+                ? Math.max(1, event.retry_after_s)
+                : 60 * 60;
+            setQuotaExhausted({
+              limit:
+                event.limit ?? readyRef.current?.platform?.turn_limit ?? 10,
+              retryAt: Date.now() + retryAfter * 1000,
+            });
+            setQuotaNoticeDismissed(false);
+            void stopRef.current?.();
+            break;
+          }
           if (
             !event.recoverable &&
             (event.stage === "rate_limit" ||
@@ -1601,11 +1633,7 @@ export function useVoiceSession() {
     wsRef.current = ws;
     ws.onopen = () => {
       if (wsRef.current !== ws) return;
-      ws.send(
-        JSON.stringify(
-          toConfigurePayload(collectClientFingerprint()),
-        ),
-      );
+      ws.send(JSON.stringify(toConfigurePayload(collectClientFingerprint())));
     };
     ws.onmessage = (message: MessageEvent<string>) => {
       if (typeof message.data !== "string") return;
@@ -1650,6 +1678,11 @@ export function useVoiceSession() {
 
   const start = useCallback(async () => {
     if (activeRef.current) return;
+    if (quotaExhausted && quotaExhausted.retryAt > Date.now()) return;
+    if (quotaExhausted) {
+      setQuotaExhausted(null);
+      setQuotaNoticeDismissed(false);
+    }
     const settings = loadVoiceSettings();
     const direct = hasUnlimitedVoiceSettings(settings);
     byokSettingsRef.current = direct ? settings : null;
@@ -1795,6 +1828,7 @@ export function useVoiceSession() {
     startCaptureWatchdog,
     startLocalVad,
     stopCaptureWatchdog,
+    quotaExhausted,
   ]);
 
   const stop = useCallback(async () => {
@@ -1968,5 +2002,12 @@ export function useVoiceSession() {
     toggleMute,
     clearConversation,
     dismissError: () => setError(null),
+    quotaExhausted,
+    quotaNoticeVisible: quotaExhausted !== null && !quotaNoticeDismissed,
+    dismissQuotaNotice: () => setQuotaNoticeDismissed(true),
+    clearQuotaExhausted: () => {
+      setQuotaExhausted(null);
+      setQuotaNoticeDismissed(false);
+    },
   };
 }

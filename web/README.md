@@ -48,7 +48,9 @@ browser uses the direct BYOK path: Sarvam STT/TTS and the LLM are requested
 without opening the Voxora backend voice socket. Provider keys therefore remain
 in the browser, but direct LLM endpoints must include the web origin in their
 CORS policy. Platform-trial sessions continue through the backend and are
-subject to cross-session rate and usage limits.
+subject to cross-session rate and usage limits. After 10 shared-platform
+queries in a rolling hour, the studio stops the metered session and shows a
+quota alert with the reset time and a link to bring your own keys.
 
 ```bash
 pnpm test        # interruption, PCM conversion and transcript persistence

@@ -121,6 +121,7 @@ async def test_cross_session_turn_quota_is_enforced():
     denied = await limiter.allow_turn(identity)
     assert not denied.allowed
     assert denied.retry_after_s > 0
+    assert denied.code == "trial_exhausted"
 
 
 async def test_turn_quota_has_no_bypass():
@@ -133,6 +134,99 @@ async def test_turn_quota_has_no_bypass():
 
     assert (await limiter.allow_turn(identity)).allowed
     assert not (await limiter.allow_turn(identity)).allowed
+
+
+async def test_default_turn_quota_is_ten_per_rolling_hour():
+    settings = Settings(rate_limit_secret="test-secret")
+    limiter = StrictRateLimiter(settings)
+    identity = _identity(limiter)
+
+    for _ in range(10):
+        assert (await limiter.allow_turn(identity)).allowed
+
+    denied = await limiter.allow_turn(identity)
+    assert not denied.allowed
+    assert denied.code == "trial_exhausted"
+    assert "10 free queries" in denied.message
+
+
+async def test_new_device_fingerprint_cannot_reset_ip_turn_quota():
+    settings = Settings(
+        rate_limit_secret="test-secret",
+        rate_limit_platform_turns_hour=1,
+    )
+    limiter = StrictRateLimiter(settings)
+    signals = ClientSignals(
+        installation_id="device-1",
+        screen_width=1440,
+        screen_height=900,
+        timezone="Asia/Kolkata",
+        language="en-IN",
+        platform="Linux",
+    )
+    first = limiter.identity(
+        ip="203.0.113.8",
+        user_agent="Browser/1.0",
+        origin="https://voxora.test",
+        signals=signals,
+    )
+    second = limiter.identity(
+        ip="203.0.113.8",
+        user_agent="Browser/2.0",
+        origin="https://voxora.test",
+        signals=ClientSignals(
+            installation_id="device-2",
+            screen_width=1920,
+            screen_height=1080,
+            timezone="Asia/Kolkata",
+            language="en-IN",
+            platform="Linux",
+        ),
+    )
+
+    assert (await limiter.allow_turn(first)).allowed
+    denied = await limiter.allow_turn(second)
+    assert not denied.allowed
+    assert denied.code == "trial_exhausted"
+
+
+async def test_turn_quota_preflight_does_not_consume_allowance():
+    settings = Settings(
+        rate_limit_secret="test-secret",
+        rate_limit_platform_turns_hour=1,
+    )
+    limiter = StrictRateLimiter(settings)
+    identity = _identity(limiter)
+
+    assert (await limiter.check_turn(identity)).allowed
+    assert (await limiter.check_turn(identity)).allowed
+    assert (await limiter.allow_turn(identity)).allowed
+    assert not (await limiter.check_turn(identity)).allowed
+
+
+async def test_turn_quota_resets_after_one_hour():
+    now = 1_000.0
+    settings = Settings(
+        rate_limit_secret="test-secret",
+        rate_limit_platform_turns_hour=1,
+    )
+    limiter = StrictRateLimiter(settings, clock=lambda: now)
+    identity = _identity(limiter)
+
+    assert (await limiter.allow_turn(identity)).allowed
+    assert not (await limiter.allow_turn(identity)).allowed
+    now += 3_601
+    assert (await limiter.allow_turn(identity)).allowed
+
+
+def test_allowed_unlimited_accepts_ips_and_cidr(monkeypatch):
+    monkeypatch.setenv("ALLOWED_UNLIMITED", "127.0.0.1, 10.0.0.0/8")
+    settings = Settings.from_env()
+
+    assert settings.allowed_unlimited == ("127.0.0.1", "10.0.0.0/8")
+    assert settings.ip_is_unlimited("127.0.0.1")
+    assert settings.ip_is_unlimited("10.24.6.8")
+    assert not settings.ip_is_unlimited("203.0.113.8")
 
 
 async def test_stt_llm_and_tts_usage_are_budgeted_separately():
@@ -204,6 +298,56 @@ async def test_router_rejects_ip_limit_before_provider_setup(monkeypatch):
 
     assert websocket.accepted
     assert websocket.sent[-1]["stage"] == "rate_limit"
+    assert websocket.closed == (1008, "Rate limit exceeded")
+
+
+async def test_router_rejects_exhausted_query_quota_before_ready():
+    settings = _router_settings(rate_limit_platform_turns_hour=1)
+    limiter = StrictRateLimiter(settings)
+    identity = limiter.identity(
+        ip="203.0.113.8",
+        user_agent="Browser/1.0",
+        origin="https://voxora.test",
+        signals=ClientSignals(
+            installation_id="device-1",
+            screen_width=1440,
+            screen_height=900,
+            timezone="Asia/Kolkata",
+            language="en-IN",
+            platform="Linux",
+        ),
+    )
+    assert (await limiter.allow_turn(identity)).allowed
+    websocket = _FakeWebSocket(
+        app=_router_app(settings, limiter),
+        messages=[
+            {
+                "type": "websocket.receive",
+                "text": json.dumps(
+                    {
+                        "type": "configure",
+                        "client": {
+                            "installation_id": "device-1",
+                            "screen_width": 1440,
+                            "screen_height": 900,
+                            "viewport_width": 1280,
+                            "viewport_height": 800,
+                            "timezone": "Asia/Kolkata",
+                            "language": "en-IN",
+                            "platform": "Linux",
+                        },
+                    }
+                ),
+            }
+        ],
+    )
+
+    await serve_voice_socket(websocket)
+
+    assert websocket.sent[-1]["stage"] == "rate_limit"
+    assert websocket.sent[-1]["code"] == "trial_exhausted"
+    assert websocket.sent[-1]["limit"] == 1
+    assert websocket.sent[-1]["retry_after_s"] > 0
     assert websocket.closed == (1008, "Rate limit exceeded")
 
 
@@ -297,6 +441,53 @@ async def test_router_rejects_duplicate_identity_before_provider_setup(monkeypat
 
     assert websocket.sent[-1]["stage"] == "rate_limit"
     assert websocket.closed == (1008, "Rate limit exceeded")
+
+
+async def test_allowed_unlimited_ip_bypasses_all_rate_limits():
+    settings = _router_settings(
+        allowed_unlimited=("203.0.113.8",),
+        rate_limit_ip_attempts_10m=0,
+        rate_limit_identity_attempts_10m=0,
+        rate_limit_identity_sessions_hour=0,
+        rate_limit_platform_turns_hour=0,
+        rate_limit_max_session_seconds=0,
+    )
+    limiter = StrictRateLimiter(settings)
+    websocket = _FakeWebSocket(
+        app=_router_app(settings, limiter),
+        messages=[
+            {
+                "type": "websocket.receive",
+                "text": json.dumps(
+                    {
+                        "type": "configure",
+                        "client": {
+                            "installation_id": "device-1",
+                            "screen_width": 1440,
+                            "screen_height": 900,
+                            "viewport_width": 1280,
+                            "viewport_height": 800,
+                            "timezone": "Asia/Kolkata",
+                            "language": "en-IN",
+                            "platform": "Linux",
+                        },
+                    }
+                ),
+            },
+            {"type": "websocket.disconnect", "code": 1000},
+        ],
+    )
+
+    await serve_voice_socket(websocket)
+
+    assert websocket.accepted
+    assert websocket.sent[0]["type"] == "ready"
+    assert websocket.sent[0]["platform"] == {
+        "limited": False,
+        "turn_limit": None,
+        "window_seconds": None,
+    }
+    assert all(event.get("stage") != "rate_limit" for event in websocket.sent)
 
 
 def test_fingerprint_is_hmac_and_changes_with_ip_or_device():

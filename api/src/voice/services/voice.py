@@ -167,15 +167,17 @@ async def _reject_rate_limit(
     websocket: WebSocket,
     decision: RateLimitDecision,
 ) -> None:
-    await websocket.send_json(
-        {
-            "type": "error",
-            "stage": "rate_limit",
-            "message": decision.message,
-            "retry_after_s": decision.retry_after_s,
-            "recoverable": False,
-        }
-    )
+    payload = {
+        "type": "error",
+        "stage": "rate_limit",
+        "message": decision.message,
+        "retry_after_s": decision.retry_after_s,
+        "code": decision.code,
+        "recoverable": False,
+    }
+    if decision.limit > 0:
+        payload["limit"] = decision.limit
+    await websocket.send_json(payload)
     await websocket.close(code=1008, reason="Rate limit exceeded")
 
 
@@ -218,16 +220,23 @@ async def serve_voice_socket(websocket: WebSocket) -> None:
         websocket.headers,
         trust_proxy_headers=platform_bundle.settings.trust_proxy_headers,
     )
+    unlimited = platform_bundle.settings.ip_is_unlimited(caller_ip)
+    if unlimited:
+        logger.warning(
+            "voice socket bypasses rate limits for allowlisted IP client=%s",
+            client_label,
+        )
     provisional = limiter.identity(
         ip=caller_ip,
         user_agent=websocket.headers.get("user-agent", ""),
         origin=origin or "",
         signals=ClientSignals(),
     )
-    ip_decision = await limiter.record_ip_attempt(provisional.ip_key)
-    if not ip_decision.allowed:
-        await _reject_rate_limit(websocket, ip_decision)
-        return
+    if not unlimited:
+        ip_decision = await limiter.record_ip_attempt(provisional.ip_key)
+        if not ip_decision.allowed:
+            await _reject_rate_limit(websocket, ip_decision)
+            return
 
     if platform_bundle.settings.require_browser_client:
         issue = browser_transport_issue(
@@ -262,10 +271,19 @@ async def serve_voice_socket(websocket: WebSocket) -> None:
         origin=origin or "",
         signals=client_signals,
     )
-    identity_decision = await limiter.acquire(identity)
-    if not identity_decision.allowed:
-        await _reject_rate_limit(websocket, identity_decision)
-        return
+    identity_acquired = False
+    if not unlimited:
+        identity_decision = await limiter.acquire(identity)
+        if not identity_decision.allowed:
+            await _reject_rate_limit(websocket, identity_decision)
+            return
+        identity_acquired = True
+
+        quota_decision = await limiter.check_turn(identity)
+        if not quota_decision.allowed:
+            await _reject_rate_limit(websocket, quota_decision)
+            await limiter.release(identity)
+            return
 
     transport: QueueTransport | None = None
     try:
@@ -276,11 +294,9 @@ async def serve_voice_socket(websocket: WebSocket) -> None:
         )
         session = VoiceSession()
 
-        async def allow_turn() -> str | None:
+        async def allow_turn() -> RateLimitDecision:
             decision = await limiter.allow_turn(identity)
-            if decision.allowed:
-                return None
-            return decision.message
+            return decision
 
         async def guard_usage(kind: str, chars: int, tokens: int) -> str | None:
             decision = await limiter.consume_usage(
@@ -307,14 +323,17 @@ async def serve_voice_socket(websocket: WebSocket) -> None:
                 max_utterance_ms=session_settings.vad_max_utterance_ms,
             ),
             session=session,
-            turn_limit=session_settings.platform_max_turns,
-            turn_guard=allow_turn,
-            usage_guard=guard_usage,
+            turn_limit=(
+                None if unlimited else session_settings.platform_max_turns
+            ),
+            turn_guard=None if unlimited else allow_turn,
+            usage_guard=None if unlimited else guard_usage,
         )
     except Exception:
         if transport is not None:
             await transport.close()
-        await limiter.release(identity)
+        if identity_acquired:
+            await limiter.release(identity)
         raise
     logger.info(
         "voice session %s started (stt=%s llm=%s tts=%s early_audio_bytes=%d)",
@@ -336,7 +355,8 @@ async def serve_voice_socket(websocket: WebSocket) -> None:
             await pipeline.feed_audio(chunk)
         deadline = (
             time.monotonic() + session_settings.rate_limit_max_session_seconds
-            if session_settings.rate_limit_max_session_seconds > 0
+            if not unlimited
+            and session_settings.rate_limit_max_session_seconds > 0
             else float("inf")
         )
         while True:
@@ -400,7 +420,8 @@ async def serve_voice_socket(websocket: WebSocket) -> None:
     except Exception:  # pragma: no cover - connection level guard
         logger.exception("Voice session failed")
     finally:
-        await limiter.release(identity)
+        if identity_acquired:
+            await limiter.release(identity)
         await pipeline.close()
         await transport.close()
         runtime_ms = round((time.time() - pipeline.session.created_at) * 1000)

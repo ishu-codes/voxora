@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sidebar";
 import { VoicePicker } from "@/components/ui/voice-picker";
 import { ConversationPanel } from "@/components/voice/ConversationPanel";
+import { QuotaExhaustedAlert } from "@/components/voice/QuotaExhaustedAlert";
 import { cn } from "@/lib/utils";
 import { useVoiceSessionContext } from "@/voice/voice-session-provider";
 
@@ -83,6 +84,9 @@ export default function VoiceStudioPage() {
   const live =
     session.status === "connected" || session.status === "reconnecting";
   const canHangUp = live || connecting;
+  const quotaBlocked =
+    session.quotaExhausted != null &&
+    session.quotaExhausted.retryAt > Date.now();
 
   const initializing =
     live && (!session.ready || session.vadStatus === "loading");
@@ -165,6 +169,15 @@ export default function VoiceStudioPage() {
             </div>
           ) : null}
 
+          {session.quotaNoticeVisible ? (
+            <QuotaExhaustedAlert
+              limit={session.quotaExhausted?.limit ?? 10}
+              retryAt={session.quotaExhausted?.retryAt ?? Date.now()}
+              onDismiss={session.dismissQuotaNotice}
+              onExpired={session.clearQuotaExhausted}
+            />
+          ) : null}
+
           <div className="relative flex min-h-0 flex-1">
             <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-6">
               <div className="absolute top-4 right-4 z-10 flex items-center gap-1 sm:top-6 sm:right-6">
@@ -235,17 +248,19 @@ export default function VoiceStudioPage() {
 
                   <ControlButton
                     label={
-                      connecting
-                        ? "Connecting"
-                        : live
-                          ? "End conversation"
-                          : "Start conversation"
+                      quotaBlocked
+                        ? "Wait for query limit to reset"
+                        : connecting
+                          ? "Connecting"
+                          : live
+                            ? "End conversation"
+                            : "Start conversation"
                     }
                     onClick={() => {
                       if (canHangUp) void session.stop();
                       else void session.start();
                     }}
-                    disabled={connecting}
+                    disabled={connecting || quotaBlocked}
                     variant={live ? "danger" : "default"}
                     className="size-16 shadow-sm"
                   >

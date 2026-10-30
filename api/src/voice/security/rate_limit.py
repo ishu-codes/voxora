@@ -119,14 +119,23 @@ class RateLimitDecision:
     allowed: bool
     message: str = ""
     retry_after_s: int = 0
+    code: str = ""
+    limit: int = 0
 
     @classmethod
     def accept(cls) -> RateLimitDecision:
         return cls(True)
 
     @classmethod
-    def deny(cls, message: str, retry_after_s: int) -> RateLimitDecision:
-        return cls(False, message, max(1, retry_after_s))
+    def deny(
+        cls,
+        message: str,
+        retry_after_s: int,
+        *,
+        code: str = "rate_limit",
+        limit: int = 0,
+    ) -> RateLimitDecision:
+        return cls(False, message, max(1, retry_after_s), code, limit)
 
 
 def client_ip(
@@ -284,6 +293,8 @@ class StrictRateLimiter:
                         WINDOW_DAY,
                     ),
                 ),
+                code="rate_limit",
+                message="Too many voice connection attempts from this IP. Try again later.",
             )
             if denied is not None:
                 return denied
@@ -327,6 +338,8 @@ class StrictRateLimiter:
                         WINDOW_DAY,
                     ),
                 ),
+                code="session_limit",
+                message="Voice session limit reached for this device. Try again later.",
             )
             if denied is not None:
                 return denied
@@ -347,36 +360,77 @@ class StrictRateLimiter:
             else:
                 self._active.pop(key, None)
 
+    def _turn_windows(
+        self,
+        identity: DeviceIdentity,
+    ) -> tuple[tuple[str, str, int, int], ...]:
+        # Check both the device fingerprint and the caller IP. Changing a
+        # browser fingerprint cannot reset the public IP's hourly allowance.
+        return (
+            (
+                "identity_platform_turn_hour",
+                identity.identity_key,
+                self.settings.rate_limit_platform_turns_hour,
+                WINDOW_HOUR,
+            ),
+            (
+                "ip_platform_turn_hour",
+                identity.ip_key,
+                self.settings.rate_limit_platform_turns_hour,
+                WINDOW_HOUR,
+            ),
+            (
+                "identity_platform_turn_day",
+                identity.identity_key,
+                self.settings.rate_limit_platform_turns_day,
+                WINDOW_DAY,
+            ),
+            (
+                "ip_platform_turn_day",
+                identity.ip_key,
+                self.settings.rate_limit_platform_turns_day,
+                WINDOW_DAY,
+            ),
+        )
+
+    def _turn_decision(
+        self,
+        now: float,
+        identity: DeviceIdentity,
+    ) -> RateLimitDecision | None:
+        limit = self.settings.rate_limit_platform_turns_hour
+        return self._check_windows(
+            now,
+            self._turn_windows(identity),
+            code="trial_exhausted",
+            message=(
+                f"You have used all {limit} free queries for this hour. "
+                "Bring your own API keys to continue immediately, or wait "
+                "for the window to reset."
+            ),
+        )
+
+    async def check_turn(self, identity: DeviceIdentity) -> RateLimitDecision:
+        """Check quota without consuming it, before initializing providers."""
+        if not self.enabled:
+            return RateLimitDecision.accept()
+        async with self._lock:
+            denied = self._turn_decision(self._clock(), identity)
+            return denied or RateLimitDecision.accept()
+
     async def allow_turn(
         self,
         identity: DeviceIdentity,
     ) -> RateLimitDecision:
         if not self.enabled:
             return RateLimitDecision.accept()
-        key = identity.identity_key
         async with self._lock:
             now = self._clock()
-            denied = self._check_windows(
-                now,
-                (
-                    (
-                        "platform_turn_hour",
-                        key,
-                        self.settings.rate_limit_platform_turns_hour,
-                        WINDOW_HOUR,
-                    ),
-                    (
-                        "platform_turn_day",
-                        key,
-                        self.settings.rate_limit_platform_turns_day,
-                        WINDOW_DAY,
-                    ),
-                ),
-            )
+            denied = self._turn_decision(now, identity)
             if denied is not None:
                 return denied
-            self._record("platform_turn_hour", key, now)
-            self._record("platform_turn_day", key, now)
+            for scope, bucket_key, _limit, _width in self._turn_windows(identity):
+                self._record(scope, bucket_key, now)
             return RateLimitDecision.accept()
 
     async def consume_usage(
@@ -446,6 +500,7 @@ class StrictRateLimiter:
                     return RateLimitDecision.deny(
                         f"{label.title()} usage limit reached for this device.",
                         retry_after,
+                        code="usage_limit",
                     )
             for scope, bucket_key, _limit, _width, amount in windows:
                 self._usage_buckets.setdefault((scope, bucket_key), deque()).append(
@@ -460,6 +515,9 @@ class StrictRateLimiter:
         self,
         now: float,
         windows: tuple[tuple[str, str, int, int], ...],
+        *,
+        code: str,
+        message: str,
     ) -> RateLimitDecision | None:
         for scope, key, limit, width in windows:
             bucket = self._buckets.setdefault((scope, key), _Bucket())
@@ -473,8 +531,10 @@ class StrictRateLimiter:
                     else max(1, width)
                 )
                 return RateLimitDecision.deny(
-                    "Voice usage limit reached for this device. Try again later.",
+                    message,
                     retry_after,
+                    code=code,
+                    limit=limit,
                 )
         return None
 
