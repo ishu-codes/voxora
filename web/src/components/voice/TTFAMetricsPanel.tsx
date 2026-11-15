@@ -55,7 +55,7 @@ export function TTFAMetricsPanel({ records, onReset }: TTFAMetricsPanelProps) {
   return (
     <section
       aria-label="Time to first audio metrics"
-      className="max-h-[52%] shrink-0 overflow-y-auto border-t border-border bg-sidebar"
+      className="min-h-full bg-sidebar"
     >
       <div className="space-y-4 p-4">
         <div className="flex items-start justify-between gap-3">

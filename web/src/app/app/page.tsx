@@ -21,9 +21,8 @@ import {
 } from "@/components/ui/sidebar";
 import { VoicePicker } from "@/components/ui/voice-picker";
 import { ConversationPanel } from "@/components/voice/ConversationPanel";
-import { ProviderSelector } from "@/components/voice/ProviderSelector";
 import { QuotaExhaustedAlert } from "@/components/voice/QuotaExhaustedAlert";
-import { ScenarioPicker } from "@/components/voice/ScenarioPicker";
+import { SessionSetupPicker } from "@/components/voice/SessionSetupPicker";
 import { cn } from "@/lib/utils";
 import { useVoiceSessionContext } from "@/voice/voice-session-provider";
 
@@ -182,7 +181,19 @@ export default function VoiceStudioPage() {
 
           <div className="relative flex min-h-0 flex-1">
             <main className="relative flex min-h-0 flex-1 flex-col items-center justify-center overflow-y-auto px-4 py-6">
-              <div className="absolute top-4 right-4 z-10 flex items-center gap-1 sm:top-6 sm:right-6">
+              <div className="absolute top-4 right-4 z-10 flex flex-col items-end gap-2 sm:top-6 sm:right-6">
+                <SessionSetupPicker
+                  scenarios={session.scenarios}
+                  scenarioId={session.selectedScenarioId}
+                  onScenarioChange={session.selectScenario}
+                  sttProvider={session.sttProvider}
+                  sttChoices={session.sttProviderChoices}
+                  onSttProviderChange={session.selectSttProvider}
+                  ttsProvider={session.ttsProvider}
+                  ttsChoices={session.ttsProviderChoices}
+                  onTtsProviderChange={session.selectTtsProvider}
+                  disabled={live || connecting}
+                />
                 <VoicePicker
                   voices={session.voices}
                   value={session.voice}
@@ -195,32 +206,6 @@ export default function VoiceStudioPage() {
               </div>
 
               <div className="flex w-full max-w-xl flex-col items-center gap-5">
-                {!live && !connecting ? (
-                  <>
-                    {session.scenarios.length ? (
-                      <ScenarioPicker
-                        scenarios={session.scenarios}
-                        value={session.selectedScenarioId}
-                        onChange={session.selectScenario}
-                      />
-                    ) : null}
-                    <div className="grid w-full max-w-md grid-cols-2 gap-3">
-                      <ProviderSelector
-                        label="Speech recognition"
-                        value={session.sttProvider}
-                        choices={session.sttProviderChoices}
-                        onChange={session.selectSttProvider}
-                      />
-                      <ProviderSelector
-                        label="Voice synthesis"
-                        value={session.ttsProvider}
-                        choices={session.ttsProviderChoices}
-                        onChange={session.selectTtsProvider}
-                      />
-                    </div>
-                  </>
-                ) : null}
-
                 <div className="relative size-65 shrink-0 sm:size-60 lg:size-70 xl:size-80">
                   <Orb
                     agentState={orbState}

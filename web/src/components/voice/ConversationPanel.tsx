@@ -1,6 +1,11 @@
 "use client";
 
-import { MessageSquareIcon, Trash2Icon, XIcon } from "lucide-react";
+import {
+  BarChart3Icon,
+  MessageSquareIcon,
+  Trash2Icon,
+  XIcon,
+} from "lucide-react";
 import { useState } from "react";
 import {
   AlertDialog,
@@ -21,6 +26,7 @@ import {
 } from "@/components/ui/conversation";
 import { Message, MessageContent } from "@/components/ui/message";
 import { SidebarHeader, SidebarTrigger } from "@/components/ui/sidebar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { TurnMetricRecord } from "@/lib/metrics";
 import { cn } from "@/lib/utils";
 import type { AgentState, ConnectionStatus } from "@/voice/protocol";
@@ -45,6 +51,8 @@ export function ConversationPanel({
   onResetMetrics,
 }: ConversationPanelProps) {
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
+  const [tab, setTab] = useState<"chat" | "stats">("chat");
+  const showStats = tab === "stats";
   const thinking =
     agentState === "thinking" && messages.at(-1)?.role === "user";
 
@@ -53,10 +61,14 @@ export function ConversationPanel({
       <SidebarHeader className="h-21.25 shrink-0 flex-row items-center justify-between gap-3 border-b border-border bg-sidebar px-4 py-0">
         <div className="min-w-0">
           <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-muted-foreground">
-            Conversation
+            {showStats ? "Session stats" : "Conversation"}
           </p>
           <h2 className="mt-1 truncate text-lg font-semibold tracking-tight">
-            {status === "connected" ? "Live transcript" : "Session transcript"}
+            {showStats
+              ? "Latency breakdown"
+              : status === "connected"
+                ? "Live transcript"
+                : "Session transcript"}
           </h2>
         </div>
         <div className="flex items-center gap-1">
@@ -106,73 +118,97 @@ export function ConversationPanel({
         </AlertDialogContent>
       </AlertDialog>
 
-      {messages.length === 0 ? (
-        <ConversationEmptyState
-          className="flex-1"
-          icon={<MessageSquareIcon className="size-8" />}
-          title="No conversation yet"
-          description="Start a session and speak. Partial transcripts appear here as they stream."
-        />
-      ) : (
-        <Conversation>
-          <ConversationContent className="flex flex-col gap-0">
-            {messages.map((message) => {
-              const isUser = message.role === "user";
-              const streaming = !message.final;
+      <Tabs
+        value={tab}
+        onValueChange={(value) => setTab(value === "stats" ? "stats" : "chat")}
+        className="min-h-0 flex-1 gap-0"
+      >
+        <TabsList className="mx-4 mt-3 grid w-[calc(100%-2rem)] grid-cols-2">
+          <TabsTrigger value="chat">
+            <MessageSquareIcon />
+            Chat
+          </TabsTrigger>
+          <TabsTrigger value="stats">
+            <BarChart3Icon />
+            Stats
+          </TabsTrigger>
+        </TabsList>
 
-              return (
-                <Message
-                  key={message.id}
-                  from={message.role}
-                  className="py-2.5"
-                >
-                  <MessageContent
-                    variant="contained"
-                    className={cn(
-                      "max-w-[92%] whitespace-pre-wrap break-words",
-                      isUser
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-secondary text-foreground",
-                      message.interrupted && "opacity-70",
-                      message.failed && "ring-1 ring-destructive/40",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "font-mono text-[10px] uppercase tracking-[0.2em]",
-                        isUser
-                          ? "text-primary-foreground/70"
-                          : "text-muted-foreground",
-                      )}
+        <TabsContent
+          value="chat"
+          className="flex flex-col data-[hidden]:hidden"
+        >
+          {messages.length === 0 ? (
+            <ConversationEmptyState
+              className="flex-1"
+              icon={<MessageSquareIcon className="size-8" />}
+              title="No conversation yet"
+              description="Start a session and speak. Partial transcripts appear here as they stream."
+            />
+          ) : (
+            <Conversation>
+              <ConversationContent className="flex flex-col gap-0">
+                {messages.map((message) => {
+                  const isUser = message.role === "user";
+                  const streaming = !message.final;
+
+                  return (
+                    <Message
+                      key={message.id}
+                      from={message.role}
+                      className="py-2.5"
                     >
-                      {isUser ? "You" : "Voxora"}
-                      {streaming ? " · streaming" : ""}
-                      {message.interrupted ? " · interrupted" : ""}
-                      {message.failed ? " · failed" : ""}
-                    </span>
-                    <span>
-                      {message.text || (streaming ? "…" : "")}
-                      {!isUser && streaming ? (
-                        <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-current align-middle" />
-                      ) : null}
-                    </span>
-                  </MessageContent>
-                </Message>
-              );
-            })}
+                      <MessageContent
+                        variant="contained"
+                        className={cn(
+                          "max-w-[92%] whitespace-pre-wrap break-words",
+                          isUser
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-foreground",
+                          message.interrupted && "opacity-70",
+                          message.failed && "ring-1 ring-destructive/40",
+                        )}
+                      >
+                        <span
+                          className={cn(
+                            "font-mono text-[10px] uppercase tracking-[0.2em]",
+                            isUser
+                              ? "text-primary-foreground/70"
+                              : "text-muted-foreground",
+                          )}
+                        >
+                          {isUser ? "You" : "Voxora"}
+                          {streaming ? " · streaming" : ""}
+                          {message.interrupted ? " · interrupted" : ""}
+                          {message.failed ? " · failed" : ""}
+                        </span>
+                        <span>
+                          {message.text || (streaming ? "…" : "")}
+                          {!isUser && streaming ? (
+                            <span className="ml-0.5 inline-block h-3.5 w-1.5 animate-pulse bg-current align-middle" />
+                          ) : null}
+                        </span>
+                      </MessageContent>
+                    </Message>
+                  );
+                })}
 
-            {thinking ? (
-              <div className="flex items-center gap-2 px-1 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                <span className="size-1.5 animate-pulse rounded-full bg-brand-text" />
-                thinking
-              </div>
-            ) : null}
-          </ConversationContent>
-          <ConversationScrollButton />
-        </Conversation>
-      )}
+                {thinking ? (
+                  <div className="flex items-center gap-2 px-1 py-3 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                    <span className="size-1.5 animate-pulse rounded-full bg-brand-text" />
+                    thinking
+                  </div>
+                ) : null}
+              </ConversationContent>
+              <ConversationScrollButton />
+            </Conversation>
+          )}
+        </TabsContent>
 
-      <TTFAMetricsPanel records={ttfaRecords} onReset={onResetMetrics} />
+        <TabsContent value="stats" className="overflow-y-auto">
+          <TTFAMetricsPanel records={ttfaRecords} onReset={onResetMetrics} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
