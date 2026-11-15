@@ -138,8 +138,8 @@ function percentile(values: number[], p: number): number | null {
 }
 
 export function useVoiceSession() {
-  const [sttProvider, setSttProviderState] = useState("faster-whisper");
-  const [ttsProvider, setTtsProviderState] = useState("sarvam");
+  const [sttProvider, setSttProviderState] = useState("gnani");
+  const [ttsProvider, setTtsProviderState] = useState("gnani");
   const [providerConfig, setProviderConfig] = useState<ProviderConfig | null>(
     null,
   );
@@ -167,6 +167,7 @@ export function useVoiceSession() {
   );
   const [voice, setVoiceState] = useState<string | undefined>(undefined);
   const providerTouchedRef = useRef(false);
+  const scenarioSelectedByUserRef = useRef(false);
   const selectedScenarioRef = useRef<string>("emi-reminder");
   const sttProviderRef = useRef(sttProvider);
   const ttsProviderRef = useRef(ttsProvider);
@@ -473,6 +474,7 @@ export function useVoiceSession() {
     providerTouchedRef.current = true;
     ttsProviderRef.current = provider;
     setTtsProviderState(provider);
+    scenarioSelectedByUserRef.current = false;
     voiceRef.current = undefined;
     setVoiceState(undefined);
   }, []);
@@ -482,6 +484,7 @@ export function useVoiceSession() {
       if (activeRef.current) return;
       const scenario = scenarios.find((item) => item.id === scenarioId);
       if (!scenario) return;
+      scenarioSelectedByUserRef.current = true;
       selectedScenarioRef.current = scenario.id;
       setSelectedScenarioId(scenario.id);
       const catalog = catalogRef.current;
@@ -503,9 +506,7 @@ export function useVoiceSession() {
       current &&
       current !== SYSTEM_VOICE &&
       catalog.voices.some((item) => item.id === current);
-    const next = valid
-      ? current
-      : catalog.default_voice || catalog.voices[0].id;
+    const next = valid ? current : catalog.voices[0].id;
     if (!next || next === current) return;
     voiceRef.current = next;
     setVoiceState(next);
@@ -517,6 +518,7 @@ export function useVoiceSession() {
   useEffect(() => {
     if (
       activeRef.current ||
+      !scenarioSelectedByUserRef.current ||
       !selectedScenario ||
       catalog?.kind !== "audio" ||
       !catalog.voices.length

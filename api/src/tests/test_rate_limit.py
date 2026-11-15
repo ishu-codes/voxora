@@ -72,6 +72,7 @@ def _router_settings(**overrides) -> Settings:
         "sarvam_api_key": "",
         "llm_api_key": "",
         "stt_provider": "sarvam",
+        "tts_provider": "sarvam",
     }
     values.update(overrides)
     return Settings(**values)

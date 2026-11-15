@@ -72,7 +72,7 @@ class Settings:
     sarvam_ws_url: str = "wss://api.sarvam.ai"
 
     # Speech to text (local Whisper by default, Sarvam Saaras optional)
-    stt_provider: str = "whisper"
+    stt_provider: str = "gnani"
     stt_model: str = "saaras:v3-realtime"
     stt_language: str = "en-IN"
     stt_stream_type: str = "fast"
@@ -98,7 +98,7 @@ class Settings:
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
 
     # Text to speech (Sarvam Bulbul, streaming WebSocket)
-    tts_provider: str = "sarvam"
+    tts_provider: str = "gnani"
     tts_model: str = "bulbul:v3"
     tts_voice: str = "shubh"
     tts_language: str = "en-IN"
@@ -110,7 +110,7 @@ class Settings:
     # Gnani Timbre v2.5 realtime speech synthesis
     gnani_tts_url: str = "wss://api.vachana.ai/api/v1/tts"
     gnani_tts_model: str = "timbre-v2.5"
-    gnani_tts_voice: str = "Poorvi"
+    gnani_tts_voice: str = "Kaveri"
     gnani_tts_language: str = "hi-en"
 
     # Provider retries are deliberately bounded. Requests run one at a time.
@@ -185,7 +185,7 @@ class Settings:
             allowed_unlimited=_env_csv("ALLOWED_UNLIMITED"),
             sarvam_api_key=_env("SARVAM_API_KEY"),
             sarvam_ws_url=_env("SARVAM_WS_URL", "wss://api.sarvam.ai").rstrip("/"),
-            stt_provider=_env("STT_PROVIDER", "whisper").lower(),
+            stt_provider=_env("STT_PROVIDER", "gnani").lower(),
             stt_model=_env("STT_MODEL", "saaras:v3-realtime"),
             stt_language=_env("STT_LANGUAGE", "en-IN"),
             stt_stream_type=_env("STT_STREAM_TYPE", "fast").lower(),
@@ -208,7 +208,7 @@ class Settings:
             llm_max_tokens=_env_int("LLM_MAX_TOKENS", 320),
             llm_timeout_s=_env_float("LLM_TIMEOUT_S", 60.0),
             system_prompt=_env("SYSTEM_PROMPT", DEFAULT_SYSTEM_PROMPT),
-            tts_provider=_env("TTS_PROVIDER", "sarvam").lower(),
+            tts_provider=_env("TTS_PROVIDER", "gnani").lower(),
             tts_model=_env("TTS_MODEL", "bulbul:v3"),
             tts_voice=_env("TTS_VOICE", "shubh"),
             tts_language=_env("TTS_LANGUAGE", "en-IN"),
@@ -221,7 +221,7 @@ class Settings:
                 "wss://api.vachana.ai/api/v1/tts",
             ),
             gnani_tts_model=_env("GNANI_TTS_MODEL", "timbre-v2.5"),
-            gnani_tts_voice=_env("GNANI_TTS_VOICE", "Poorvi"),
+            gnani_tts_voice=_env("GNANI_TTS_VOICE", "Kaveri"),
             gnani_tts_language=_env("GNANI_TTS_LANGUAGE", "hi-en"),
             provider_retry_attempts=_env_int("PROVIDER_RETRY_ATTEMPTS", 3),
             provider_retry_base_ms=_env_int("PROVIDER_RETRY_BASE_MS", 750),

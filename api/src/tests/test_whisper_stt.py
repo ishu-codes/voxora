@@ -37,8 +37,8 @@ def test_decode_wav_resamples_to_16khz_mono_float32():
     assert 15_900 <= audio.size <= 16_100
 
 
-def test_whisper_is_the_default_stt_provider():
-    assert Settings().stt_provider == "whisper"
+def test_whisper_is_available_as_an_explicit_stt_provider():
+    assert Settings(stt_provider="whisper").stt_provider == "whisper"
     assert Settings().whisper_language == "auto"
 
 
@@ -55,7 +55,7 @@ def test_unsupported_cuda_device_falls_back_to_cpu():
 
 
 async def test_provider_bundle_uses_preloaded_whisper_engine():
-    bundle = await ProviderBundle.initialize(Settings())
+    bundle = await ProviderBundle.initialize(Settings(stt_provider="whisper"))
 
     try:
         assert isinstance(await bundle.new_stt(), WhisperSTT)

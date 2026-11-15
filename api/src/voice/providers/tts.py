@@ -36,6 +36,7 @@ class SarvamTTS:
         self._speaker: str | None = None
         self._dirty = False
         self._connect_lock = asyncio.Lock()
+        self._request_lock = asyncio.Lock()
 
     def _url(self) -> str:
         query = urlencode(
@@ -114,18 +115,19 @@ class SarvamTTS:
     async def prepare(self, voice: str | None = None) -> None:
         """Open the synthesis socket before the first sentence is available."""
         speaker = (voice or self._settings.tts_voice).strip()
-        async with self._connect_lock:
-            if self._dirty:
-                await self._close_socket()
-                self._dirty = False
-            await self._connect_once(speaker)
+        async with self._request_lock:
+            async with self._connect_lock:
+                if self._dirty:
+                    await self._close_socket()
+                    self._dirty = False
+                await self._connect_once(speaker)
 
     async def _send(self, payload: dict) -> None:
         if self._ws is None or self._ws.close_code is not None:
             raise ProviderError("tts", "Sarvam speech synthesis is not connected.")
         await self._ws.send(json.dumps(payload))
 
-    async def _stream(
+    async def _stream_locked(
         self, text: str, voice: str | None = None
     ) -> AsyncIterator[bytes]:
         speaker = (voice or self._settings.tts_voice).strip()
@@ -134,6 +136,9 @@ class SarvamTTS:
                 await self._close_socket()
                 self._dirty = False
             await self._connect_once(speaker)
+        ws = self._ws
+        if ws is None or ws.close_code is not None:
+            raise ProviderError("tts", "Sarvam speech synthesis is not connected.")
 
         self._dirty = True
         chunks = 0
@@ -148,15 +153,15 @@ class SarvamTTS:
             text,
         )
         try:
-            await self._send({"type": "text", "data": {"text": text}})
-            await self._send({"type": "flush"})
+            await ws.send(json.dumps({"type": "text", "data": {"text": text}}))
+            await ws.send(json.dumps({"type": "flush"}))
             deadline = loop.time() + self._settings.tts_timeout_s
             while True:
                 remaining = deadline - loop.time()
                 if remaining <= 0:
                     raise ProviderError("tts", "Sarvam speech synthesis timed out.")
                 try:
-                    raw = await asyncio.wait_for(self._ws.recv(), timeout=remaining)
+                    raw = await asyncio.wait_for(ws.recv(), timeout=remaining)
                 except asyncio.TimeoutError as exc:
                     raise ProviderError(
                         "tts", "Sarvam speech synthesis timed out."
@@ -224,6 +229,13 @@ class SarvamTTS:
                 # server-side cancel, so in-flight audio would otherwise leak
                 # into the next reply.
                 await self._close_socket()
+
+    async def _stream(
+        self, text: str, voice: str | None = None
+    ) -> AsyncIterator[bytes]:
+        async with self._request_lock:
+            async for chunk in self._stream_locked(text, voice):
+                yield chunk
 
     def synthesize(self, text: str, voice: str | None = None) -> AsyncIterator[bytes]:
         return self._stream(text, voice)

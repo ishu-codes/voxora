@@ -85,6 +85,33 @@ class FakeGnaniTTSSocket:
         self.close_code = 1000
 
 
+class DelayedFakeGnaniTTSSocket(FakeGnaniTTSSocket):
+    async def send(self, raw: str) -> None:
+        self.sent.append(json.loads(raw))
+
+        async def respond() -> None:
+            await asyncio.sleep(0.05)
+            self._events.put_nowait(
+                json.dumps(
+                    {
+                        "type": "audio",
+                        "data": {
+                            "audio": base64.b64encode(b"\x00\x01" * 64).decode()
+                        },
+                    }
+                )
+            )
+            self._events.put_nowait(
+                json.dumps({"type": "complete", "data": {"is_final": True}})
+            )
+
+        asyncio.create_task(respond())
+
+
+async def _collect_chunks(iterator) -> list[bytes]:
+    return [chunk async for chunk in iterator]
+
+
 async def test_gnani_stt_rebuffers_1024_byte_frames_and_parses_transcript(
     monkeypatch,
 ):
@@ -192,6 +219,33 @@ async def test_gnani_tts_surfaces_documented_error(monkeypatch):
     with pytest.raises(ProviderError, match="invalid voice"):
         async for _chunk in tts.synthesize("Hello.", "NotAVoice"):
             pass
+    await tts.close()
+
+
+async def test_gnani_tts_prewarm_does_not_close_active_synthesis(monkeypatch):
+    socket = DelayedFakeGnaniTTSSocket()
+
+    async def connect(*_args, **_kwargs):
+        return socket
+
+    monkeypatch.setattr("websockets.connect", connect)
+    tts = GnaniTTS(
+        Settings(
+            tts_provider="gnani",
+            gnani_api_key="test-key",
+            provider_retry_attempts=1,
+        )
+    )
+
+    synthesis = asyncio.create_task(
+        _collect_chunks(tts.synthesize("Hello.", "Kaveri"))
+    )
+    await asyncio.sleep(0.01)
+    prewarm = asyncio.create_task(tts.prepare("Kaveri"))
+    chunks = await synthesis
+    await prewarm
+
+    assert chunks == [b"\x00\x01" * 64]
     await tts.close()
 
 

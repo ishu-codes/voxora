@@ -139,7 +139,7 @@ async def test_voice_catalog_endpoint_is_cacheable():
     assert response.status_code == 200
     assert response.headers["cache-control"].startswith("public, max-age=86400")
     payload = response.json()
-    assert payload["provider"] == "sarvam"
+    assert payload["provider"] == "gnani"
     assert payload["voices"]
 
 
@@ -147,6 +147,7 @@ async def test_websocket_accepts_client_signals_before_ready():
     settings = _router_settings(
         require_browser_client=True,
         rate_limit_enabled=False,
+        tts_provider="sarvam",
     )
     limiter = StrictRateLimiter(settings)
     websocket = _FakeWebSocket(

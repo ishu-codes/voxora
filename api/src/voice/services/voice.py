@@ -514,10 +514,10 @@ async def serve_voice_socket(websocket: WebSocket) -> None:
                 else None
             ),
             voice=(
-                scenario.voice
-                if scenario is not None
-                else str(client_payload["voice"])
+                str(client_payload["voice"])
                 if "voice" in client_payload
+                else scenario.voice
+                if scenario is not None
                 else None
             ),
         )

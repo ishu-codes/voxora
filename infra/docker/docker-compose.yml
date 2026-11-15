@@ -14,6 +14,7 @@ services:
       SARVAM_API_KEY: ${SARVAM_API_KEY:-}
       GNANI_API_KEY: ${GNANI_API_KEY:-}
       SARVAM_WS_URL: ${SARVAM_WS_URL:-wss://api.sarvam.ai}
+      STT_PROVIDER: ${STT_PROVIDER:-gnani}
       STT_MODEL: ${STT_MODEL:-saaras:v3-realtime}
       STT_LANGUAGE: ${STT_LANGUAGE:-en-IN}
       STT_STREAM_TYPE: ${STT_STREAM_TYPE:-fast}
@@ -28,13 +29,14 @@ services:
       LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-320}
 
       TTS_MODEL: ${TTS_MODEL:-bulbul:v3}
-      TTS_PROVIDER: ${TTS_PROVIDER:-sarvam}
+      TTS_PROVIDER: ${TTS_PROVIDER:-gnani}
       TTS_VOICE: ${TTS_VOICE:-shubh}
       TTS_LANGUAGE: ${TTS_LANGUAGE:-en-IN}
       TTS_SAMPLE_RATE: ${TTS_SAMPLE_RATE:-22050}
       TTS_SPEED: ${TTS_SPEED:-1.0}
       TTS_TEMPERATURE: ${TTS_TEMPERATURE:-0.6}
       GNANI_TTS_MODEL: ${GNANI_TTS_MODEL:-timbre-v2.5}
+      GNANI_TTS_VOICE: ${GNANI_TTS_VOICE:-Kaveri}
 
       RATE_LIMIT_ENABLED: "true"
       REQUIRE_BROWSER_CLIENT: "true"

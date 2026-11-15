@@ -69,6 +69,8 @@ async def main() -> None:
     await llm.close()
 
     tts = GnaniTTS(settings, "verify-tts")
+    prewarm = asyncio.create_task(tts.prepare(settings.gnani_tts_voice))
+    await asyncio.sleep(0.01)
     tts_started = time.perf_counter()
     audio = bytearray()
     first_audio_ms: float | None = None
@@ -76,6 +78,7 @@ async def main() -> None:
         if first_audio_ms is None:
             first_audio_ms = round((time.perf_counter() - tts_started) * 1000, 1)
         audio.extend(chunk)
+    await prewarm
     await tts.close()
 
     output_path = Path("/tmp/voxora-gnani-roundtrip.wav")

@@ -31,6 +31,7 @@ class GnaniTTS:
         self._voice: str | None = None
         self._dirty = False
         self._connect_lock = asyncio.Lock()
+        self._request_lock = asyncio.Lock()
 
     async def _connect_once(self, voice: str) -> None:
         if (
@@ -99,11 +100,12 @@ class GnaniTTS:
 
     async def prepare(self, voice: str | None = None) -> None:
         selected = (voice or self._settings.gnani_tts_voice).strip()
-        async with self._connect_lock:
-            if self._dirty:
-                await self._close_socket()
-                self._dirty = False
-            await self._connect_once(selected)
+        async with self._request_lock:
+            async with self._connect_lock:
+                if self._dirty:
+                    await self._close_socket()
+                    self._dirty = False
+                await self._connect_once(selected)
 
     def _request(self, text: str, voice: str) -> dict[str, object]:
         return {
@@ -126,18 +128,28 @@ class GnaniTTS:
         text: str,
         voice: str,
     ) -> AsyncIterator[bytes]:
+        async with self._request_lock:
+            async for chunk in self._stream_locked(text, voice):
+                yield chunk
+
+    async def _stream_locked(
+        self,
+        text: str,
+        voice: str,
+    ) -> AsyncIterator[bytes]:
         async with self._connect_lock:
             if self._dirty:
                 await self._close_socket()
                 self._dirty = False
             await self._connect_once(voice)
-        if self._ws is None or self._ws.close_code is not None:
+        ws = self._ws
+        if ws is None or ws.close_code is not None:
             raise ProviderError("tts", "Gnani speech synthesis is not connected.")
 
         self._dirty = True
         loop = asyncio.get_running_loop()
         started = loop.time()
-        await self._ws.send(json.dumps(self._request(text, voice)))
+        await ws.send(json.dumps(self._request(text, voice)))
         deadline = started + self._settings.tts_timeout_s
         chunks = 0
         total_bytes = 0
@@ -153,7 +165,7 @@ class GnaniTTS:
                 remaining = deadline - loop.time()
                 if remaining <= 0:
                     raise ProviderError("tts", "Gnani speech synthesis timed out.")
-                raw = await asyncio.wait_for(self._ws.recv(), timeout=remaining)
+                raw = await asyncio.wait_for(ws.recv(), timeout=remaining)
                 try:
                     message = json.loads(raw)
                 except (TypeError, json.JSONDecodeError):
