@@ -23,6 +23,7 @@ import { VoicePicker } from "@/components/ui/voice-picker";
 import { ConversationPanel } from "@/components/voice/ConversationPanel";
 import { ProviderSelector } from "@/components/voice/ProviderSelector";
 import { QuotaExhaustedAlert } from "@/components/voice/QuotaExhaustedAlert";
+import { ScenarioPicker } from "@/components/voice/ScenarioPicker";
 import { cn } from "@/lib/utils";
 import { useVoiceSessionContext } from "@/voice/voice-session-provider";
 
@@ -195,20 +196,29 @@ export default function VoiceStudioPage() {
 
               <div className="flex w-full max-w-xl flex-col items-center gap-5">
                 {!live && !connecting ? (
-                  <div className="grid w-full max-w-md grid-cols-2 gap-3">
-                    <ProviderSelector
-                      label="Speech recognition"
-                      value={session.sttProvider}
-                      choices={session.sttProviderChoices}
-                      onChange={session.selectSttProvider}
-                    />
-                    <ProviderSelector
-                      label="Voice synthesis"
-                      value={session.ttsProvider}
-                      choices={session.ttsProviderChoices}
-                      onChange={session.selectTtsProvider}
-                    />
-                  </div>
+                  <>
+                    {session.scenarios.length ? (
+                      <ScenarioPicker
+                        scenarios={session.scenarios}
+                        value={session.selectedScenarioId}
+                        onChange={session.selectScenario}
+                      />
+                    ) : null}
+                    <div className="grid w-full max-w-md grid-cols-2 gap-3">
+                      <ProviderSelector
+                        label="Speech recognition"
+                        value={session.sttProvider}
+                        choices={session.sttProviderChoices}
+                        onChange={session.selectSttProvider}
+                      />
+                      <ProviderSelector
+                        label="Voice synthesis"
+                        value={session.ttsProvider}
+                        choices={session.ttsProviderChoices}
+                        onChange={session.selectTtsProvider}
+                      />
+                    </div>
+                  </>
                 ) : null}
 
                 <div className="relative size-65 shrink-0 sm:size-60 lg:size-70 xl:size-80">

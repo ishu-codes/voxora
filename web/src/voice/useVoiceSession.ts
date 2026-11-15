@@ -7,6 +7,7 @@ import {
   type TurnMetricRecord,
   TurnTimer,
 } from "@/lib/metrics";
+import { getScenarios, type Scenario } from "@/lib/scenarios";
 import { API_URL } from "@/lib/voice-catalog";
 import {
   getProviderConfig,
@@ -142,6 +143,8 @@ export function useVoiceSession() {
   const [providerConfig, setProviderConfig] = useState<ProviderConfig | null>(
     null,
   );
+  const [scenarios, setScenarios] = useState<Scenario[]>([]);
+  const [selectedScenarioId, setSelectedScenarioId] = useState("emi-reminder");
   const catalog = useVoiceCatalog(ttsProvider);
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [agentState, setAgentState] = useState<AgentState>("idle");
@@ -164,6 +167,7 @@ export function useVoiceSession() {
   );
   const [voice, setVoiceState] = useState<string | undefined>(undefined);
   const providerTouchedRef = useRef(false);
+  const selectedScenarioRef = useRef<string>("emi-reminder");
   const sttProviderRef = useRef(sttProvider);
   const ttsProviderRef = useRef(ttsProvider);
   sttProviderRef.current = sttProvider;
@@ -267,6 +271,24 @@ export function useVoiceSession() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    void getScenarios().then((items) => {
+      if (!active || !items.length) return;
+      setScenarios(items);
+      const current = items.some(
+        (item) => item.id === selectedScenarioRef.current,
+      )
+        ? selectedScenarioRef.current
+        : items[0].id;
+      selectedScenarioRef.current = current;
+      setSelectedScenarioId(current);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!quotaExhausted) return;
     const delay = Math.max(0, quotaExhausted.retryAt - Date.now());
     const timer = window.setTimeout(() => {
@@ -275,6 +297,12 @@ export function useVoiceSession() {
     }, delay);
     return () => window.clearTimeout(timer);
   }, [quotaExhausted]);
+
+  const selectedScenario = useMemo(
+    () => scenarios.find((scenario) => scenario.id === selectedScenarioId),
+    [scenarios, selectedScenarioId],
+  );
+  selectedScenarioRef.current = selectedScenarioId;
 
   const options = useMemo<VoiceOption[]>(() => {
     const kind = ready?.tts.kind ?? catalog?.kind;
@@ -449,6 +477,25 @@ export function useVoiceSession() {
     setVoiceState(undefined);
   }, []);
 
+  const selectScenario = useCallback(
+    (scenarioId: string) => {
+      if (activeRef.current) return;
+      const scenario = scenarios.find((item) => item.id === scenarioId);
+      if (!scenario) return;
+      selectedScenarioRef.current = scenario.id;
+      setSelectedScenarioId(scenario.id);
+      const catalog = catalogRef.current;
+      const next = catalog?.voices.some((item) => item.id === scenario.voice)
+        ? scenario.voice
+        : catalog?.default_voice;
+      if (next) {
+        voiceRef.current = next;
+        setVoiceState(next);
+      }
+    },
+    [scenarios],
+  );
+
   useEffect(() => {
     if (catalog?.kind !== "audio" || !catalog.voices.length) return;
     const current = voiceRef.current;
@@ -466,6 +513,25 @@ export function useVoiceSession() {
       send({ type: "voice", voice: next });
     }
   }, [catalog, send]);
+
+  useEffect(() => {
+    if (
+      activeRef.current ||
+      !selectedScenario ||
+      catalog?.kind !== "audio" ||
+      !catalog.voices.length
+    ) {
+      return;
+    }
+    const next = catalog.voices.some(
+      (item) => item.id === selectedScenario.voice,
+    )
+      ? selectedScenario.voice
+      : catalog.default_voice || catalog.voices[0].id;
+    if (!next || voiceRef.current === next) return;
+    voiceRef.current = next;
+    setVoiceState(next);
+  }, [catalog, selectedScenario]);
 
   const upsertUserMessage = useCallback(
     (text: string, final: boolean, turnId?: string) => {
@@ -994,7 +1060,10 @@ export function useVoiceSession() {
             content: message.text,
           }));
         const messages = [
-          { role: "system" as const, content: BYOK_SYSTEM_PROMPT },
+          {
+            role: "system" as const,
+            content: selectedScenario?.system_prompt ?? BYOK_SYSTEM_PROMPT,
+          },
           ...history,
         ];
 
@@ -1121,6 +1190,7 @@ export function useVoiceSession() {
       finishMetricTurn,
       publishDiagnostics,
       pushError,
+      selectedScenario?.system_prompt,
       settleAssistantMessage,
       upsertUserMessage,
     ],
@@ -1842,6 +1912,7 @@ export function useVoiceSession() {
           toConfigurePayload(collectClientFingerprint(), {
             sttProvider: sttProviderRef.current,
             ttsProvider: ttsProviderRef.current,
+            scenarioId: selectedScenarioRef.current,
             voice: voiceRef.current,
           }),
         ),
@@ -2034,6 +2105,64 @@ export function useVoiceSession() {
       setVoiceState(directVoice);
       setStatus("connected");
       setAgentState("listening");
+      const opening = selectedScenario?.outbound
+        ? selectedScenario.opening_line
+        : "";
+      if (opening) {
+        const generation = ++directGenerationRef.current;
+        const turnId = `local-opening-${Date.now()}-${generation}`;
+        const controller = new AbortController();
+        directAbortRef.current = controller;
+        turnsRef.current.begin(turnId);
+        activeTurnRef.current = turnId;
+        currentAssistantTurnRef.current = turnId;
+        appendAssistantMessage(turnId, opening);
+        setAgentState("thinking");
+        void (async () => {
+          try {
+            const pcm = await synthesizeWithSarvam(
+              settings,
+              opening,
+              directVoice,
+              controller.signal,
+              catalogRef.current?.model ?? "bulbul:v3",
+            );
+            if (
+              !activeRef.current ||
+              generation !== directGenerationRef.current ||
+              turnsRef.current.isCancelled(turnId)
+            ) {
+              return;
+            }
+            const player = ensurePlayer();
+            player.enqueue(pcm, BYOK_TTS_SAMPLE_RATE);
+            completeAssistantMessage(turnId, opening, false);
+            turnsRef.current.settle(turnId);
+            if (activeTurnRef.current === turnId) activeTurnRef.current = null;
+            if (currentAssistantTurnRef.current === turnId) {
+              currentAssistantTurnRef.current = null;
+            }
+          } catch (cause) {
+            if (!controller.signal.aborted) {
+              pushError(
+                cause instanceof Error
+                  ? cause.message
+                  : "Could not synthesize the opening line.",
+              );
+            }
+            settleAssistantMessage(turnId, {
+              interrupted: controller.signal.aborted,
+              failed: !controller.signal.aborted,
+            });
+            turnsRef.current.settle(turnId);
+            setAgentState("listening");
+          } finally {
+            if (directAbortRef.current === controller) {
+              directAbortRef.current = null;
+            }
+          }
+        })();
+      }
       return;
     }
     connectSocket();
@@ -2041,6 +2170,8 @@ export function useVoiceSession() {
     clearTurnWatchdog,
     clearVadTailTimer,
     connectSocket,
+    appendAssistantMessage,
+    completeAssistantMessage,
     ensurePlayer,
     handleFrame,
     pushError,
@@ -2050,6 +2181,8 @@ export function useVoiceSession() {
     stopCaptureWatchdog,
     quotaExhausted,
     resetMetrics,
+    selectedScenario,
+    settleAssistantMessage,
   ]);
 
   const stop = useCallback(async () => {
@@ -2240,11 +2373,15 @@ export function useVoiceSession() {
     voice,
     sttProvider,
     ttsProvider,
+    scenarios,
+    selectedScenario,
+    selectedScenarioId,
     sttProviderChoices: providerConfig?.stt ?? ([] satisfies ProviderChoice[]),
     ttsProviderChoices: providerConfig?.tts ?? ([] satisfies ProviderChoice[]),
     selectVoice,
     selectSttProvider,
     selectTtsProvider,
+    selectScenario,
     start,
     stop,
     interrupt,

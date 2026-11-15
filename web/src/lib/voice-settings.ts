@@ -88,6 +88,7 @@ export function toConfigurePayload(
   selection?: {
     sttProvider?: string;
     ttsProvider?: string;
+    scenarioId?: string;
     language?: string;
     voice?: string;
   },
@@ -97,6 +98,7 @@ export function toConfigurePayload(
     ...(client ? { client } : {}),
     ...(selection?.sttProvider ? { stt_provider: selection.sttProvider } : {}),
     ...(selection?.ttsProvider ? { tts_provider: selection.ttsProvider } : {}),
+    ...(selection?.scenarioId ? { scenario_id: selection.scenarioId } : {}),
     ...(selection?.language ? { language: selection.language } : {}),
     ...(selection?.voice ? { voice: selection.voice } : {}),
   };

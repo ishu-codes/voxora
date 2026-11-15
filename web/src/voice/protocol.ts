@@ -11,6 +11,7 @@ export type ProviderInfo = {
 export type ReadyEvent = {
   type: "ready";
   session_id: string;
+  scenario_id?: string | null;
   audio: { format: "pcm16"; input_sample_rate: number; frame_ms: number };
   stt: ProviderInfo & {
     partials: boolean;

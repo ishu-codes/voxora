@@ -10,6 +10,7 @@ from ..services.voice import (
     get_catalog,
     get_config,
     get_metrics,
+    get_scenarios,
     reset_metrics,
     serve_voice_socket,
 )
@@ -37,6 +38,11 @@ async def voice_catalog(
 @router.get("/metrics")
 async def voice_metrics() -> dict[str, Any]:
     return get_metrics()
+
+
+@router.get("/scenarios")
+async def scenarios() -> list[dict[str, Any]]:
+    return get_scenarios()
 
 
 @router.delete("/metrics")

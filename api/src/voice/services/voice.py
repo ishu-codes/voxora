@@ -19,6 +19,8 @@ from ..providers import WHISPER_MODEL
 from ..runtime.pipeline import VoicePipeline
 from ..runtime.session import VoiceSession
 from ..runtime.transport import QueueTransport
+from ..scenarios import public_scenarios
+from ..scenarios import get_scenario as load_scenario
 from ..security.rate_limit import (
     ClientSignals,
     RateLimitDecision,
@@ -84,29 +86,54 @@ def _session_settings(
     tts_provider: str,
     language: str | None = None,
     voice: str | None = None,
+    tts_language: str | None = None,
 ) -> Settings:
     stt_language = language or (
         config.gnani_stt_language
         if stt_provider == "gnani"
         else config.stt_language
     )
-    tts_language = language or (
+    selected_tts_language = tts_language or language or (
         config.gnani_tts_language
         if tts_provider == "gnani"
         else config.tts_language
     )
-    if tts_provider == "sarvam" and tts_language == "hi-en":
-        tts_language = "hi-IN"
+    selected_voice = voice or (
+        config.gnani_tts_voice
+        if tts_provider == "gnani"
+        else config.tts_voice
+    )
+    if tts_provider == "gnani":
+        catalog = build_catalog(
+            config.gnani_tts_model,
+            config.gnani_tts_voice,
+            "gnani",
+        )
+        metadata = next(
+            (
+                item
+                for item in catalog["voices"]
+                if item.get("id") == selected_voice
+            ),
+            None,
+        )
+        if metadata and metadata.get("language"):
+            selected_tts_language = str(metadata["language"])
+        known = {str(item.get("id")) for item in catalog["voices"]}
+        if selected_voice not in known:
+            selected_voice = str(catalog["default_voice"])
+    if tts_provider == "sarvam" and selected_tts_language == "hi-en":
+        selected_tts_language = "hi-IN"
     return replace(
         config,
         stt_provider=stt_provider,
         tts_provider=tts_provider,
         gnani_stt_language=stt_language,
         stt_language=stt_language,
-        tts_language=tts_language,
-        gnani_tts_language=tts_language,
-        tts_voice=voice or config.tts_voice,
-        gnani_tts_voice=voice or config.gnani_tts_voice,
+        tts_language=selected_tts_language,
+        gnani_tts_language=selected_tts_language,
+        tts_voice=selected_voice,
+        gnani_tts_voice=selected_voice,
     )
 
 
@@ -196,6 +223,10 @@ def get_catalog(
     return build_catalog(model or settings.tts_model, settings.tts_voice, "sarvam")
 
 
+def get_scenarios() -> list[dict[str, Any]]:
+    return public_scenarios()
+
+
 def get_metrics() -> dict[str, Any]:
     """Aggregate latency percentiles across recent turns on this process."""
     return registry.summary()
@@ -255,7 +286,13 @@ async def read_initial_config(
         raw_client = payload.get("client", {})
         if isinstance(raw_client, dict):
             client_payload = raw_client
-        for key in ("stt_provider", "tts_provider", "language", "voice"):
+        for key in (
+            "stt_provider",
+            "tts_provider",
+            "scenario_id",
+            "language",
+            "voice",
+        ):
             value = payload.get(key)
             if isinstance(value, str) and value.strip():
                 client_payload[key] = value.strip()
@@ -458,19 +495,37 @@ async def serve_voice_socket(websocket: WebSocket) -> None:
 
     transport: QueueTransport | None = None
     try:
+        scenario = None
+        if "scenario_id" in client_payload:
+            try:
+                scenario = load_scenario(str(client_payload["scenario_id"]))
+            except KeyError as exc:
+                await reject_provider(str(exc))
+                return
         session_settings = _session_settings(
             platform_bundle.settings,
             stt_provider,
             tts_provider,
             language=(
-                str(client_payload["language"])
+                scenario.language_hint
+                if scenario is not None
+                else str(client_payload["language"])
                 if "language" in client_payload
                 else None
             ),
             voice=(
-                str(client_payload["voice"]) if "voice" in client_payload else None
+                scenario.voice
+                if scenario is not None
+                else str(client_payload["voice"])
+                if "voice" in client_payload
+                else None
             ),
         )
+        if scenario is not None:
+            session_settings = replace(
+                session_settings,
+                system_prompt=scenario.system_prompt,
+            )
         bundle = platform_bundle
         transport = QueueTransport(
             websocket, max_queue=session_settings.max_output_queue
@@ -519,6 +574,12 @@ async def serve_voice_socket(websocket: WebSocket) -> None:
             ),
             turn_guard=None if unlimited else allow_turn,
             usage_guard=None if unlimited else guard_usage,
+            opening_line=(
+                scenario.opening_line
+                if scenario is not None and scenario.outbound
+                else None
+            ),
+            scenario_id=scenario.id if scenario is not None else None,
         )
     except Exception:
         if transport is not None:
@@ -739,6 +800,7 @@ __all__ = [
     "get_catalog",
     "get_config",
     "get_metrics",
+    "get_scenarios",
     "handle_control_text",
     "read_initial_config",
     "reset_metrics",

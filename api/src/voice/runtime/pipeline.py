@@ -64,6 +64,8 @@ class VoicePipeline:
             [], Awaitable[RateLimitDecision | str | None]
         ] | None = None,
         usage_guard: Callable[[str, int, int], Awaitable[str | None]] | None = None,
+        opening_line: str | None = None,
+        scenario_id: str | None = None,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.transport = transport
@@ -75,6 +77,8 @@ class VoicePipeline:
         self.turn_limit = turn_limit
         self.turn_guard = turn_guard
         self.usage_guard = usage_guard
+        self._opening_line = (opening_line or "").strip() or None
+        self.scenario_id = scenario_id
         self.session = session or VoiceSession()
         self._tag = f"session={self.session.session_id[:8]}"
         self.metrics = metrics or default_registry
@@ -131,6 +135,7 @@ class VoicePipeline:
                 "reason": reasons.get("stt", ""),
             },
             "llm": {"name": self.llm.name, "reason": reasons.get("llm", "")},
+            "scenario_id": self.scenario_id,
             "tts": {
                 "name": self.tts.name,
                 "kind": self.tts.kind,
@@ -158,6 +163,8 @@ class VoicePipeline:
     async def start(self, reasons: dict[str, str] | None = None) -> None:
         await self.transport.send(self.ready_event(reasons))
         await self._set_state("listening")
+        if self._opening_line:
+            self._start_scripted_turn(self._opening_line)
 
     def _schedule_tts_prewarm(self) -> None:
         if self._tts_prewarm_task is not None and not self._tts_prewarm_task.done():
@@ -174,6 +181,95 @@ class VoicePipeline:
             logger.info("%s tts prewarm skipped: %s", self._tag, exc.message)
         except Exception:
             logger.warning("%s tts prewarm failed", self._tag, exc_info=True)
+
+    def _start_scripted_turn(self, text: str) -> None:
+        self._generation += 1
+        generation = self._generation
+        self._turns[generation] = {
+            "turn_id": self._label(generation),
+            "speech_duration_ms": None,
+            "stt": None,
+            "llm": None,
+            "tts": self.tts.name,
+            "scripted_opening": True,
+        }
+        self._turn_task = asyncio.create_task(
+            self._speak_scripted(generation, text)
+        )
+        self._task_turn_id = generation
+        logger.info(
+            "%s scripted opening turn=%s chars=%d",
+            self._tag,
+            self._label(generation),
+            len(text),
+        )
+
+    async def _speak_scripted(self, generation: int, text: str) -> None:
+        turn = self._turns[generation]
+        ts_started = self.clock()
+        try:
+            self._schedule_tts_prewarm()
+            await self.transport.send(
+                {
+                    "type": "assistant.delta",
+                    "turn_id": self._label(generation),
+                    "text": text,
+                }
+            )
+            await self._consume_usage("tts", chars=len(text))
+            tts_started = self.clock()
+            first_audio_at: float | None = None
+            async for chunk in self.tts.synthesize(text, voice=self._voice):
+                if generation != self._generation:
+                    return
+                if first_audio_at is None:
+                    first_audio_at = self.clock()
+                    turn["tts_first_audio_ms"] = _ms(tts_started, first_audio_at)
+                    turn["e2e_first_audio_ms"] = _ms(ts_started, first_audio_at)
+                    await self._set_state("speaking", generation)
+                await self.transport.send(
+                    {
+                        "type": "audio.chunk",
+                        "turn_id": self._label(generation),
+                        "data": base64.b64encode(chunk).decode("ascii"),
+                        "sample_rate": self.tts.sample_rate,
+                        "format": "pcm16",
+                    }
+                )
+            if generation != self._generation:
+                return
+            self.session.add("assistant", text)
+            turn["total_ms"] = _ms(ts_started, self.clock())
+            self.metrics.record(turn)
+            await self.transport.send(
+                {
+                    "type": "assistant.done",
+                    "turn_id": self._label(generation),
+                    "text": text,
+                }
+            )
+            await self.transport.send(
+                {
+                    "type": "turn.metrics",
+                    "turn_id": self._label(generation),
+                    "metrics": {
+                        "tts_first_audio_ms": turn.get("tts_first_audio_ms"),
+                        "e2e_first_audio_ms": turn.get("e2e_first_audio_ms"),
+                        "total_ms": turn.get("total_ms"),
+                    },
+                }
+            )
+            await self._set_state("listening", generation)
+        except asyncio.CancelledError:
+            raise
+        except ProviderError as exc:
+            await self._fail(generation, exc.stage, exc.message)
+        except Exception as exc:  # pragma: no cover - defensive
+            await self._fail(generation, "internal", str(exc) or "Internal error")
+        finally:
+            if self._task_turn_id == generation:
+                self._turn_task = None
+                self._task_turn_id = None
 
     # ------------------------------------------------------------ audio input
 
