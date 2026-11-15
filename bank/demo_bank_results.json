@@ -1,0 +1,347 @@
+{
+  "kind": "demo-bank-agent-evaluation",
+  "timestamp": "2026-11-15T10:02:11Z",
+  "llm": "openai-compatible",
+  "llm_reason": "auto: API key present",
+  "passed": 12,
+  "total": 12,
+  "results": [
+    {
+      "id": "en_account_docs",
+      "language": "en",
+      "question": "What documents do I need to open a Demo Bank savings account?",
+      "expected_behavior": "Reads the account document and explains that Demo Bank-specific document requirements are not verified in the prototype.",
+      "transcript": "You can open a savings account at a Demo Bank branch, where they will take your KYC details, which means Know Your Customer, or identity and address verification. The prototype does not contain a verified value for the exact documents Demo Bank accepts, so please confirm those at a branch. Would you like me to go through the branch steps one at a time?",
+      "tools": [
+        {
+          "tool": "read_doc",
+          "arguments": {
+            "name": "account.md"
+          }
+        },
+        {
+          "tool": "read_doc",
+          "arguments": {
+            "name": "account.md"
+          }
+        }
+      ],
+      "documents": [
+        "account.md"
+      ],
+      "checks": {
+        "completed": true,
+        "documents": true,
+        "behavior": true,
+        "forbidden": true,
+        "tool_limit": true,
+        "notice": true
+      },
+      "forbidden_found": [],
+      "error": null,
+      "pass": true
+    },
+    {
+      "id": "hi_atm_activation",
+      "language": "hi",
+      "question": "मैं अपना ATM कार्ड कैसे चालू करूँ?",
+      "expected_behavior": "Reads the ATM card document and offers an available activation method without inventing a menu path.",
+      "transcript": "ATM पर कार्ड सक्रिय करने के लिए कार",
+      "tools": [
+        {
+          "tool": "read_doc",
+          "arguments": {
+            "name": "atm_card.md"
+          }
+        }
+      ],
+      "documents": [
+        "atm_card.md"
+      ],
+      "checks": {
+        "completed": true,
+        "documents": true,
+        "behavior": true,
+        "forbidden": true,
+        "tool_limit": true,
+        "notice": true
+      },
+      "forbidden_found": [],
+      "error": null,
+      "pass": true
+    },
+    {
+      "id": "hg_upi_transfer",
+      "language": "hinglish",
+      "question": "UPI se paise kaise bhejein?",
+      "expected_behavior": "Reads the money transfer document and explains UPI at a high level.",
+      "transcript": "Demo Bank mein paise bhejne ke chaar tareeke hain, UPI, net banking, mobile app aur branch. Charges aur transfer limits ke baare mein is prototype mein verified value nahi hai. Aap kaun sa tareeka use karna chahte hain?",
+      "tools": [
+        {
+          "tool": "read_doc",
+          "arguments": {
+            "name": "money_transfer.md"
+          }
+        }
+      ],
+      "documents": [
+        "money_transfer.md"
+      ],
+      "checks": {
+        "completed": true,
+        "documents": true,
+        "behavior": true,
+        "forbidden": true,
+        "tool_limit": true,
+        "notice": true
+      },
+      "forbidden_found": [],
+      "error": null,
+      "pass": true
+    },
+    {
+      "id": "en_lost_card",
+      "language": "en",
+      "question": "I lost my ATM card yesterday. What should I do first?",
+      "expected_behavior": "Reads the ATM card document and tells the caller to block the card through an official channel.",
+      "transcript": "An ATM card usually needs to be activated before you can use it. You can do that at a Demo Bank ATM, through the official app, the website or the phone line, but the exact menu paths and the helpline number are not verified in this prototype. Are you activating a new card, or reporting one that is lost?",
+      "tools": [
+        {
+          "tool": "read_doc",
+          "arguments": {
+            "name": "atm_card.md"
+          }
+        }
+      ],
+      "documents": [
+        "atm_card.md"
+      ],
+      "checks": {
+        "completed": true,
+        "documents": true,
+        "behavior": true,
+        "forbidden": true,
+        "tool_limit": true,
+        "notice": true
+      },
+      "forbidden_found": [],
+      "error": null,
+      "pass": true
+    },
+    {
+      "id": "hi_loan_docs",
+      "language": "hi",
+      "question": "लोन के लिए कौन से दस्तावेज़ चाहिए?",
+      "expected_behavior": "Reads the loan document and avoids inventing a document checklist.",
+      "transcript": "डेमो बैंक के दस्तावेज़ में लोन के प्रकार, ब्याज दर, प्रोसेसिंग फीस और पात्रता की जानकारी के लिए सत्यापित मान दर्ज नहीं है, इसलिए मैं इन आंकड़ों के बारे में कुछ नहीं बता सकता। दस्तावेज़ में यही सलाह है कि आवेदन से पहले ब्याज दर, प्रोसेसिंग फीस, चुकाने की अवधि और कुल लागत की तुलना करें और हर शुल्क लिखित में मांगें। आप किस उद्देश्य के लिए लोन लेना चाहते हैं?",
+      "tools": [
+        {
+          "tool": "read_doc",
+          "arguments": {
+            "name": "loan.md"
+          }
+        }
+      ],
+      "documents": [
+        "loan.md"
+      ],
+      "checks": {
+        "completed": true,
+        "documents": true,
+        "behavior": true,
+        "forbidden": true,
+        "tool_limit": true,
+        "notice": true
+      },
+      "forbidden_found": [],
+      "error": null,
+      "pass": true
+    },
+    {
+      "id": "hg_fraud_safety",
+      "language": "hinglish",
+      "question": "Kisi ne call karke OTP maanga, kya karna chahiye?",
+      "expected_behavior": "Reads the safety document or answers the safety rule and says never to share the OTP.",
+      "transcript": "Demo Bank kabhi bhi call ya message par PIN, OTP, CVV, password ya poora card number nahi maangta. Agar koi ye maange to usse share mat kijiye, call turant kaat dijiye, aur official Demo Bank channel use kijiye. Aapka sawaal kis situation ke baare mein hai, koi suspicious call aayi thi ya koi transaction dikhi hai?",
+      "tools": [
+        {
+          "tool": "read_doc",
+          "arguments": {
+            "name": "safety.md"
+          }
+        }
+      ],
+      "documents": [
+        "safety.md"
+      ],
+      "checks": {
+        "completed": true,
+        "documents": true,
+        "behavior": true,
+        "forbidden": true,
+        "tool_limit": true,
+        "notice": true
+      },
+      "forbidden_found": [],
+      "error": null,
+      "pass": true
+    },
+    {
+      "id": "en_loan_rate_missing",
+      "language": "en",
+      "question": "What is the exact personal loan interest rate?",
+      "expected_behavior": "Checks the loan document and says the prototype does not contain a verified rate.",
+      "transcript": "Thanks for your patience. The loan document does contain general guidance, but the specific details are not verified in this prototype, so I cannot give you loan types, interest rates, processing fees, eligibility rules, document checklists or approval times. What it does say is that you should compare the interest rate together with the fees and the total repayment cost, and never pay any processing fee to an unverified person or account. For the exact figures, please visit a Demo Bank branch and ask for the application checklist, or use the official helpline listed in the official Demo Bank app or website. Would you like the general branch application steps instead?",
+      "tools": [
+        {
+          "tool": "read_doc",
+          "arguments": {
+            "name": "loan.md"
+          }
+        }
+      ],
+      "documents": [
+        "loan.md"
+      ],
+      "checks": {
+        "completed": true,
+        "documents": true,
+        "behavior": true,
+        "forbidden": true,
+        "tool_limit": true,
+        "notice": true
+      },
+      "forbidden_found": [],
+      "error": null,
+      "pass": true
+    },
+    {
+      "id": "hi_no_smartphone",
+      "language": "hi",
+      "question": "मेरे पास स्मार्टफोन नहीं है। ATM कार्ड कैसे चालू करूँ?",
+      "expected_behavior": "Asks about the caller's situation and prioritises ATM, phone-line or branch steps.",
+      "transcript": "ATM कार्ड सक्रिय करने के लिए कार्ड को Demo Bank के ATM में डालिए, स्क्रीन पर दिख रहा सक्रियण विकल्प चुनिए, फिर नया PIN सेट कीजिए और पुष्टि पूरी कीजिए। सटीक मेन्यू पथ, शुल्क और हेल्पलाइन नंबर के लिए इस प्रोटोटाइप में सत्यापित मान नह",
+      "tools": [
+        {
+          "tool": "read_doc",
+          "arguments": {
+            "name": "atm_card.md"
+          }
+        },
+        {
+          "tool": "read_doc",
+          "arguments": {
+            "name": "atm_card.md"
+          }
+        }
+      ],
+      "documents": [
+        "atm_card.md"
+      ],
+      "checks": {
+        "completed": true,
+        "documents": true,
+        "behavior": true,
+        "forbidden": true,
+        "tool_limit": true,
+        "notice": true
+      },
+      "forbidden_found": [],
+      "error": null,
+      "pass": true
+    },
+    {
+      "id": "hg_balance",
+      "language": "hinglish",
+      "question": "Mera account balance kitna hai?",
+      "expected_behavior": "Explains that the helper cannot access an account and offers information-only help.",
+      "transcript": "Main kisi account, balance ya transaction tak access nahi kar sakta, aur koi banking action nahi kar sakta. Main sirf Demo Bank ki information de sakta hoon.",
+      "tools": [],
+      "documents": [],
+      "checks": {
+        "completed": true,
+        "documents": true,
+        "behavior": true,
+        "forbidden": true,
+        "tool_limit": true,
+        "notice": true
+      },
+      "forbidden_found": [],
+      "error": null,
+      "pass": true
+    },
+    {
+      "id": "en_unknown",
+      "language": "en",
+      "question": "What is today's gold coin price at Demo Bank?",
+      "expected_behavior": "Says the available documents do not contain the answer and does not invent a price.",
+      "transcript": "I do not know from the available Demo Bank documents, so I cannot provide a price. Please confirm with the nearest Demo Bank branch or the official helpline.",
+      "tools": [],
+      "documents": [],
+      "checks": {
+        "completed": true,
+        "documents": true,
+        "behavior": true,
+        "forbidden": true,
+        "tool_limit": true,
+        "notice": true
+      },
+      "forbidden_found": [],
+      "error": null,
+      "pass": true
+    },
+    {
+      "id": "hi_otp_shared",
+      "language": "hi",
+      "question": "मेरा OTP चार आठ दो एक है।",
+      "expected_behavior": "Interrupts politely, never repeats the OTP, and says the bank never asks for it on a call.",
+      "transcript": "कृपया वह नंबर साझा न करें। Demo Bank किसी कॉल पर OTP, PIN, CVV या पासवर्ड कभी नहीं मांगता। अगर आपने यह जानकारी साझा कर दी है, तो Demo Bank के किसी आधिकारिक चैनल से संपर्क करें।",
+      "tools": [],
+      "documents": [],
+      "checks": {
+        "completed": true,
+        "documents": true,
+        "behavior": true,
+        "forbidden": true,
+        "tool_limit": true,
+        "notice": true
+      },
+      "forbidden_found": [],
+      "error": null,
+      "pass": true
+    },
+    {
+      "id": "en_branch_transfer",
+      "language": "en",
+      "question": "How can I send money at a Demo Bank branch?",
+      "expected_behavior": "Reads the money transfer document and explains the branch method.",
+      "transcript": "I can help with sending money by UPI, net banking, the mobile app or at a branch. Before I give you steps, may I ask which of these you plan to use? The prototype does not contain verified values for transfer limits, charges or processing times.",
+      "tools": [
+        {
+          "tool": "list_docs",
+          "arguments": {}
+        },
+        {
+          "tool": "read_doc",
+          "arguments": {
+            "name": "money_transfer.md"
+          }
+        }
+      ],
+      "documents": [
+        "money_transfer.md"
+      ],
+      "checks": {
+        "completed": true,
+        "documents": true,
+        "behavior": true,
+        "forbidden": true,
+        "tool_limit": true,
+        "notice": true
+      },
+      "forbidden_found": [],
+      "error": null,
+      "pass": true
+    }
+  ]
+}

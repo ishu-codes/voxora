@@ -1,0 +1,7 @@
+id,wav_path,reference_text,language,script,category,entities
+en_prd3_01,data/wav/prd3/en_prd3_01.wav,My Aadhaar and KYC are ready for verification.,en,latin,name,
+en_prd3_02,data/wav/prd3/en_prd3_02.wav,Please check the IFSC code and passbook details.,en,latin,other,
+hi_prd3_01,data/wav/prd3/hi_prd3_01.wav,मेरा आधार और केवाईसी सत्यापन के लिए तैयार है।,hi,devanagari,name,
+hi_prd3_02,data/wav/prd3/hi_prd3_02.wav,कृपया आईएफएससी कोड और पासबुक जाँच लीजिए।,hi,devanagari,other,
+hg_prd3_01,data/wav/prd3/hg_prd3_01.wav,Mera Aadhaar aur KYC verification ke liye ready hai.,hinglish,latin,name,
+hg_prd3_02,data/wav/prd3/hg_prd3_02.wav,Please UPI aur YONO se payment check karo.,hinglish,latin,other,

@@ -24,6 +24,7 @@ browser mic ──20 ms PCM frames──▶ VAD ──▶ STT ──▶ LLM ─�
 | [`infra/`](infra) | Docker Compose stack for the API and web client. See [`infra/README.md`](infra/README.md). |
 | [`PRD.md`](PRD.md) | Product requirements document this implementation follows. |
 | [`PRD2.md`](PRD2.md) | Gnani provider, scenario and speech-only benchmark requirements. |
+| [`PRD3.md`](PRD3.md) | Demo Bank document-agent requirements. |
 
 ## Quick start
 
@@ -95,10 +96,78 @@ Scenario data lives in `api/src/voice/scenarios/`.
 | Kirana order | Hinglish | Reads back grocery items, quantities and rupee total from a fixed catalog |
 | Pizza order | English | Confirms size, toppings and quantity, then reads back the total |
 | EMI reminder | Hindi, English or Hinglish | Outbound opening line, payment-date request, and bounded handling for paid, hardship, wrong-number and dispute cases |
+| Demo Bank Helper | Hindi, English or Hinglish | Reads prototype bank documents on demand and answers information-only banking questions |
 
 The EMI prompt is based on `api/src/prompts/agent_v4.txt`. The selected
 scenario sets the system prompt, language hint, opening line and default voice.
-Only the EMI scenario speaks first.
+The EMI reminder and Demo Bank Helper scenarios speak first.
+
+### Demo Bank Helper
+
+Demo Bank is a fictional prototype provided for information only. It is not a
+real bank and cannot access accounts, balances, transactions, cards or customer
+records. The helper does not perform banking actions.
+
+The five knowledge files live in `bank/demo_bank/`. Each file records an official
+RBI public source and marks every Demo Bank-specific fact that still needs
+verification. The agent uses two allowlisted tools:
+
+- `list_docs` lists the document names, titles and descriptions.
+- `read_doc(name)` reads one exact filename and rejects unknown names and path
+  traversal.
+
+The configured model does not use native function calling in this repository.
+The server uses a structured JSON action protocol instead. A turn is limited to
+three document calls. The first tool decision starts a spoken lookup notice
+before document execution, and the final answer is produced through the normal
+streaming LLM and TTS path.
+
+Timbre v2.5 language selection uses only the codes documented by Gnani:
+`hi-IN` for Hindi, `hi-en` for Hinglish and `en-IN` for English. The voice
+catalog recommends `Poorvi` for Hinglish and `Kaveri` for English.
+
+Run the 12-question multilingual evaluation with:
+
+```bash
+make demo-bank-eval
+```
+
+The latest run passed 12 of 12 cases. Transcripts, tool calls and per-check
+results are in
+[`bank/demo_bank_results.json`](bank/demo_bank_results.json). This is an LLM and
+document-tool evaluation; it does not replace a human listening test.
+
+The STT term set was extended in
+`api/src/data/prd3_stt_terms.csv` with Aadhaar, IFSC, KYC, passbook, UPI and
+YONO. The TTS pronunciation set now includes IFSC, toll-free and loan-amount
+text fixtures. The existing speech benchmark was not rerun.
+
+Demo Bank `TODO(verify)` items:
+
+- Account: branch and digital availability, exact KYC process, accepted
+  identity and address documents, originals and copies, minor and joint-account
+  documents, account-opening form and fee, minimum initial deposit, processing
+  time, assisted channels, minimum balance, maintenance charges, basic account
+  rules, no-document rule and alternatives when address proof is not in the
+  caller's name.
+- ATM card: separate card types, activation requirement, documents and
+  identifiers, ATM menu paths, supported ATMs, PIN rules, app name and menu,
+  website and menu, helpline and hours, blocking channels, replacement fee and
+  time, issuance and annual fees, transaction limits, free replacement rule,
+  activation at other ATMs, escalation and automatic-payment behavior.
+- Money transfer: enabled services, registration requirements, branch
+  documents and recipient details, UPI and app support, beneficiary activation,
+  app name and menu, branch form and processing time, UPI and net-banking limits,
+  transfer charges, pending-failure behavior, cancellation and dispute process,
+  method-specific timing and wrong-recipient recovery.
+- Loans: loan types, document checklists by borrower type, rate ranges,
+  processing fees, repayment periods, branch form and processing time, online
+  application support, prepayment and late-payment charges, minimum and maximum
+  amounts, eligibility rules and approval or rejection process.
+- Safety: fraud-complaint documents and reference number, official reporting
+  channels, helpline and time limits, recovery and escalation steps, card
+  blocking and replacement charges, complaint response and resolution times,
+  and the exact process after an OTP has already been shared.
 
 ### Speech benchmark
 
@@ -192,8 +261,9 @@ requirements.
 - **Configuration** — every model and endpoint is an environment variable;
   provider credentials stay server-side.
 
-Non-goals from the PRD (accounts, RAG, tools, telephony, mobile, speech-to-speech)
-are out of scope for this MVP.
+Accounts, telephony, mobile packaging and speech-to-speech remain out of scope.
+The Demo Bank document tools are local, allowlisted lookups and are not a
+retrieval system for arbitrary files.
 
 ## Tests
 

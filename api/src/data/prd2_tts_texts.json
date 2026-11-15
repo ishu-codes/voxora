@@ -18,5 +18,9 @@
   {"id": "hg03", "language": "hinglish", "text": "Meri EMI chaar hazaar paanch sau rupaye hai."},
   {"id": "hg04", "language": "hinglish", "text": "Loan amount ek lakh pachaas hazaar rupaye hai."},
   {"id": "hg05", "language": "hinglish", "text": "Support subah das se shaam chhe baje tak available hai."},
-  {"id": "hg06", "language": "hinglish", "text": "Payment phone number nau aath saat chhe paanch four three two one zero hai."}
+  {"id": "hg06", "language": "hinglish", "text": "Payment phone number nau aath saat chhe paanch four three two one zero hai."},
+  {"id": "en08", "language": "en", "text": "The IFSC code is D E M O zero zero zero one two three four.", "fixture_note": "Pronounced identifier fixture, not a real bank code."},
+  {"id": "hi08", "language": "hi", "text": "आईएफएससी कोड डी ई एम ओ शून्य शून्य शून्य एक दो तीन चार है।", "fixture_note": "Pronounced identifier fixture, not a real bank code."},
+  {"id": "hg07", "language": "hinglish", "text": "Loan amount do lakh pachaas hazaar rupaye hai.", "fixture_note": "Pronunciation fixture."},
+  {"id": "en09", "language": "en", "text": "Demo Bank toll free number is one eight hundred zero zero one two three.", "fixture_note": "Pronunciation fixture, not a real helpline."}
 ]

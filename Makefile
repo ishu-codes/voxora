@@ -7,7 +7,7 @@ INFRA_COMPOSE := docker compose --env-file infra/.env -f infra/docker/docker-com
 .PHONY: help install env api-install web-install dev api-dev api-serve web-dev \
 	web-build test test-api test-integration test-web typecheck lint build check \
 	health demo bench-stt bench-noise bench-latency bench-scenarios bench-heldout \
-	bench-report bench-prd2 calibrate infra-env infra-config infra-build infra-up infra-down \
+	bench-report bench-prd2 demo-bank-eval calibrate infra-env infra-config infra-build infra-up infra-down \
 	infra-logs
 
 help:
@@ -38,6 +38,7 @@ help:
 	@echo "  make bench-heldout      Run the frozen held-out comparison"
 	@echo "  make bench-report       Regenerate REPORT.md and NUMBERS.md"
 	@echo "  make bench-prd2         Run the STT/TTS-only Gnani benchmark"
+	@echo "  make demo-bank-eval     Run the 12 Demo Bank agent questions"
 	@echo "  make calibrate          Label the calibration sample"
 
 install: api-install web-install
@@ -129,6 +130,9 @@ bench-report:
 
 bench-prd2:
 	cd $(API_DIR) && PYTHONPATH=src uv run python -m bench.runners.run_prd2 --runs 3
+
+demo-bank-eval:
+	cd $(API_DIR) && PYTHONPATH=src uv run python -m scripts.run_demo_bank_agent
 
 calibrate:
 	cd $(API_DIR) && PYTHONPATH=src uv run python -m tools.calibrate_judge --conversations 25 --stt 15
