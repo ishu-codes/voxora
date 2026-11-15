@@ -54,6 +54,10 @@ class BenchmarkConfig:
         return self.raw["providers"]["tts"]
 
     @property
+    def gnani(self) -> dict[str, Any]:
+        return self.raw["providers"]["gnani"]
+
+    @property
     def llm(self) -> ProviderConfig:
         return self._provider("llm")
 
@@ -129,6 +133,10 @@ class BenchmarkConfig:
         if requested:
             return requested in {"1", "true", "yes", "on"}
         return bool(self.whisper.get("enabled"))
+
+    @property
+    def gnani_api_key(self) -> str:
+        return _env(self.raw["environment"]["gnani_api_key"])
 
     @property
     def network_region(self) -> str:

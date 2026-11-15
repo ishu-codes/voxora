@@ -1,0 +1,22 @@
+[
+  {"id": "en01", "language": "en", "text": "Your grocery order total is three hundred forty five rupees."},
+  {"id": "en02", "language": "en", "text": "The payment is due on the fifth of November."},
+  {"id": "en03", "language": "en", "text": "Please call nine eight seven six five four three two one zero."},
+  {"id": "en04", "language": "en", "text": "The annual turnover is two crore forty lakh rupees."},
+  {"id": "en05", "language": "en", "text": "The ticket costs three hundred forty five rupees and fifty paise."},
+  {"id": "en06", "language": "en", "text": "The next installment is seven thousand two hundred rupees."},
+  {"id": "en07", "language": "en", "text": "Human support is available from ten in the morning to six in the evening."},
+  {"id": "hi01", "language": "hi", "text": "आपकी भुगतान की तारीख पाँच नवंबर है।"},
+  {"id": "hi02", "language": "hi", "text": "आपकी मासिक किस्त चार हज़ार पाँच सौ रुपये है।"},
+  {"id": "hi03", "language": "hi", "text": "कृपया नौ आठ सात छह पाँच चार तीन दो एक शून्य पर कॉल करें।"},
+  {"id": "hi04", "language": "hi", "text": "सालाना कारोबार दो करोड़ चालीस लाख रुपये है।"},
+  {"id": "hi05", "language": "hi", "text": "देरी का जुर्माना तीन सौ रुपये है।"},
+  {"id": "hi06", "language": "hi", "text": "आपका ऑर्डर सात नवंबर को भेजा जाएगा।"},
+  {"id": "hi07", "language": "hi", "text": "मानव सहायता सोमवार से शुक्रवार सुबह दस से शाम छह बजे तक उपलब्ध है।"},
+  {"id": "hg01", "language": "hinglish", "text": "Aapka payment paanch November tak due hai."},
+  {"id": "hg02", "language": "hinglish", "text": "Aapka grocery total teen sau paintalis rupaye hai."},
+  {"id": "hg03", "language": "hinglish", "text": "Meri EMI chaar hazaar paanch sau rupaye hai."},
+  {"id": "hg04", "language": "hinglish", "text": "Loan amount ek lakh pachaas hazaar rupaye hai."},
+  {"id": "hg05", "language": "hinglish", "text": "Support subah das se shaam chhe baje tak available hai."},
+  {"id": "hg06", "language": "hinglish", "text": "Payment phone number nau aath saat chhe paanch four three two one zero hai."}
+]

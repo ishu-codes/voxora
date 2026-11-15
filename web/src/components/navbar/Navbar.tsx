@@ -1,6 +1,6 @@
 "use client";
 
-import { SettingsIcon } from "lucide-react";
+import { BarChart3Icon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { Wordmark } from "@/components/marketing/Wordmark";
 import { ThemeToggle } from "@/components/navbar/ThemeToggle";
@@ -16,6 +16,17 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            render={<Link href="/benchmark" />}
+            nativeButton={false}
+            aria-label="Speech benchmark"
+            title="Speech benchmark"
+            className="rounded-full text-muted-foreground hover:text-foreground"
+          >
+            <BarChart3Icon className="size-[1.2rem]" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"

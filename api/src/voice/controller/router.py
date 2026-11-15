@@ -14,6 +14,7 @@ from ..services.voice import (
     reset_metrics,
     serve_voice_socket,
 )
+from ..services.benchmark import latest_benchmark
 
 router = APIRouter()
 
@@ -43,6 +44,11 @@ async def voice_metrics() -> dict[str, Any]:
 @router.get("/scenarios")
 async def scenarios() -> list[dict[str, Any]]:
     return get_scenarios()
+
+
+@router.get("/benchmark")
+async def benchmark() -> dict[str, Any]:
+    return latest_benchmark()
 
 
 @router.delete("/metrics")

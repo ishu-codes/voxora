@@ -61,6 +61,15 @@ providers:
     temperature: 0.6
     timeout_s: 60
 
+  gnani:
+    stt_url: "https://api.vachana.ai/stt/v3"
+    stt_model: "prisma-v2.5"
+    stt_format: "verbatim"
+    tts_url: "wss://api.vachana.ai/api/v1/tts"
+    tts_model: "timbre-v2.5"
+    tts_speed: 1.0
+    timeout_s: 60
+
 audio:
   convert_with: "ffmpeg"
   encoding: "pcm_s16le"
@@ -76,3 +85,4 @@ environment:
   whisper_api_key: "WHISPER_API_KEY"
   whisper_base_url: "WHISPER_BASE_URL"
   network_region: "BENCHMARK_NETWORK_REGION"
+  gnani_api_key: "GNANI_API_KEY"

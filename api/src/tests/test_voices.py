@@ -1,10 +1,13 @@
+import asyncio
 from types import SimpleNamespace
 
-from fastapi.testclient import TestClient
+import httpx
 
 from main import app
 from src.voice.catalog.voices import CATALOG_PATH, build_catalog, load_catalog
-from src.voice.services.voice import handle_control_text
+from src.voice.security.rate_limit import StrictRateLimiter
+from src.voice.services.voice import handle_control_text, serve_voice_socket
+from src.tests.test_rate_limit import _FakeWebSocket, _router_app, _router_settings
 
 
 class _TransportStub:
@@ -125,9 +128,13 @@ async def test_router_forwards_turn_targeted_interrupt():
     assert pipeline.transport.events == []
 
 
-def test_voice_catalog_endpoint_is_cacheable():
-    with TestClient(app) as client:
-        response = client.get("/api/v1/voice/voices")
+async def test_voice_catalog_endpoint_is_cacheable():
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(
+        transport=transport,
+        base_url="http://test",
+    ) as client:
+        response = await client.get("/api/v1/voice/voices")
 
     assert response.status_code == 200
     assert response.headers["cache-control"].startswith("public, max-age=86400")
@@ -136,41 +143,44 @@ def test_voice_catalog_endpoint_is_cacheable():
     assert payload["voices"]
 
 
-def test_websocket_accepts_client_signals_before_ready():
-    with TestClient(app) as client:
-        with client.websocket_connect(
-            "/api/v1/voice/ws",
-            headers={
-                "origin": "http://localhost:3000",
-                "user-agent": (
-                    "Mozilla/5.0 (X11; Linux x86_64) "
-                    "AppleWebKit/537.36 Chrome/130.0.0.0 Safari/537.36"
+async def test_websocket_accepts_client_signals_before_ready():
+    settings = _router_settings(
+        require_browser_client=True,
+        rate_limit_enabled=False,
+    )
+    limiter = StrictRateLimiter(settings)
+    websocket = _FakeWebSocket(
+        app=_router_app(settings, limiter),
+        messages=[
+            {
+                "type": "websocket.receive",
+                "text": (
+                    '{"type":"configure","client":{'
+                    '"installation_id":"12345678-1234-1234-1234-123456789abc",'
+                    '"screen_width":1440,"screen_height":900,'
+                    '"viewport_width":1280,"viewport_height":800,'
+                    '"pixel_ratio":1,"color_depth":24,'
+                    '"timezone":"Asia/Kolkata","language":"en-US",'
+                    '"platform":"Linux x86_64","hardware_concurrency":8,'
+                    '"device_memory":8,"touch_points":0,"webdriver":false}}'
                 ),
             },
-        ) as websocket:
-            websocket.send_json(
-                {
-                    "type": "configure",
-                    "client": {
-                        "installation_id": "12345678-1234-1234-1234-123456789abc",
-                        "screen_width": 1440,
-                        "screen_height": 900,
-                        "viewport_width": 1280,
-                        "viewport_height": 800,
-                        "pixel_ratio": 1,
-                        "color_depth": 24,
-                        "timezone": "Asia/Kolkata",
-                        "language": "en-US",
-                        "platform": "Linux x86_64",
-                        "hardware_concurrency": 8,
-                        "device_memory": 8,
-                        "touch_points": 0,
-                        "webdriver": False,
-                    },
-                }
-            )
-            ready = websocket.receive_json()
+            {"type": "websocket.disconnect", "code": 1000},
+        ],
+    )
+    websocket.headers["user-agent"] = (
+        "Mozilla/5.0 (X11; Linux x86_64) "
+        "AppleWebKit/537.36 Chrome/130.0.0.0 Safari/537.36"
+    )
 
+    await serve_voice_socket(websocket)
+    await asyncio.sleep(0.05)
+
+    ready = next(
+        (event for event in websocket.sent if event["type"] == "ready"),
+        None,
+    )
+    assert ready is not None, websocket.sent
     assert ready["type"] == "ready"
     assert ready["platform"]["limited"] is True
     assert ready["platform"]["turn_limit"] > 0

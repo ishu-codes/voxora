@@ -7,7 +7,7 @@ database or RAG dependencies.
 
 ```bash
 cp infra/.env.example infra/.env
-# Set SARVAM_API_KEY and the LLM settings in infra/.env
+# Set SARVAM_API_KEY, GNANI_API_KEY and the LLM settings in infra/.env
 docker compose --env-file infra/.env \
   -f infra/docker/docker-compose.yml up --build
 ```
