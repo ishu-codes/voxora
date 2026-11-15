@@ -71,7 +71,7 @@ class Settings:
     sarvam_api_key: str = ""
     sarvam_ws_url: str = "wss://api.sarvam.ai"
 
-    # Speech to text (local Whisper by default, Sarvam Saaras optional)
+    # Speech to text (Gnani Prisma by default)
     stt_provider: str = "gnani"
     stt_model: str = "saaras:v3-realtime"
     stt_language: str = "en-IN"

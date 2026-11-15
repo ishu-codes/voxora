@@ -1548,7 +1548,7 @@ export function useVoiceSession() {
       function startRecognition() {
         if (!supportsBrowserStt()) {
           pushError(
-            "This browser has no on-device speech recognition. Set STT_PROVIDER=openai or faster-whisper on the server.",
+            "This browser has no on-device speech recognition. Choose Faster Whisper or another server STT provider.",
           );
           return;
         }

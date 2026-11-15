@@ -67,7 +67,7 @@ export const CAPABILITIES_COPY = {
     {
       num: "01",
       title: "Streaming speech recognition",
-      command: "STT_PROVIDER=openai|faster-whisper|browser",
+      command: "STT_PROVIDER=gnani|sarvam|faster-whisper",
       description:
         "Audio frames flow continuously. Partial transcripts update the UI while the turn is still open.",
     },

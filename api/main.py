@@ -48,7 +48,9 @@ async def lifespan(app: FastAPI):
         "providers stt=%s:%s tts=sarvam:%s llm=%s (%s)",
         settings.stt_provider,
         (
-            settings.stt_model
+            settings.gnani_stt_model
+            if settings.stt_provider == "gnani"
+            else settings.stt_model
             if settings.stt_provider == "sarvam"
             else WHISPER_MODEL
         ),
