@@ -23,11 +23,15 @@ async def voice_config(request: Request) -> dict[str, Any]:
 
 
 @router.get("/voices")
-async def voice_catalog(response: Response) -> dict[str, Any]:
+async def voice_catalog(
+    response: Response,
+    provider: str | None = None,
+    model: str | None = None,
+) -> dict[str, Any]:
     response.headers["Cache-Control"] = (
         "public, max-age=86400, stale-while-revalidate=604800"
     )
-    return get_catalog()
+    return get_catalog(provider=provider, model=model)
 
 
 @router.get("/metrics")

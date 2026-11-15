@@ -6,6 +6,7 @@ import asyncio
 import json
 import logging
 import time
+from dataclasses import replace
 from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -14,7 +15,7 @@ from ..audio.vad import EnergyVAD
 from ..catalog.voices import build_catalog
 from ..core.config import Settings, settings
 from ..core.metrics import registry
-from ..providers import WHISPER_MODEL, SarvamSTT, SarvamTTS
+from ..providers import WHISPER_MODEL
 from ..runtime.pipeline import VoicePipeline
 from ..runtime.session import VoiceSession
 from ..runtime.transport import QueueTransport
@@ -30,6 +31,84 @@ from .provider_bundle import get_or_create_bundle
 
 logger = logging.getLogger(__name__)
 
+STT_PROVIDER_IDS = ("gnani", "sarvam", "faster-whisper")
+TTS_PROVIDER_IDS = ("gnani", "sarvam")
+
+
+def _stt_provider_id(value: str) -> str:
+    return "faster-whisper" if value in {"whisper", "faster-whisper"} else value
+
+
+def _provider_entries(config: Settings) -> dict[str, list[dict[str, Any]]]:
+    return {
+        "stt": [
+            {
+                "id": "gnani",
+                "name": "Gnani Prisma",
+                "model": config.gnani_stt_model,
+                "available": bool(config.gnani_api_key),
+            },
+            {
+                "id": "sarvam",
+                "name": "Sarvam Saaras",
+                "model": config.stt_model,
+                "available": bool(config.sarvam_api_key),
+            },
+            {
+                "id": "faster-whisper",
+                "name": "Faster Whisper",
+                "model": WHISPER_MODEL,
+                "available": True,
+            },
+        ],
+        "tts": [
+            {
+                "id": "gnani",
+                "name": "Gnani Timbre",
+                "model": config.gnani_tts_model,
+                "available": bool(config.gnani_api_key),
+            },
+            {
+                "id": "sarvam",
+                "name": "Sarvam Bulbul",
+                "model": config.tts_model,
+                "available": bool(config.sarvam_api_key),
+            },
+        ],
+    }
+
+
+def _session_settings(
+    config: Settings,
+    stt_provider: str,
+    tts_provider: str,
+    language: str | None = None,
+    voice: str | None = None,
+) -> Settings:
+    stt_language = language or (
+        config.gnani_stt_language
+        if stt_provider == "gnani"
+        else config.stt_language
+    )
+    tts_language = language or (
+        config.gnani_tts_language
+        if tts_provider == "gnani"
+        else config.tts_language
+    )
+    if tts_provider == "sarvam" and tts_language == "hi-en":
+        tts_language = "hi-IN"
+    return replace(
+        config,
+        stt_provider=stt_provider,
+        tts_provider=tts_provider,
+        gnani_stt_language=stt_language,
+        stt_language=stt_language,
+        tts_language=tts_language,
+        gnani_tts_language=tts_language,
+        tts_voice=voice or config.tts_voice,
+        gnani_tts_voice=voice or config.gnani_tts_voice,
+    )
+
 
 def _limiter(websocket: WebSocket) -> StrictRateLimiter:
     limiter = getattr(websocket.app.state, "rate_limiter", None)
@@ -44,6 +123,7 @@ def _limiter(websocket: WebSocket) -> StrictRateLimiter:
 def get_config(state: Any) -> dict[str, Any]:
     """Non-secret provider configuration for the diagnostics panel."""
     bundle = get_or_create_bundle(state, settings)
+    providers = _provider_entries(settings)
     return {
         "app": settings.app_name,
         "version": settings.version,
@@ -53,29 +133,44 @@ def get_config(state: Any) -> dict[str, Any]:
             "frame_ms": 20,
         },
         "stt": {
-            "provider": (
-                "whisper" if settings.stt_provider == "whisper" else SarvamSTT.name
-            ),
+            "provider": _stt_provider_id(settings.stt_provider),
             "model": (
                 WHISPER_MODEL
-                if settings.stt_provider == "whisper"
+                if settings.stt_provider in {"whisper", "faster-whisper"}
+                else settings.gnani_stt_model
+                if settings.stt_provider == "gnani"
                 else settings.stt_model
             ),
             "language": (
                 settings.whisper_language
-                if settings.stt_provider == "whisper"
+                if settings.stt_provider in {"whisper", "faster-whisper"}
+                else settings.gnani_stt_language
+                if settings.stt_provider == "gnani"
                 else settings.stt_language
             ),
-            "partials": settings.stt_provider != "whisper",
+            "providers": providers["stt"],
         },
         "llm": {"provider": bundle.llm.name},
         "tts": {
-            "provider": SarvamTTS.name,
-            "kind": SarvamTTS.kind,
-            "model": settings.tts_model,
-            "voice": settings.tts_voice,
-            "language": settings.tts_language,
+            "provider": settings.tts_provider,
+            "kind": "audio",
+            "model": (
+                settings.gnani_tts_model
+                if settings.tts_provider == "gnani"
+                else settings.tts_model
+            ),
+            "voice": (
+                settings.gnani_tts_voice
+                if settings.tts_provider == "gnani"
+                else settings.tts_voice
+            ),
+            "language": (
+                settings.gnani_tts_language
+                if settings.tts_provider == "gnani"
+                else settings.tts_language
+            ),
             "sample_rate": settings.tts_sample_rate,
+            "providers": providers["tts"],
         },
         "vad": {"name": "EnergyVAD", "end_silence_ms": settings.vad_end_silence_ms},
         "targets": {
@@ -86,9 +181,19 @@ def get_config(state: Any) -> dict[str, Any]:
     }
 
 
-def get_catalog() -> dict[str, Any]:
-    """Return the speakers supported by the configured Sarvam TTS model."""
-    return build_catalog(settings.tts_model, settings.tts_voice)
+def get_catalog(
+    provider: str | None = None,
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Return speakers supported by one configured TTS provider/model."""
+    selected = (provider or settings.tts_provider).lower()
+    if selected == "gnani":
+        return build_catalog(
+            model or settings.gnani_tts_model,
+            settings.gnani_tts_voice,
+            "gnani",
+        )
+    return build_catalog(model or settings.tts_model, settings.tts_voice, "sarvam")
 
 
 def get_metrics() -> dict[str, Any]:
@@ -150,6 +255,10 @@ async def read_initial_config(
         raw_client = payload.get("client", {})
         if isinstance(raw_client, dict):
             client_payload = raw_client
+        for key in ("stt_provider", "tts_provider", "language", "voice"):
+            value = payload.get(key)
+            if isinstance(value, str) and value.strip():
+                client_payload[key] = value.strip()
         raw_credentials = payload.get("byok", payload.get("settings", {}))
         if isinstance(raw_credentials, dict) and any(
             value for value in raw_credentials.values()
@@ -201,6 +310,18 @@ async def _reject_client(websocket: WebSocket, message: str) -> None:
         }
     )
     await websocket.close(code=1008, reason="Browser client required")
+
+
+async def _reject_config(websocket: WebSocket, message: str) -> None:
+    await websocket.send_json(
+        {
+            "type": "error",
+            "stage": "config",
+            "message": message,
+            "recoverable": False,
+        }
+    )
+    await websocket.close(code=1008, reason="Invalid provider configuration")
 
 
 async def serve_voice_socket(websocket: WebSocket) -> None:
@@ -295,9 +416,61 @@ async def serve_voice_socket(websocket: WebSocket) -> None:
             await limiter.release(identity)
             return
 
+    stt_provider = _stt_provider_id(
+        str(client_payload.get("stt_provider") or platform_bundle.settings.stt_provider)
+    )
+    tts_provider = str(
+        client_payload.get("tts_provider") or platform_bundle.settings.tts_provider
+    ).lower()
+
+    async def reject_provider(message: str) -> None:
+        await _reject_config(websocket, message)
+        if identity_acquired:
+            await limiter.release(identity)
+
+    if stt_provider not in STT_PROVIDER_IDS:
+        await reject_provider(
+            f"Unsupported speech-to-text provider {stt_provider!r}.",
+        )
+        return
+    if tts_provider not in TTS_PROVIDER_IDS:
+        await reject_provider(
+            f"Unsupported text-to-speech provider {tts_provider!r}.",
+        )
+        return
+    provider_entries = _provider_entries(platform_bundle.settings)
+    selected_stt = next(
+        item for item in provider_entries["stt"] if item["id"] == stt_provider
+    )
+    selected_tts = next(
+        item for item in provider_entries["tts"] if item["id"] == tts_provider
+    )
+    if stt_provider == "gnani" and not selected_stt["available"]:
+        await reject_provider(
+            "Gnani Prisma is selected, but GNANI_API_KEY is not configured.",
+        )
+        return
+    if tts_provider == "gnani" and not selected_tts["available"]:
+        await reject_provider(
+            "Gnani Timbre is selected, but GNANI_API_KEY is not configured.",
+        )
+        return
+
     transport: QueueTransport | None = None
     try:
-        session_settings = platform_bundle.settings
+        session_settings = _session_settings(
+            platform_bundle.settings,
+            stt_provider,
+            tts_provider,
+            language=(
+                str(client_payload["language"])
+                if "language" in client_payload
+                else None
+            ),
+            voice=(
+                str(client_payload["voice"]) if "voice" in client_payload else None
+            ),
+        )
         bundle = platform_bundle
         transport = QueueTransport(
             websocket, max_queue=session_settings.max_output_queue
@@ -322,9 +495,17 @@ async def serve_voice_socket(websocket: WebSocket) -> None:
         pipeline = VoicePipeline(
             transport=transport,
             settings=session_settings,
-            stt=bundle.new_stt(session.session_id),
+            stt=await bundle.new_stt(
+                session.session_id,
+                provider=stt_provider,
+                settings=session_settings,
+            ),
             llm=bundle.llm,
-            tts=bundle.new_tts(session.session_id),
+            tts=bundle.new_tts(
+                session.session_id,
+                provider=tts_provider,
+                settings=session_settings,
+            ),
             vad=EnergyVAD(
                 threshold=session_settings.vad_threshold,
                 start_frames=session_settings.vad_start_frames,

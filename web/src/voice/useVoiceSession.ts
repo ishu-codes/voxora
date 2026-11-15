@@ -9,6 +9,11 @@ import {
 } from "@/lib/metrics";
 import { API_URL } from "@/lib/voice-catalog";
 import {
+  getProviderConfig,
+  type ProviderChoice,
+  type ProviderConfig,
+} from "@/lib/voice-providers";
+import {
   hasUnlimitedVoiceSettings,
   loadVoiceSettings,
   toConfigurePayload,
@@ -132,7 +137,12 @@ function percentile(values: number[], p: number): number | null {
 }
 
 export function useVoiceSession() {
-  const catalog = useVoiceCatalog();
+  const [sttProvider, setSttProviderState] = useState("faster-whisper");
+  const [ttsProvider, setTtsProviderState] = useState("sarvam");
+  const [providerConfig, setProviderConfig] = useState<ProviderConfig | null>(
+    null,
+  );
+  const catalog = useVoiceCatalog(ttsProvider);
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   const [agentState, setAgentState] = useState<AgentState>("idle");
   const [ready, setReady] = useState<ReadyEvent | null>(null);
@@ -153,6 +163,11 @@ export function useVoiceSession() {
     [],
   );
   const [voice, setVoiceState] = useState<string | undefined>(undefined);
+  const providerTouchedRef = useRef(false);
+  const sttProviderRef = useRef(sttProvider);
+  const ttsProviderRef = useRef(ttsProvider);
+  sttProviderRef.current = sttProvider;
+  ttsProviderRef.current = ttsProvider;
 
   const wsRef = useRef<WebSocket | null>(null);
   const captureRef = useRef<AudioCapture | null>(null);
@@ -232,6 +247,23 @@ export function useVoiceSession() {
     window.speechSynthesis.addEventListener("voiceschanged", load);
     return () =>
       window.speechSynthesis.removeEventListener("voiceschanged", load);
+  }, []);
+
+  useEffect(() => {
+    let active = true;
+    void getProviderConfig().then((config) => {
+      if (!active || !config) return;
+      setProviderConfig(config);
+      if (!providerTouchedRef.current) {
+        sttProviderRef.current = config.sttProvider;
+        ttsProviderRef.current = config.ttsProvider;
+        setSttProviderState(config.sttProvider);
+        setTtsProviderState(config.ttsProvider);
+      }
+    });
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
@@ -400,6 +432,22 @@ export function useVoiceSession() {
     },
     [send],
   );
+
+  const selectSttProvider = useCallback((provider: string) => {
+    if (activeRef.current) return;
+    providerTouchedRef.current = true;
+    sttProviderRef.current = provider;
+    setSttProviderState(provider);
+  }, []);
+
+  const selectTtsProvider = useCallback((provider: string) => {
+    if (activeRef.current) return;
+    providerTouchedRef.current = true;
+    ttsProviderRef.current = provider;
+    setTtsProviderState(provider);
+    voiceRef.current = undefined;
+    setVoiceState(undefined);
+  }, []);
 
   useEffect(() => {
     if (catalog?.kind !== "audio" || !catalog.voices.length) return;
@@ -1789,7 +1837,15 @@ export function useVoiceSession() {
     wsRef.current = ws;
     ws.onopen = () => {
       if (wsRef.current !== ws) return;
-      ws.send(JSON.stringify(toConfigurePayload(collectClientFingerprint())));
+      ws.send(
+        JSON.stringify(
+          toConfigurePayload(collectClientFingerprint(), {
+            sttProvider: sttProviderRef.current,
+            ttsProvider: ttsProviderRef.current,
+            voice: voiceRef.current,
+          }),
+        ),
+      );
     };
     ws.onmessage = (message: MessageEvent<string>) => {
       if (typeof message.data !== "string") return;
@@ -1843,7 +1899,10 @@ export function useVoiceSession() {
       setQuotaNoticeDismissed(false);
     }
     const settings = loadVoiceSettings();
-    const direct = hasUnlimitedVoiceSettings(settings);
+    const direct =
+      hasUnlimitedVoiceSettings(settings) &&
+      sttProviderRef.current !== "gnani" &&
+      ttsProviderRef.current !== "gnani";
     byokSettingsRef.current = direct ? settings : null;
     byokRef.current = direct;
     fatalConnectionRef.current = false;
@@ -2179,7 +2238,13 @@ export function useVoiceSession() {
     stream: captureStream,
     voices: options,
     voice,
+    sttProvider,
+    ttsProvider,
+    sttProviderChoices: providerConfig?.stt ?? ([] satisfies ProviderChoice[]),
+    ttsProviderChoices: providerConfig?.tts ?? ([] satisfies ProviderChoice[]),
     selectVoice,
+    selectSttProvider,
+    selectTtsProvider,
     start,
     stop,
     interrupt,

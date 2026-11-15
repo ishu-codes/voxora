@@ -58,7 +58,7 @@ async def test_provider_bundle_uses_preloaded_whisper_engine():
     bundle = await ProviderBundle.initialize(Settings())
 
     try:
-        assert isinstance(bundle.new_stt(), WhisperSTT)
+        assert isinstance(await bundle.new_stt(), WhisperSTT)
         assert bundle.whisper_engine is not None
     finally:
         await bundle.close()

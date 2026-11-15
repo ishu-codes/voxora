@@ -1,6 +1,8 @@
 """Provider factories and shared provider types."""
 
 from .base import LLMProvider, PartialCallback, ProviderError, STTProvider, TTSProvider
+from .gnani_stt import GnaniSTT
+from .gnani_tts import GnaniTTS
 from .llm import EchoLLM, OpenAICompatibleLLM, build_llm
 from .stt import SarvamSTT
 from .tts import SarvamTTS
@@ -13,6 +15,8 @@ __all__ = [
     "PartialCallback",
     "ProviderError",
     "EchoLLM",
+    "GnaniSTT",
+    "GnaniTTS",
     "OpenAICompatibleLLM",
     "SarvamSTT",
     "SarvamTTS",

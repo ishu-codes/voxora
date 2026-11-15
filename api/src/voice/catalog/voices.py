@@ -1,4 +1,4 @@
-"""Runtime access to the Sarvam voice catalog."""
+"""Runtime access to the Sarvam and Gnani voice catalogs."""
 
 from __future__ import annotations
 
@@ -8,10 +8,11 @@ from pathlib import Path
 from typing import Any
 
 CATALOG_PATH = Path(__file__).with_name("voices.json")
+GNANI_CATALOG_PATH = Path(__file__).with_name("gnani_voices.json")
 Catalog = dict[str, Any]
 
 
-@lru_cache(maxsize=1)
+@lru_cache(maxsize=2)
 def load_catalog(path: Path | str = CATALOG_PATH) -> Catalog:
     """Load the JSON catalog once per process."""
     catalog_path = Path(path)
@@ -39,9 +40,13 @@ def _voices_for_model(catalog: Catalog, model: str) -> list[dict[str, str]]:
     return voices
 
 
-def build_catalog(model: str, default_voice: str) -> dict[str, object]:
-    """Build the browser response for the configured model."""
-    data = load_catalog()
+def build_catalog(
+    model: str,
+    default_voice: str,
+    provider: str = "sarvam",
+) -> dict[str, object]:
+    """Build the browser response for one configured provider and model."""
+    data = load_catalog(GNANI_CATALOG_PATH if provider == "gnani" else CATALOG_PATH)
     voices = _voices_for_model(data, model)
     known = {voice["id"] for voice in voices}
     return {
@@ -55,4 +60,4 @@ def build_catalog(model: str, default_voice: str) -> dict[str, object]:
     }
 
 
-__all__ = ["CATALOG_PATH", "build_catalog", "load_catalog"]
+__all__ = ["CATALOG_PATH", "GNANI_CATALOG_PATH", "build_catalog", "load_catalog"]

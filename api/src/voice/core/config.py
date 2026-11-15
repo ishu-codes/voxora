@@ -1,8 +1,8 @@
 """Environment-driven configuration for the Voxora voice service.
 
-Speech recognition defaults to local Whisper, with Sarvam's streaming model as
-an option. Synthesis remains on Sarvam. The language model is provider-agnostic
-because any OpenAI-compatible endpoint speaks the same protocol.
+Speech recognition and synthesis can use Sarvam, Gnani or the local Whisper
+model. The provider chosen in the browser overrides the server default for one
+session, but credentials always remain server-side.
 """
 
 from __future__ import annotations
@@ -80,6 +80,13 @@ class Settings:
     stt_timeout_s: float = 30.0
     whisper_language: str = "auto"
 
+    # Gnani Prisma v2.5 streaming speech to text
+    gnani_api_key: str = ""
+    gnani_stt_url: str = "wss://api.vachana.ai/stt/v3/stream"
+    gnani_stt_model: str = "prisma-v2.5"
+    gnani_stt_language: str = "hi-IN"
+    gnani_stt_format: str = "verbatim"
+
     # LLM (any OpenAI-compatible endpoint)
     llm_provider: str = "auto"
     llm_model: str = "gpt-4o-mini"
@@ -91,6 +98,7 @@ class Settings:
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
 
     # Text to speech (Sarvam Bulbul, streaming WebSocket)
+    tts_provider: str = "sarvam"
     tts_model: str = "bulbul:v3"
     tts_voice: str = "shubh"
     tts_language: str = "en-IN"
@@ -98,6 +106,16 @@ class Settings:
     tts_speed: float = 1.0
     tts_temperature: float = 0.6
     tts_timeout_s: float = 60.0
+
+    # Gnani Timbre v2.5 realtime speech synthesis
+    gnani_tts_url: str = "wss://api.vachana.ai/api/v1/tts"
+    gnani_tts_model: str = "timbre-v2.5"
+    gnani_tts_voice: str = "Poorvi"
+    gnani_tts_language: str = "hi-en"
+
+    # Provider retries are deliberately bounded. Requests run one at a time.
+    provider_retry_attempts: int = 3
+    provider_retry_base_ms: int = 750
 
     # Voice activity detection / turn taking
     vad_threshold: float = 0.014
@@ -174,6 +192,14 @@ class Settings:
             stt_mode=_env("STT_MODE", "transcribe").lower(),
             stt_timeout_s=_env_float("STT_TIMEOUT_S", 30.0),
             whisper_language=_env("WHISPER_LANGUAGE", "auto"),
+            gnani_api_key=_env("GNANI_API_KEY"),
+            gnani_stt_url=_env(
+                "GNANI_STT_URL",
+                "wss://api.vachana.ai/stt/v3/stream",
+            ),
+            gnani_stt_model=_env("GNANI_STT_MODEL", "prisma-v2.5"),
+            gnani_stt_language=_env("GNANI_STT_LANGUAGE", "hi-IN"),
+            gnani_stt_format=_env("GNANI_STT_FORMAT", "verbatim").lower(),
             llm_provider=_env("LLM_PROVIDER", "auto").lower(),
             llm_model=_env("LLM_MODEL", "gpt-4o-mini"),
             llm_base_url=_env("LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/"),
@@ -182,6 +208,7 @@ class Settings:
             llm_max_tokens=_env_int("LLM_MAX_TOKENS", 320),
             llm_timeout_s=_env_float("LLM_TIMEOUT_S", 60.0),
             system_prompt=_env("SYSTEM_PROMPT", DEFAULT_SYSTEM_PROMPT),
+            tts_provider=_env("TTS_PROVIDER", "sarvam").lower(),
             tts_model=_env("TTS_MODEL", "bulbul:v3"),
             tts_voice=_env("TTS_VOICE", "shubh"),
             tts_language=_env("TTS_LANGUAGE", "en-IN"),
@@ -189,6 +216,15 @@ class Settings:
             tts_speed=_env_float("TTS_SPEED", 1.0),
             tts_temperature=_env_float("TTS_TEMPERATURE", 0.6),
             tts_timeout_s=_env_float("TTS_TIMEOUT_S", 60.0),
+            gnani_tts_url=_env(
+                "GNANI_TTS_URL",
+                "wss://api.vachana.ai/api/v1/tts",
+            ),
+            gnani_tts_model=_env("GNANI_TTS_MODEL", "timbre-v2.5"),
+            gnani_tts_voice=_env("GNANI_TTS_VOICE", "Poorvi"),
+            gnani_tts_language=_env("GNANI_TTS_LANGUAGE", "hi-en"),
+            provider_retry_attempts=_env_int("PROVIDER_RETRY_ATTEMPTS", 3),
+            provider_retry_base_ms=_env_int("PROVIDER_RETRY_BASE_MS", 750),
             vad_threshold=_env_float("VAD_THRESHOLD", 0.014),
             vad_start_frames=_env_int("VAD_START_FRAMES", 3),
             vad_end_silence_ms=_env_int("VAD_END_SILENCE_MS", 650),

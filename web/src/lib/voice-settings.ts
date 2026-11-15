@@ -83,9 +83,21 @@ export function hasUnlimitedVoiceSettings(settings: VoiceSettings): boolean {
   );
 }
 
-export function toConfigurePayload(client?: ClientFingerprint) {
+export function toConfigurePayload(
+  client?: ClientFingerprint,
+  selection?: {
+    sttProvider?: string;
+    ttsProvider?: string;
+    language?: string;
+    voice?: string;
+  },
+) {
   return {
     type: "configure" as const,
     ...(client ? { client } : {}),
+    ...(selection?.sttProvider ? { stt_provider: selection.sttProvider } : {}),
+    ...(selection?.ttsProvider ? { tts_provider: selection.ttsProvider } : {}),
+    ...(selection?.language ? { language: selection.language } : {}),
+    ...(selection?.voice ? { voice: selection.voice } : {}),
   };
 }

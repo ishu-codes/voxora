@@ -24,9 +24,13 @@ type CachedCatalog = {
   catalog: VoiceCatalog;
 };
 
-const STORAGE_KEY = "voxora.voice-catalog.v1";
+const STORAGE_KEY_PREFIX = "voxora.voice-catalog.v2";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-let inflight: Promise<VoiceCatalog | null> | null = null;
+const inflight = new Map<string, Promise<VoiceCatalog | null>>();
+
+function storageKey(provider: string): string {
+  return `${STORAGE_KEY_PREFIX}.${provider}`;
+}
 
 function isCatalog(value: unknown): value is VoiceCatalog {
   if (typeof value !== "object" || value === null) return false;
@@ -45,10 +49,12 @@ function isCatalog(value: unknown): value is VoiceCatalog {
   });
 }
 
-export function readVoiceCatalogCache(): CachedCatalog | null {
+export function readVoiceCatalogCache(
+  provider = "sarvam",
+): CachedCatalog | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey(provider));
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (typeof parsed !== "object" || parsed === null) return null;
@@ -62,28 +68,34 @@ export function readVoiceCatalogCache(): CachedCatalog | null {
   }
 }
 
-function writeVoiceCatalogCache(catalog: VoiceCatalog): void {
+function writeVoiceCatalogCache(provider: string, catalog: VoiceCatalog): void {
   if (typeof window === "undefined") return;
   try {
     const record: CachedCatalog = { savedAt: Date.now(), catalog };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+    window.localStorage.setItem(storageKey(provider), JSON.stringify(record));
   } catch {
     /* Storage can be unavailable in private browsing; the session still works. */
   }
 }
 
-export async function getVoiceCatalog(): Promise<VoiceCatalog | null> {
-  const cached = readVoiceCatalogCache();
+export async function getVoiceCatalog(
+  provider = "sarvam",
+): Promise<VoiceCatalog | null> {
+  const cached = readVoiceCatalogCache(provider);
   if (cached && Date.now() - cached.savedAt < CACHE_TTL_MS) {
     return cached.catalog;
   }
-  if (inflight) return inflight;
+  const pending = inflight.get(provider);
+  if (pending) return pending;
 
-  inflight = (async () => {
+  const request = (async () => {
     try {
-      const response = await fetch(`${API_URL}/api/v1/voice/voices`, {
-        headers: { Accept: "application/json" },
-      });
+      const response = await fetch(
+        `${API_URL}/api/v1/voice/voices?provider=${encodeURIComponent(provider)}`,
+        {
+          headers: { Accept: "application/json" },
+        },
+      );
       if (!response.ok) {
         throw new Error(`Voice catalog request failed (${response.status})`);
       }
@@ -91,15 +103,16 @@ export async function getVoiceCatalog(): Promise<VoiceCatalog | null> {
       if (!isCatalog(payload)) {
         throw new Error("Voice catalog response has an unexpected shape");
       }
-      writeVoiceCatalogCache(payload);
+      writeVoiceCatalogCache(provider, payload);
       return payload;
     } catch {
       // A stale catalog is still useful when the API is briefly unavailable.
       return cached?.catalog ?? null;
     } finally {
-      inflight = null;
+      inflight.delete(provider);
     }
   })();
 
-  return inflight;
+  inflight.set(provider, request);
+  return request;
 }
