@@ -75,6 +75,31 @@ class FakeLLM:
         return None
 
 
+class ScriptedBankLLM:
+    name = "bank-test-llm"
+    streaming = True
+
+    def __init__(self, responses: list[str]) -> None:
+        self.responses = responses
+        self.calls = 0
+
+    async def _stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
+        if self.calls >= len(self.responses):
+            yield "I do not know from the available documents."
+            return
+        response = self.responses[self.calls]
+        self.calls += 1
+        midpoint = max(1, len(response) // 2)
+        yield response[:midpoint]
+        yield response[midpoint:]
+
+    def stream(self, messages: list[dict[str, str]]) -> AsyncIterator[str]:
+        return self._stream(messages)
+
+    async def close(self) -> None:
+        return None
+
+
 class FakeAudioTTS:
     name = "fake-tts"
     kind = "audio"
@@ -544,4 +569,44 @@ async def test_speech_start_prewarms_tts_before_generation():
     await asyncio.sleep(0)
 
     assert tts.prepared == ["ritu"]
+    await pipeline.close()
+
+
+async def test_demo_bank_agent_runs_document_tool_before_streamed_answer():
+    llm = ScriptedBankLLM(
+        [
+            '{"action":"tool","tool":"read_doc","name":"atm_card.md",'
+            '"notice":"Ek minute, documents check kar raha hoon."}',
+            '{"action":"answer"}',
+            "ATM card ko official Demo Bank app se activate karein. "
+            "Kya aap mobile app use karte hain?",
+        ]
+    )
+    tts = FakeAudioTTS(1)
+    pipeline, transport = _pipeline(
+        FakeSTT("How do I activate my ATM card?"),
+        llm,
+        tts,
+    )
+    pipeline.scenario_id = "demo-bank"
+
+    await _speak(pipeline)
+    await _silence(pipeline, 3)
+    await _await_turn(pipeline)
+
+    tool_calls = transport.of_type("bank.tool.call")
+    assert [event["tool"] for event in tool_calls] == ["read_doc"]
+    results = transport.of_type("bank.tool.result")
+    assert results and results[0]["ok"] is True
+    assert transport.of_type("bank.notice")[0]["text"].startswith("Ek minute")
+    assert transport.of_type("bank.documents.used")[0]["documents"] == [
+        "atm_card.md"
+    ]
+    audio = transport.of_type("audio.chunk")
+    assert audio[0].get("phase") == "bank_notice"
+    assert all(event.get("phase") == "bank_answer" for event in audio[1:])
+    assert any(
+        str(event.get("text", "")).startswith("ATM card") for event in audio[1:]
+    )
+    assert llm.calls == 3
     await pipeline.close()

@@ -13,8 +13,11 @@ export type TurnMetricRecord = {
   mode: TTFAMode;
   sttProvider: string;
   language: string | null;
+  scenarioId?: string | null;
   stages: TTFAStages;
   ttfaMs: number | null;
+  bankNoticeMs?: number | null;
+  bankAnswerFirstAudioMs?: number | null;
   timestamp: string;
   status: TTFAStatus;
   coldStart: boolean;
@@ -42,6 +45,7 @@ type TurnTimerInput = {
   mode: TTFAMode;
   sttProvider: string;
   language: string | null;
+  scenarioId?: string | null;
   coldStart: boolean;
   startedAt?: number;
   timestamp?: string;
@@ -82,6 +86,7 @@ export class TurnTimer {
   private readonly mode: TTFAMode;
   private readonly sttProvider: string;
   private readonly language: string | null;
+  private readonly scenarioId: string | null;
   private readonly startedAt: number;
   private readonly timestamp: string;
   private readonly now: () => number;
@@ -89,12 +94,15 @@ export class TurnTimer {
   private firstLlmTokenAt: number | null = null;
   private firstAudioReceivedAt: number | null = null;
   private playbackStartedAt: number | null = null;
+  private bankNoticeAt: number | null = null;
+  private bankAnswerAt: number | null = null;
 
   constructor(input: TurnTimerInput) {
     this.turnId = input.turnId;
     this.mode = input.mode;
     this.sttProvider = input.sttProvider;
     this.language = input.language;
+    this.scenarioId = input.scenarioId ?? null;
     this.coldStart = input.coldStart;
     this.now = input.now ?? (() => performance.now());
     this.startedAt = input.startedAt ?? this.now();
@@ -113,6 +121,15 @@ export class TurnTimer {
     this.firstAudioReceivedAt ??= at;
   }
 
+  markBankNotice(at = this.now()): void {
+    this.bankNoticeAt ??= at;
+  }
+
+  markBankAnswer(at = this.now()): void {
+    this.bankAnswerAt ??= at;
+    this.firstAudioReceivedAt ??= at;
+  }
+
   finish(status: TTFAStatus, at = this.now()): TurnMetricRecord {
     if (status === "complete") this.playbackStartedAt ??= at;
     return {
@@ -120,6 +137,7 @@ export class TurnTimer {
       mode: this.mode,
       sttProvider: this.sttProvider,
       language: this.language,
+      scenarioId: this.scenarioId,
       stages: {
         sttMs: duration(this.startedAt, this.transcriptFinalAt),
         llmMs: duration(this.transcriptFinalAt, this.firstLlmTokenAt),
@@ -127,11 +145,47 @@ export class TurnTimer {
         playbackMs: duration(this.firstAudioReceivedAt, this.playbackStartedAt),
       },
       ttfaMs: duration(this.startedAt, this.playbackStartedAt),
+      bankNoticeMs: duration(this.startedAt, this.bankNoticeAt),
+      bankAnswerFirstAudioMs: duration(this.startedAt, this.bankAnswerAt),
       timestamp: this.timestamp,
       status,
       coldStart: this.coldStart,
     };
   }
+}
+
+export type BankTTFAStats = {
+  count: number;
+  noticeMean: number | null;
+  noticeMedian: number | null;
+  noticeP95: number | null;
+  answerMean: number | null;
+  answerMedian: number | null;
+  answerP95: number | null;
+};
+
+export function calculateBankTTFAStats(
+  records: readonly TurnMetricRecord[],
+): BankTTFAStats {
+  const bankRecords = records.filter(
+    (record) =>
+      record.scenarioId === "demo-bank" && record.status === "complete",
+  );
+  const notices = bankRecords
+    .map((record) => record.bankNoticeMs)
+    .filter((value): value is number => value != null);
+  const answers = bankRecords
+    .map((record) => record.bankAnswerFirstAudioMs)
+    .filter((value): value is number => value != null);
+  return {
+    count: bankRecords.length,
+    noticeMean: average(notices),
+    noticeMedian: percentile(notices, 50),
+    noticeP95: percentile(notices, 95),
+    answerMean: average(answers),
+    answerMedian: percentile(answers, 50),
+    answerP95: percentile(answers, 95),
+  };
 }
 
 export function calculateTTFAStats(

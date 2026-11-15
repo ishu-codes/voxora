@@ -71,6 +71,16 @@ export type TurnDiagnostics = {
   startedAt: number;
 };
 
+export type BankToolLogEntry = {
+  id: string;
+  turnId: string;
+  tool: "list_docs" | "read_doc";
+  arguments: Record<string, string>;
+  status: "running" | "ok" | "error";
+  documents: string[];
+  at: number;
+};
+
 export type VoiceSessionState = {
   status: ConnectionStatus;
   agentState: AgentState;
@@ -175,6 +185,9 @@ export function useVoiceSession() {
   const [vadStatus, setVadStatus] = useState<LocalVadStatus>("off");
   const [diagnostics, setDiagnostics] = useState<TurnDiagnostics[]>([]);
   const [ttfaRecords, setTtfaRecords] = useState<TurnMetricRecord[]>([]);
+  const [bankStatus, setBankStatus] = useState<"checking" | "idle">("idle");
+  const [bankToolLog, setBankToolLog] = useState<BankToolLogEntry[]>([]);
+  const [bankDocsUsed, setBankDocsUsed] = useState<string[]>([]);
   const [captureStream, setCaptureStream] = useState<MediaStream | null>(null);
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>(
     [],
@@ -229,6 +242,7 @@ export function useVoiceSession() {
   const turnDiagRef = useRef<Map<string, TurnDiagnostics>>(new Map());
   const metricTimersRef = useRef<Map<string, TurnTimer>>(new Map());
   const currentMetricTurnRef = useRef<string | null>(null);
+  const playbackPhaseRef = useRef<"bank_notice" | "bank_answer">("bank_answer");
   const coldStartUsedRef = useRef(false);
   const turnWatchdogRef = useRef<number | null>(null);
 
@@ -443,6 +457,7 @@ export function useVoiceSession() {
       mode: "backend" | "byok";
       sttProvider: string;
       language: string | null;
+      scenarioId?: string | null;
       startedAt?: number;
     }): TurnTimer | null => {
       if (metricTimersRef.current.has(input.turnId)) {
@@ -450,6 +465,10 @@ export function useVoiceSession() {
       }
       const timer = new TurnTimer({
         ...input,
+        scenarioId:
+          input.scenarioId ??
+          readyRef.current?.scenario_id ??
+          selectedScenarioRef.current,
         coldStart: !coldStartUsedRef.current,
       });
       coldStartUsedRef.current = true;
@@ -896,6 +915,21 @@ export function useVoiceSession() {
   const recordFirstPlayback = useCallback(
     (turnId: string) => {
       const playbackAt = performance.now();
+      const bankScenario = readyRef.current?.scenario_id === "demo-bank";
+      const phase = playbackPhaseRef.current;
+      const timer = metricTimersRef.current.get(turnId);
+      if (bankScenario && phase === "bank_notice") {
+        timer?.markBankNotice(playbackAt);
+        const speechEnd = speechEndAtRef.current;
+        if (speechEnd != null) {
+          sendTurnMetrics(turnId, {
+            bank_notice_playback_ms: Math.round(playbackAt - speechEnd),
+          });
+        }
+        playbackPhaseRef.current = "bank_answer";
+        return;
+      }
+      if (bankScenario) timer?.markBankAnswer(playbackAt);
       finishMetricTurn(turnId, "complete");
       const diag = ensureTurnDiagnostics(turnId);
       if (diag.firstPlayback != null) return;
@@ -1373,11 +1407,54 @@ export function useVoiceSession() {
               language: readyRef.current?.stt.language ?? null,
               startedAt: lastUserAudioSentAtRef.current ?? performance.now(),
             });
-          } else {
+          } else if (event.stage === "llm_first_token") {
             metricTimersRef.current.get(event.turn_id)?.markFirstLlmToken();
           }
           break;
         }
+        case "bank.status":
+          setBankStatus(event.status);
+          break;
+        case "bank.notice":
+          setBankStatus("checking");
+          break;
+        case "bank.tool.call": {
+          setBankStatus("checking");
+          setBankToolLog((previous) =>
+            previous.some((entry) => entry.id === event.tool_id)
+              ? previous
+              : [
+                  ...previous,
+                  {
+                    id: event.tool_id,
+                    turnId: event.turn_id,
+                    tool: event.tool,
+                    arguments: event.arguments,
+                    status: "running" as const,
+                    documents: [],
+                    at: Date.now(),
+                  },
+                ].slice(-20),
+          );
+          break;
+        }
+        case "bank.tool.result":
+          setBankToolLog((previous) =>
+            previous.map((entry) =>
+              entry.id === event.tool_id
+                ? {
+                    ...entry,
+                    status: event.ok ? "ok" : "error",
+                    documents: event.documents,
+                  }
+                : entry,
+            ),
+          );
+          break;
+        case "bank.documents.used":
+          setBankDocsUsed(event.documents);
+          setBankStatus("idle");
+          break;
         case "transcript.partial":
           upsertUserMessage(event.text, false);
           if (!playerRef.current?.isSpeaking) setAgentState("capturing");
@@ -1440,7 +1517,15 @@ export function useVoiceSession() {
           currentAssistantTurnRef.current = event.turn_id;
           const player = ensurePlayer();
           const spokenText = event.text;
-          metricTimersRef.current.get(event.turn_id)?.markFirstAudioReceived();
+          if (!player.isSpeaking) {
+            playbackPhaseRef.current =
+              event.phase === "bank_notice" ? "bank_notice" : "bank_answer";
+          }
+          if (event.phase !== "bank_notice") {
+            metricTimersRef.current
+              .get(event.turn_id)
+              ?.markFirstAudioReceived();
+          }
           player.enqueue(
             decodePcm16(event.data),
             event.sample_rate,
@@ -2063,6 +2148,10 @@ export function useVoiceSession() {
     reconnectAttemptsRef.current = 0;
     turnDiagRef.current.clear();
     setDiagnostics([]);
+    setBankStatus("idle");
+    setBankToolLog([]);
+    setBankDocsUsed([]);
+    playbackPhaseRef.current = "bank_answer";
     resetMetrics();
     clearTurnWatchdog();
     clearVadTailTimer();
@@ -2418,6 +2507,9 @@ export function useVoiceSession() {
     completedTurnsRef.current.clear();
     turnDiagRef.current.clear();
     setDiagnostics([]);
+    setBankStatus("idle");
+    setBankToolLog([]);
+    setBankDocsUsed([]);
     resetMetrics();
   }, [clearMessages, resetMetrics]);
 
@@ -2448,6 +2540,9 @@ export function useVoiceSession() {
     diagnostics,
     summary,
     ttfaRecords,
+    bankStatus,
+    bankToolLog,
+    bankDocsUsed,
     stream: captureStream,
     voices: options,
     voice,

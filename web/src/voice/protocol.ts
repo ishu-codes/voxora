@@ -55,6 +55,7 @@ export type ServerEvent =
       data: string;
       sample_rate: number;
       format: "pcm16";
+      phase?: "bank_notice" | "bank_answer";
       /** Spoken sentence that begins at this first chunk of audio. */
       text?: string;
     }
@@ -67,7 +68,41 @@ export type ServerEvent =
   | {
       type: "turn.timing";
       turn_id: string;
-      stage: "speech_end" | "llm_first_token";
+      stage:
+        | "speech_end"
+        | "llm_first_token"
+        | "bank_notice_first_audio"
+        | "bank_answer_first_audio";
+    }
+  | {
+      type: "bank.status";
+      turn_id: string;
+      status: "checking" | "idle";
+    }
+  | {
+      type: "bank.notice";
+      turn_id: string;
+      text: string;
+    }
+  | {
+      type: "bank.tool.call";
+      turn_id: string;
+      tool_id: string;
+      tool: "list_docs" | "read_doc";
+      arguments: Record<string, string>;
+    }
+  | {
+      type: "bank.tool.result";
+      turn_id: string;
+      tool_id: string;
+      tool: "list_docs" | "read_doc";
+      ok: boolean;
+      documents: string[];
+    }
+  | {
+      type: "bank.documents.used";
+      turn_id: string;
+      documents: string[];
     }
   | {
       type: "turn.metrics";

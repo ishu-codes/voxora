@@ -2,8 +2,12 @@
 
 import {
   BarChart3Icon,
+  CheckCircle2Icon,
+  FileTextIcon,
+  LoaderCircleIcon,
   MessageSquareIcon,
   Trash2Icon,
+  XCircleIcon,
   XIcon,
 } from "lucide-react";
 import { useState } from "react";
@@ -30,7 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { TurnMetricRecord } from "@/lib/metrics";
 import { cn } from "@/lib/utils";
 import type { AgentState, ConnectionStatus } from "@/voice/protocol";
-import type { VoiceMessage } from "@/voice/useVoiceSession";
+import type { BankToolLogEntry, VoiceMessage } from "@/voice/useVoiceSession";
 import { TTFAMetricsPanel } from "./TTFAMetricsPanel";
 
 type ConversationPanelProps = {
@@ -38,6 +42,9 @@ type ConversationPanelProps = {
   agentState: AgentState;
   status: ConnectionStatus;
   ttfaRecords: TurnMetricRecord[];
+  bankStatus: "checking" | "idle";
+  bankToolLog: BankToolLogEntry[];
+  bankDocsUsed: string[];
   onClear: () => void;
   onResetMetrics: () => void;
 };
@@ -47,6 +54,9 @@ export function ConversationPanel({
   agentState,
   status,
   ttfaRecords,
+  bankStatus,
+  bankToolLog,
+  bankDocsUsed,
   onClear,
   onResetMetrics,
 }: ConversationPanelProps) {
@@ -138,6 +148,27 @@ export function ConversationPanel({
           value="chat"
           className="flex flex-col data-[hidden]:hidden"
         >
+          {bankStatus === "checking" || bankDocsUsed.length ? (
+            <div className="mx-4 mt-3 flex items-start gap-2 rounded-xl bg-muted/50 px-3 py-2.5 text-xs">
+              {bankStatus === "checking" ? (
+                <LoaderCircleIcon className="mt-0.5 size-3.5 shrink-0 animate-spin text-brand-text" />
+              ) : (
+                <FileTextIcon className="mt-0.5 size-3.5 shrink-0 text-brand-text" />
+              )}
+              <div className="min-w-0">
+                <p className="font-medium">
+                  {bankStatus === "checking"
+                    ? "Checking Demo Bank documents"
+                    : "Documents used for the answer"}
+                </p>
+                {bankDocsUsed.length ? (
+                  <p className="mt-0.5 break-words text-muted-foreground">
+                    {bankDocsUsed.join(", ")}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
           {messages.length === 0 ? (
             <ConversationEmptyState
               className="flex-1"
@@ -198,6 +229,49 @@ export function ConversationPanel({
                     <span className="size-1.5 animate-pulse rounded-full bg-brand-text" />
                     thinking
                   </div>
+                ) : null}
+
+                {bankToolLog.length ? (
+                  <section
+                    aria-label="Document tool log"
+                    className="mt-4 border-t border-border pt-3"
+                  >
+                    <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                      Document tool log
+                    </p>
+                    <ol className="mt-2 space-y-2">
+                      {bankToolLog.slice(-8).map((entry) => (
+                        <li
+                          key={entry.id}
+                          className="flex items-start gap-2 text-xs"
+                        >
+                          {entry.status === "running" ? (
+                            <LoaderCircleIcon className="mt-0.5 size-3.5 shrink-0 animate-spin text-brand-text" />
+                          ) : entry.status === "ok" ? (
+                            <CheckCircle2Icon className="mt-0.5 size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <XCircleIcon className="mt-0.5 size-3.5 shrink-0 text-destructive" />
+                          )}
+                          <span className="min-w-0">
+                            <span className="font-medium">
+                              {entry.tool === "read_doc"
+                                ? entry.arguments.name
+                                : "Document list"}
+                            </span>
+                            <span className="block text-muted-foreground">
+                              {entry.status === "running"
+                                ? "Looking up"
+                                : entry.status === "ok"
+                                  ? entry.documents.length
+                                    ? `Found ${entry.documents.join(", ")}`
+                                    : "Lookup completed"
+                                  : "Lookup failed"}
+                            </span>
+                          </span>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
                 ) : null}
               </ConversationContent>
               <ConversationScrollButton />

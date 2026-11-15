@@ -299,6 +299,9 @@ export default function VoiceStudioPage() {
             agentState={session.agentState}
             status={session.status}
             ttfaRecords={session.ttfaRecords}
+            bankStatus={session.bankStatus}
+            bankToolLog={session.bankToolLog}
+            bankDocsUsed={session.bankDocsUsed}
             onClear={session.clearConversation}
             onResetMetrics={session.resetMetrics}
           />

@@ -73,7 +73,7 @@ def get_scenario(scenario_id: str) -> Scenario:
 
 
 def public_scenarios() -> list[dict[str, Any]]:
-    preferred = ("kirana", "pizza", "emi-reminder")
+    preferred = ("kirana", "pizza", "emi-reminder", "demo-bank")
     scenarios = load_scenarios()
     ordered = [scenarios[key] for key in preferred if key in scenarios]
     ordered.extend(

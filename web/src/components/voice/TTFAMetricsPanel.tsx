@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
+  calculateBankTTFAStats,
   calculateTTFAStats,
   type TTFAStages,
   type TurnMetricRecord,
@@ -32,6 +33,7 @@ export function TTFAMetricsPanel({ records, onReset }: TTFAMetricsPanelProps) {
     () => calculateTTFAStats(records, { includeColdStart }),
     [includeColdStart, records],
   );
+  const bankStats = useMemo(() => calculateBankTTFAStats(records), [records]);
   const recent = records.slice(-6).reverse();
   const stages: Array<[string, keyof TTFAStages]> = [
     ["STT", "sttMs"],
@@ -118,6 +120,50 @@ export function TTFAMetricsPanel({ records, onReset }: TTFAMetricsPanelProps) {
           interrupted, {stats.excluded.failed} failed,{" "}
           {stats.excluded.coldStart} cold start)
         </p>
+
+        {bankStats.count ? (
+          <div className="border-y border-border py-3">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                Demo Bank Helper
+              </p>
+              <span className="text-[11px] text-muted-foreground">
+                {bankStats.count} turns
+              </span>
+            </div>
+            <table className="w-full text-xs">
+              <tbody>
+                {[
+                  [
+                    "Spoken notice",
+                    bankStats.noticeMedian,
+                    bankStats.noticeP95,
+                  ],
+                  [
+                    "Answer first audio",
+                    bankStats.answerMedian,
+                    bankStats.answerP95,
+                  ],
+                ].map(([label, median, p95]) => (
+                  <tr
+                    key={label as string}
+                    className="border-t border-border/70"
+                  >
+                    <th className="py-1.5 text-left font-normal text-muted-foreground">
+                      {label}
+                    </th>
+                    <td className="py-1.5 text-right font-medium tabular-nums">
+                      p50 {formatMs(median as number | null)}
+                    </td>
+                    <td className="py-1.5 text-right font-medium tabular-nums">
+                      p95 {formatMs(p95 as number | null)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
 
         <div>
           <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
