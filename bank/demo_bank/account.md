@@ -3,23 +3,24 @@ title: "Demo Bank savings account"
 description: "Read when the caller asks how to open a savings account, which documents are needed, what KYC means, or what minimum balance applies."
 source_url: "https://www.rbi.org.in/commonperson/English/Scripts/FAQs.aspx?Id=3782"
 last_verified: "2026-11-15"
+demo_values: "illustrative-not-real-banking-terms"
 ---
 
 # Demo Bank savings account
 
 ## Overview
 
-Demo Bank is a prototype bank used for information only. A savings account can be opened at a branch. TODO(verify): Confirm whether Demo Bank also supports account opening through its mobile app or website.
+Demo Bank is a prototype bank used for information only. The details below are illustrative demo values, not real banking terms. A savings account can be opened at a branch or through the Demo Bank mobile app.
 
-The bank collects KYC information before opening an account. KYC means Know Your Customer. TODO(verify): Add Demo Bank's exact KYC process and any video-based process it offers.
+The bank collects KYC information before opening an account. KYC means Know Your Customer. Customers can complete KYC at a branch or by following the identity verification steps in the Demo Bank mobile app.
 
 ## Documents required
 
-TODO(verify): List the identity and address documents Demo Bank accepts for a savings account.
+For identity, Demo Bank accepts Aadhaar, PAN, a passport, a voter ID or a driving licence.
 
-TODO(verify): State whether the original document must be shown and whether photocopies are required.
+Customers show the original identity document and submit one photocopy. Aadhaar may be used for identity and address verification, but the caller is never asked to read or send the Aadhaar number to this helper.
 
-TODO(verify): List the additional documents required for a minor, a joint account or a customer who does not have a standard address proof.
+For address, Demo Bank accepts an electricity bill, water bill, rent agreement, passport or another bank statement. A minor account needs the guardian's KYC and proof of relationship. Every joint account holder must complete KYC.
 
 ## Steps
 
@@ -31,23 +32,23 @@ TODO(verify): List the additional documents required for a minor, a joint accoun
 4. Complete any additional verification required by Demo Bank.
 5. Collect the account details and passbook or welcome information.
 
-TODO(verify): Add the official Demo Bank account-opening form name, account-opening fee, minimum initial deposit and processing time.
+Ask for the Demo Bank Savings Account Application. There is no account-opening fee and the illustrative minimum initial deposit is five hundred rupees. Branch accounts are usually available the same day when KYC is complete.
 
 ### Open an account through the mobile app or website
 
-TODO(verify): Confirm whether Demo Bank supports this method and add its steps.
+Yes. Open the Demo Bank Mobile app, choose Open Savings Account, enter the requested details, complete KYC verification and choose the branch shown by the app.
 
 ### Open an account with assisted help
 
-TODO(verify): Confirm whether Demo Bank has a field officer, banking correspondent or assisted digital process for small towns and villages.
+Customers who need help can ask a Demo Bank branch representative or an authorised Demo Bank field officer to start the application.
 
 ## Charges and limits
 
-TODO(verify): Add the minimum balance rule for each savings account type.
+The illustrative average monthly balance is one thousand rupees for a Regular Savings Account and zero for a Demo Basic Savings Account.
 
-TODO(verify): Add account-opening, maintenance, debit-card and SMS-alert charges.
+There is no account-opening fee. SMS alerts are free, and the illustrative annual debit-card fee is one hundred fifty rupees.
 
-TODO(verify): Add any available basic savings account with a different balance rule.
+The Demo Basic Savings Account has no minimum balance requirement and includes a free ATM card.
 
 ## Common mistakes
 
@@ -64,12 +65,12 @@ KYC means Know Your Customer. It is the identity and address verification proces
 
 ### Can Demo Bank open the account without any identity document?
 
-TODO(verify): Add Demo Bank's official rule.
+No. A valid identity document is required for every customer.
 
 ### How long does account opening take?
 
-TODO(verify): Add the official processing time.
+Most applications are processed within one working day. If additional verification is needed, Demo Bank may take up to three working days.
 
 ### What if the address proof is not in the caller's name?
 
-TODO(verify): Add the documents and alternatives Demo Bank accepts.
+Use a rent agreement with a recent utility bill, an employer address letter, or a declaration supported by a document approved by branch staff.

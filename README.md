@@ -109,8 +109,9 @@ real bank and cannot access accounts, balances, transactions, cards or customer
 records. The helper does not perform banking actions.
 
 The five knowledge files live in `bank/demo_bank/`. Each file records an official
-RBI public source and marks every Demo Bank-specific fact that still needs
-verification. The agent uses two allowlisted tools:
+RBI public source for context. All Demo Bank-specific charges, limits, document
+lists, rates, helplines and processing times are illustrative demo terms rather
+than real banking terms. The agent uses two allowlisted tools:
 
 - `list_docs` lists the document names, titles and descriptions.
 - `read_doc(name)` reads one exact filename and rejects unknown names and path
@@ -142,32 +143,11 @@ The STT term set was extended in
 YONO. The TTS pronunciation set now includes IFSC, toll-free and loan-amount
 text fixtures. The existing speech benchmark was not rerun.
 
-Demo Bank `TODO(verify)` items:
-
-- Account: branch and digital availability, exact KYC process, accepted
-  identity and address documents, originals and copies, minor and joint-account
-  documents, account-opening form and fee, minimum initial deposit, processing
-  time, assisted channels, minimum balance, maintenance charges, basic account
-  rules, no-document rule and alternatives when address proof is not in the
-  caller's name.
-- ATM card: separate card types, activation requirement, documents and
-  identifiers, ATM menu paths, supported ATMs, PIN rules, app name and menu,
-  website and menu, helpline and hours, blocking channels, replacement fee and
-  time, issuance and annual fees, transaction limits, free replacement rule,
-  activation at other ATMs, escalation and automatic-payment behavior.
-- Money transfer: enabled services, registration requirements, branch
-  documents and recipient details, UPI and app support, beneficiary activation,
-  app name and menu, branch form and processing time, UPI and net-banking limits,
-  transfer charges, pending-failure behavior, cancellation and dispute process,
-  method-specific timing and wrong-recipient recovery.
-- Loans: loan types, document checklists by borrower type, rate ranges,
-  processing fees, repayment periods, branch form and processing time, online
-  application support, prepayment and late-payment charges, minimum and maximum
-  amounts, eligibility rules and approval or rejection process.
-- Safety: fraud-complaint documents and reference number, official reporting
-  channels, helpline and time limits, recovery and escalation steps, card
-  blocking and replacement charges, complaint response and resolution times,
-  and the exact process after an OTP has already been shared.
+Illustrative Demo Bank terms include a one thousand rupee regular savings
+balance, no basic-account balance requirement, a two hundred rupee replacement
+card, a one lakh rupee daily UPI limit, a five lakh rupee digital transfer limit,
+and personal-loan rates starting at ten point five percent. These values exist
+only for the prototype and must not be presented as real offers.
 
 ### Speech benchmark
 

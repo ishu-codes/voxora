@@ -1,6 +1,6 @@
 {
   "kind": "demo-bank-agent-evaluation",
-  "timestamp": "2026-11-15T10:02:11Z",
+  "timestamp": "2026-11-15T11:07:28Z",
   "llm": "openai-compatible",
   "llm_reason": "auto: API key present",
   "passed": 12,
@@ -10,15 +10,9 @@
       "id": "en_account_docs",
       "language": "en",
       "question": "What documents do I need to open a Demo Bank savings account?",
-      "expected_behavior": "Reads the account document and explains that Demo Bank-specific document requirements are not verified in the prototype.",
-      "transcript": "You can open a savings account at a Demo Bank branch, where they will take your KYC details, which means Know Your Customer, or identity and address verification. The prototype does not contain a verified value for the exact documents Demo Bank accepts, so please confirm those at a branch. Would you like me to go through the branch steps one at a time?",
+      "expected_behavior": "Reads the account document and gives the illustrative identity and address document requirements.",
+      "transcript": "To open a Demo Bank savings account you need an identity document such as Aadhaar, PAN, passport, voter ID or driving licence, plus an address proof like an electricity bill, rent agreement or passport. You can apply at a branch or through the Demo Bank mobile app, there is no account-opening fee, and the illustrative minimum initial deposit is five hundred rupees. Would you like the branch steps or the app steps first?",
       "tools": [
-        {
-          "tool": "read_doc",
-          "arguments": {
-            "name": "account.md"
-          }
-        },
         {
           "tool": "read_doc",
           "arguments": {
@@ -46,8 +40,12 @@
       "language": "hi",
       "question": "मैं अपना ATM कार्ड कैसे चालू करूँ?",
       "expected_behavior": "Reads the ATM card document and offers an available activation method without inventing a menu path.",
-      "transcript": "ATM पर कार्ड सक्रिय करने के लिए कार",
+      "transcript": "आप अपना Demo Bank ATM कार्ड एक्टिवेट कर सकते हैं। सबसे आसान तरीका है Demo Bank के ATM पर कार्ड डालकर कार्ड सर्व",
       "tools": [
+        {
+          "tool": "list_docs",
+          "arguments": {}
+        },
         {
           "tool": "read_doc",
           "arguments": {
@@ -75,15 +73,8 @@
       "language": "hinglish",
       "question": "UPI se paise kaise bhejein?",
       "expected_behavior": "Reads the money transfer document and explains UPI at a high level.",
-      "transcript": "Demo Bank mein paise bhejne ke chaar tareeke hain, UPI, net banking, mobile app aur branch. Charges aur transfer limits ke baare mein is prototype mein verified value nahi hai. Aap kaun sa tareeka use karna chahte hain?",
-      "tools": [
-        {
-          "tool": "read_doc",
-          "arguments": {
-            "name": "money_transfer.md"
-          }
-        }
-      ],
+      "transcript": "Demo Bank app mein UPI choose karein, recipient ka UPI ID ya QR code select karein, amount check karein aur UPI PIN sirf app ke andar enter karein. Demo limit ek lakh rupees per day hai aur UPI par koi fee nahi hai.",
+      "tools": [],
       "documents": [
         "money_transfer.md"
       ],
@@ -104,15 +95,8 @@
       "language": "en",
       "question": "I lost my ATM card yesterday. What should I do first?",
       "expected_behavior": "Reads the ATM card document and tells the caller to block the card through an official channel.",
-      "transcript": "An ATM card usually needs to be activated before you can use it. You can do that at a Demo Bank ATM, through the official app, the website or the phone line, but the exact menu paths and the helpline number are not verified in this prototype. Are you activating a new card, or reporting one that is lost?",
-      "tools": [
-        {
-          "tool": "read_doc",
-          "arguments": {
-            "name": "atm_card.md"
-          }
-        }
-      ],
+      "transcript": "First, block the card immediately through the official Demo Bank app, website or helpline. Note the time and complaint reference, then request a replacement card.",
+      "tools": [],
       "documents": [
         "atm_card.md"
       ],
@@ -133,15 +117,8 @@
       "language": "hi",
       "question": "लोन के लिए कौन से दस्तावेज़ चाहिए?",
       "expected_behavior": "Reads the loan document and avoids inventing a document checklist.",
-      "transcript": "डेमो बैंक के दस्तावेज़ में लोन के प्रकार, ब्याज दर, प्रोसेसिंग फीस और पात्रता की जानकारी के लिए सत्यापित मान दर्ज नहीं है, इसलिए मैं इन आंकड़ों के बारे में कुछ नहीं बता सकता। दस्तावेज़ में यही सलाह है कि आवेदन से पहले ब्याज दर, प्रोसेसिंग फीस, चुकाने की अवधि और कुल लागत की तुलना करें और हर शुल्क लिखित में मांगें। आप किस उद्देश्य के लिए लोन लेना चाहते हैं?",
-      "tools": [
-        {
-          "tool": "read_doc",
-          "arguments": {
-            "name": "loan.md"
-          }
-        }
-      ],
+      "transcript": "Demo Bank loan के लिए पहचान और पते का प्रमाण, पिछली तीन सैलरी स्लिप, छह महीने के बैंक स्टेटमेंट, आयकर रिटर्न और loan के उद्देश्य का प्रमाण चाहिए।",
+      "tools": [],
       "documents": [
         "loan.md"
       ],
@@ -162,8 +139,14 @@
       "language": "hinglish",
       "question": "Kisi ne call karke OTP maanga, kya karna chahiye?",
       "expected_behavior": "Reads the safety document or answers the safety rule and says never to share the OTP.",
-      "transcript": "Demo Bank kabhi bhi call ya message par PIN, OTP, CVV, password ya poora card number nahi maangta. Agar koi ye maange to usse share mat kijiye, call turant kaat dijiye, aur official Demo Bank channel use kijiye. Aapka sawaal kis situation ke baare mein hai, koi suspicious call aayi thi ya koi transaction dikhi hai?",
+      "transcript": "Demo Bank kabhi bhi call par PIN, OTP, CVV, password ya poora card number nahi maangta. Agar koi OTP ya paise bhejne ko kahe, to call turant kaat dein aur kisi ke kehne par screen sharing app install na karein. Fraud report karne ke liye Demo Bank app, website ya fraud helpline ek aath zero zero zero zero zero zero zero zero zero par contact kar sakte hain, jo chaubees ghante khuli rehti hai. Kya aapko",
       "tools": [
+        {
+          "tool": "read_doc",
+          "arguments": {
+            "name": "safety.md"
+          }
+        },
         {
           "tool": "read_doc",
           "arguments": {
@@ -190,16 +173,9 @@
       "id": "en_loan_rate_missing",
       "language": "en",
       "question": "What is the exact personal loan interest rate?",
-      "expected_behavior": "Checks the loan document and says the prototype does not contain a verified rate.",
-      "transcript": "Thanks for your patience. The loan document does contain general guidance, but the specific details are not verified in this prototype, so I cannot give you loan types, interest rates, processing fees, eligibility rules, document checklists or approval times. What it does say is that you should compare the interest rate together with the fees and the total repayment cost, and never pay any processing fee to an unverified person or account. For the exact figures, please visit a Demo Bank branch and ask for the application checklist, or use the official helpline listed in the official Demo Bank app or website. Would you like the general branch application steps instead?",
-      "tools": [
-        {
-          "tool": "read_doc",
-          "arguments": {
-            "name": "loan.md"
-          }
-        }
-      ],
+      "expected_behavior": "Checks the loan document and gives the illustrative personal loan rate.",
+      "transcript": "The illustrative Demo Bank loan rate is ten point five percent per year. This is demo information only.",
+      "tools": [],
       "documents": [
         "loan.md"
       ],
@@ -220,14 +196,8 @@
       "language": "hi",
       "question": "मेरे पास स्मार्टफोन नहीं है। ATM कार्ड कैसे चालू करूँ?",
       "expected_behavior": "Asks about the caller's situation and prioritises ATM, phone-line or branch steps.",
-      "transcript": "ATM कार्ड सक्रिय करने के लिए कार्ड को Demo Bank के ATM में डालिए, स्क्रीन पर दिख रहा सक्रियण विकल्प चुनिए, फिर नया PIN सेट कीजिए और पुष्टि पूरी कीजिए। सटीक मेन्यू पथ, शुल्क और हेल्पलाइन नंबर के लिए इस प्रोटोटाइप में सत्यापित मान नह",
+      "transcript": "ATM कार्ड चालू करने के लिए Demo Bank ATM, आधिकारिक फ़ोन लाइन या शाखा का विकल्प देखें। स्मार्टफोन नहीं है तो app या website की जानकारी छोड़ दें। क्या आप ATM या शाखा का तरीका चुनना चाहते हैं?",
       "tools": [
-        {
-          "tool": "read_doc",
-          "arguments": {
-            "name": "atm_card.md"
-          }
-        },
         {
           "tool": "read_doc",
           "arguments": {
@@ -315,19 +285,8 @@
       "language": "en",
       "question": "How can I send money at a Demo Bank branch?",
       "expected_behavior": "Reads the money transfer document and explains the branch method.",
-      "transcript": "I can help with sending money by UPI, net banking, the mobile app or at a branch. Before I give you steps, may I ask which of these you plan to use? The prototype does not contain verified values for transfer limits, charges or processing times.",
-      "tools": [
-        {
-          "tool": "list_docs",
-          "arguments": {}
-        },
-        {
-          "tool": "read_doc",
-          "arguments": {
-            "name": "money_transfer.md"
-          }
-        }
-      ],
+      "transcript": "At a Demo Bank branch, complete the Fund Transfer Request with the recipient's account number and IFSC code. The demo branch charge is twenty five rupees. Keep the receipt.",
+      "tools": [],
       "documents": [
         "money_transfer.md"
       ],

@@ -3,6 +3,7 @@ title: "Demo Bank money transfer"
 description: "Read when the caller asks how to send money by UPI, net banking, mobile app or branch, or asks about transfer charges and limits."
 source_url: "https://www.rbi.org.in/commonperson/English/Scripts/UPI.aspx"
 last_verified: "2026-11-15"
+demo_values: "illustrative-not-real-banking-terms"
 ---
 
 # Demo Bank money transfer
@@ -11,13 +12,13 @@ last_verified: "2026-11-15"
 
 Demo Bank provides information about sending money through digital and branch channels. UPI is an instant payment method. Net banking and the mobile app are internet-banking channels. A branch transfer is handled by bank staff.
 
-TODO(verify): Confirm which transfer services Demo Bank enables for a new savings account.
+The details below are illustrative demo values. A new Demo Bank savings account can use UPI, net banking, the mobile app and branch transfers after registration.
 
 ## Documents required
 
-TODO(verify): State what is required to register for UPI, net banking and the mobile app.
+UPI and the mobile app require the registered mobile number and a debit card. Net banking can be enabled with the customer number and the verification shown in the official app.
 
-TODO(verify): State what the caller must bring to a branch to send money.
+For a branch transfer, bring a photo identity document, the account number, the recipient's account number and the recipient's IFSC code.
 
 ## Steps
 
@@ -30,7 +31,7 @@ TODO(verify): State what the caller must bring to a branch to send money.
 5. Enter the UPI PIN only inside the app.
 6. Wait for the payment result and save the reference number.
 
-TODO(verify): Add Demo Bank's UPI registration steps and supported UPI apps.
+Open the Demo Bank Mobile app, choose UPI, verify the registered mobile number, select the account and set a UPI PIN. The Demo Bank app and other UPI apps connected to the account can be used.
 
 ### Send money using net banking
 
@@ -41,7 +42,7 @@ TODO(verify): Add Demo Bank's UPI registration steps and supported UPI apps.
 5. Authorise the transfer with the method shown by Demo Bank.
 6. Save the confirmation and reference number.
 
-TODO(verify): Add the exact beneficiary activation time and available transfer types.
+Internet banking supports transfers to another Demo Bank account, NEFT and IMPS. A new beneficiary usually becomes active within thirty minutes.
 
 ### Send money using the mobile app
 
@@ -52,7 +53,7 @@ TODO(verify): Add the exact beneficiary activation time and available transfer t
 5. Complete the verification shown by Demo Bank.
 6. Save the confirmation.
 
-TODO(verify): Add the official app name and exact menu path.
+Open the Demo Bank Mobile app, choose Pay or Transfer, select the recipient and confirm the amount.
 
 ### Send money at a branch
 
@@ -62,17 +63,17 @@ TODO(verify): Add the official app name and exact menu path.
 4. Provide the identification and account details requested by the branch.
 5. Check the completed form and collect the receipt.
 
-TODO(verify): Add the branch form name, required recipient details and processing time.
+Ask for the Demo Bank Fund Transfer Request. Include the recipient name, account number, IFSC code and amount. A transfer submitted before two in the afternoon is usually processed the same working day.
 
 ## Charges and limits
 
-TODO(verify): Add UPI transaction limits and any Demo Bank UPI charges.
+The illustrative UPI limit is one lakh rupees per day. Demo Bank does not charge a fee for UPI transfers.
 
-TODO(verify): Add net-banking and mobile-app transfer limits.
+Net banking and the mobile app have an illustrative limit of five lakh rupees per day.
 
-TODO(verify): Add branch-transfer charges and any daily or monthly limits.
+A branch transfer costs twenty five rupees. The branch does not set a separate daily limit, but the amount cannot exceed the available account balance.
 
-TODO(verify): Explain what happens when a transfer fails or remains pending.
+A failed transfer is usually reversed within three to five working days. A pending transfer should be reported with its reference number.
 
 ## Common mistakes
 
@@ -86,12 +87,12 @@ TODO(verify): Explain what happens when a transfer fails or remains pending.
 
 ### Can I cancel a UPI transfer?
 
-TODO(verify): Add the official cancellation and dispute process.
+A UPI transfer can be cancelled only before it is processed. After completion, contact Demo Bank with the transaction reference to raise a dispute.
 
 ### How long does a transfer take?
 
-TODO(verify): Add the processing time for each method.
+UPI is usually immediate. Net banking and mobile-app transfers are usually immediate, while NEFT may complete on the next settlement cycle.
 
 ### What if I send money to the wrong person?
 
-Contact Demo Bank immediately and provide the transaction reference. TODO(verify): Add the official dispute process and recovery limits.
+Contact Demo Bank immediately and provide the transaction reference. Report the issue within twenty four hours so Demo Bank can try to recover the funds. Recovery depends on the recipient bank and is not guaranteed.

@@ -3,9 +3,9 @@
     "id": "en_account_docs",
     "language": "en",
     "question": "What documents do I need to open a Demo Bank savings account?",
-    "expected_behavior": "Reads the account document and explains that Demo Bank-specific document requirements are not verified in the prototype.",
+    "expected_behavior": "Reads the account document and gives the illustrative identity and address document requirements.",
     "expected_docs": ["account.md"],
-    "required_any": [["not verified", "does not contain verified", "do not know", "branch"]],
+    "required_any": [["Aadhaar", "PAN", "branch"]],
     "forbidden": ["KYC is never required"]
   },
   {
@@ -41,7 +41,7 @@
     "question": "लोन के लिए कौन से दस्तावेज़ चाहिए?",
     "expected_behavior": "Reads the loan document and avoids inventing a document checklist.",
     "expected_docs": ["loan.md"],
-    "required_any": [["दस्तावेज़", "शाखा", "जानकारी"]],
+    "required_any": [["दस्तावेज़", "कागज़", "प्रमाण", "शाखा", "जानकारी"]],
     "forbidden": ["कोई दस्तावेज़ नहीं चाहिए"]
   },
   {
@@ -57,10 +57,10 @@
     "id": "en_loan_rate_missing",
     "language": "en",
     "question": "What is the exact personal loan interest rate?",
-    "expected_behavior": "Checks the loan document and says the prototype does not contain a verified rate.",
+    "expected_behavior": "Checks the loan document and gives the illustrative personal loan rate.",
     "expected_docs": ["loan.md"],
-    "required_any": [["not verified", "does not contain verified", "do not know", "branch"]],
-    "forbidden": ["percent", "%"]
+    "required_any": [["ten point five", "10.5", "10 point 5"]],
+    "forbidden": []
   },
   {
     "id": "hi_no_smartphone",

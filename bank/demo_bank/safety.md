@@ -3,6 +3,7 @@ title: "Demo Bank fraud safety"
 description: "Read when the caller asks about fraud, OTPs, PINs, passwords, card details, suspicious calls, or information the bank never requests."
 source_url: "https://www.rbi.org.in/commonperson/English/Scripts/FLW24_DigitalCyberHygiene.aspx"
 last_verified: "2026-11-15"
+demo_values: "illustrative-not-real-banking-terms"
 ---
 
 # Demo Bank fraud safety
@@ -13,11 +14,13 @@ Demo Bank never asks a customer to share a PIN, OTP, CVV, password, net-banking 
 
 This bank helper has no access to an account and cannot check a balance, verify a transaction or perform a banking action.
 
+The service details below are illustrative demo values, not real bank terms.
+
 ## Documents required
 
 No document is required to receive fraud-safety information.
 
-TODO(verify): Add the document or reference number Demo Bank requires when a fraud complaint is filed through an official channel.
+To file a fraud complaint, keep the transaction date, amount, reference number and any message received from the suspected fraudster.
 
 ## Steps
 
@@ -36,7 +39,7 @@ TODO(verify): Add the document or reference number Demo Bank requires when a fra
 3. Report the issue through the official Demo Bank channel.
 4. Follow the complaint reference until Demo Bank closes it.
 
-TODO(verify): Add the official fraud-reporting channels, helpline number and complaint time limits.
+Report fraud through the Demo Bank Mobile app, website or the fraud helpline at one eight zero zero zero zero zero zero zero zero zero. The fraud line is available twenty four hours. Report suspicious activity as soon as it is discovered.
 
 ### Recover safely after a suspected fraud
 
@@ -45,13 +48,13 @@ TODO(verify): Add the official fraud-reporting channels, helpline number and com
 3. Keep screenshots and reference numbers.
 4. Watch for new messages that claim to help but ask for another OTP or payment.
 
-TODO(verify): Add Demo Bank's official recovery and escalation steps.
+After reporting, Demo Bank records the complaint, secures the affected access channel and provides a complaint reference. Follow the reference until Demo Bank gives a written outcome.
 
 ## Charges and limits
 
-TODO(verify): State whether Demo Bank charges for blocking a card, replacing a card or raising a fraud complaint.
+Blocking a card and filing a fraud complaint are free. An illustrative replacement card costs two hundred rupees.
 
-TODO(verify): Add the official complaint response and resolution time limits.
+Demo Bank usually acknowledges a fraud complaint within twenty four hours and aims to complete its investigation within ten working days.
 
 ## Common mistakes
 
@@ -77,4 +80,4 @@ No. It provides information only. Use an official Demo Bank channel for account 
 
 ### What should I do if I already shared an OTP?
 
-Contact Demo Bank immediately through an official channel and ask it to secure the affected card or account access. TODO(verify): Add the exact official reporting process.
+Contact Demo Bank immediately through the app, website or fraud helpline. Ask it to block the card, secure digital access and create a fraud complaint with a reference number.
