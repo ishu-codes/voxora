@@ -14,7 +14,7 @@ from ..audio.vad import EnergyVAD
 from ..catalog.voices import build_catalog
 from ..core.config import Settings, settings
 from ..core.metrics import registry
-from ..providers import SarvamSTT, SarvamTTS
+from ..providers import WHISPER_MODEL, SarvamSTT, SarvamTTS
 from ..runtime.pipeline import VoicePipeline
 from ..runtime.session import VoiceSession
 from ..runtime.transport import QueueTransport
@@ -53,10 +53,20 @@ def get_config(state: Any) -> dict[str, Any]:
             "frame_ms": 20,
         },
         "stt": {
-            "provider": SarvamSTT.name,
-            "model": settings.stt_model,
-            "language": settings.stt_language,
-            "partials": SarvamSTT.supports_partials,
+            "provider": (
+                "whisper" if settings.stt_provider == "whisper" else SarvamSTT.name
+            ),
+            "model": (
+                WHISPER_MODEL
+                if settings.stt_provider == "whisper"
+                else settings.stt_model
+            ),
+            "language": (
+                settings.whisper_language
+                if settings.stt_provider == "whisper"
+                else settings.stt_language
+            ),
+            "partials": settings.stt_provider != "whisper",
         },
         "llm": {"provider": bundle.llm.name},
         "tts": {

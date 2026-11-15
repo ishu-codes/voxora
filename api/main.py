@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from src.voice.catalog import load_catalog
 from src.voice.controller import router as voice_router
 from src.voice.core.config import settings
+from src.voice.providers import WHISPER_MODEL
 from src.voice.security.rate_limit import StrictRateLimiter
 from src.voice.services.provider_bundle import ProviderBundle, shutdown_providers
 
@@ -40,12 +41,17 @@ async def lifespan(app: FastAPI):
         ", ".join(models),
         sum(len(model["voices"]) for model in models.values()),
     )
-    app.state.voice_providers = ProviderBundle.build(settings)
+    app.state.voice_providers = await ProviderBundle.initialize(settings)
     app.state.rate_limiter = StrictRateLimiter(settings)
     bundle: ProviderBundle = app.state.voice_providers
     logger.info(
-        "providers stt=sarvam:%s tts=sarvam:%s llm=%s (%s)",
-        settings.stt_model,
+        "providers stt=%s:%s tts=sarvam:%s llm=%s (%s)",
+        settings.stt_provider,
+        (
+            settings.stt_model
+            if settings.stt_provider == "sarvam"
+            else WHISPER_MODEL
+        ),
         settings.tts_model,
         bundle.llm.name,
         bundle.reasons.get("llm"),

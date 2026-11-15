@@ -1,2 +1,0 @@
-"ragify" "ragify"
-"postgres" "ragify"

@@ -177,6 +177,13 @@ async def test_full_turn_streams_partials_and_audio():
     assert [event["text"] for event in partials] == ["what is", "what is latency"]
     final = transport.of_type("transcript.final")
     assert final and final[0]["text"] == "what is latency"
+    timing = transport.of_type("turn.timing")
+    assert [event["stage"] for event in timing] == [
+        "speech_end",
+        "llm_first_token",
+    ]
+    assert all(event["turn_id"] == final[0]["turn_id"] for event in timing)
+    assert pipeline.ready_event()["stt"]["language"] == "en-IN"
     assert transport.of_type("assistant.delta") == []
     chunks = transport.of_type("audio.chunk")
     assert len(chunks) == 2

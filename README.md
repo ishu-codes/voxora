@@ -21,6 +21,7 @@ browser mic ──20 ms PCM frames──▶ VAD ──▶ STT ──▶ LLM ─�
 | --- | --- |
 | [`api/`](api) | FastAPI backend: WebSocket session, VAD, provider adapters, metrics. See [`api/README.md`](api/README.md). |
 | [`web/`](web) | React + TypeScript client: capture, playback, transcript, latency panel. See [`web/README.md`](web/README.md). |
+| [`infra/`](infra) | Docker Compose stack for the API and web client. See [`infra/README.md`](infra/README.md). |
 | [`PRD.md`](PRD.md) | Product requirements document this implementation follows. |
 
 ## Quick start
@@ -44,6 +45,16 @@ pnpm dev                       # http://localhost:3000
 Open <http://localhost:3000/app>, press **Start**, allow the microphone and
 talk. Speech recognition and synthesis run on Sarvam's streaming models; the
 language model can be any OpenAI-compatible endpoint.
+
+To run both services in containers instead:
+
+```bash
+cp infra/.env.example infra/.env
+# add SARVAM_API_KEY and the LLM credentials to infra/.env
+make infra-up                  # http://localhost:3000/app
+```
+
+Stop the stack with `make infra-down`.
 
 ```bash
 # backend .env

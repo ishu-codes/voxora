@@ -127,6 +127,7 @@ class VoicePipeline:
                 "name": self.stt.name,
                 "partials": bool(getattr(self.stt, "supports_partials", False)),
                 "mode": self.mode,
+                "language": getattr(self.stt, "language", self.settings.stt_language),
                 "reason": reasons.get("stt", ""),
             },
             "llm": {"name": self.llm.name, "reason": reasons.get("llm", "")},
@@ -264,6 +265,13 @@ class VoicePipeline:
             "llm": self.llm.name,
             "tts": self.tts.name,
         }
+        await self.transport.send(
+            {
+                "type": "turn.timing",
+                "turn_id": turn_id,
+                "stage": "speech_end",
+            }
+        )
         await self._set_state("thinking", generation)
         logger.info(
             "%s speech end turn=%s duration_ms=%.1f",
@@ -437,6 +445,13 @@ class VoicePipeline:
                     if first_token_at is None:
                         first_token_at = self.clock()
                         turn["llm_first_token_ms"] = _ms(llm_started, first_token_at)
+                        await self.transport.send(
+                            {
+                                "type": "turn.timing",
+                                "turn_id": self._label(generation),
+                                "stage": "llm_first_token",
+                            }
+                        )
                     tokens.append(token)
                     for sentence in chunker.feed(token):
                         await queue.put(sentence)

@@ -285,9 +285,9 @@ export default function VoiceStudioPage() {
             messages={session.messages}
             agentState={session.agentState}
             status={session.status}
-            diagnostics={session.diagnostics}
-            summary={session.summary}
+            ttfaRecords={session.ttfaRecords}
             onClear={session.clearConversation}
+            onResetMetrics={session.resetMetrics}
           />
         </Sidebar>
       </SidebarProvider>

@@ -4,6 +4,7 @@ from .base import LLMProvider, PartialCallback, ProviderError, STTProvider, TTSP
 from .llm import EchoLLM, OpenAICompatibleLLM, build_llm
 from .stt import SarvamSTT
 from .tts import SarvamTTS
+from .whisper_stt import WHISPER_MODEL, WhisperEngine, WhisperSTT
 
 __all__ = [
     "LLMProvider",
@@ -15,5 +16,8 @@ __all__ = [
     "OpenAICompatibleLLM",
     "SarvamSTT",
     "SarvamTTS",
+    "WHISPER_MODEL",
+    "WhisperEngine",
+    "WhisperSTT",
     "build_llm",
 ]

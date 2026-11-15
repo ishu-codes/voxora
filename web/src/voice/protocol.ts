@@ -12,7 +12,11 @@ export type ReadyEvent = {
   type: "ready";
   session_id: string;
   audio: { format: "pcm16"; input_sample_rate: number; frame_ms: number };
-  stt: ProviderInfo & { partials: boolean; mode: "browser-stt" | "server-stt" };
+  stt: ProviderInfo & {
+    partials: boolean;
+    mode: "browser-stt" | "server-stt";
+    language?: string;
+  };
   llm: ProviderInfo;
   tts: ProviderInfo & {
     kind: "audio" | "browser";
@@ -59,6 +63,11 @@ export type ServerEvent =
       reason: "barge_in" | "manual" | string;
     }
   | { type: "turn.empty"; turn_id: string }
+  | {
+      type: "turn.timing";
+      turn_id: string;
+      stage: "speech_end" | "llm_first_token";
+    }
   | {
       type: "turn.metrics";
       turn_id: string;

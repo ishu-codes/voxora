@@ -1,16 +1,30 @@
+FROM ghcr.io/astral-sh/uv:0.13.6 AS uv
+
 FROM python:3.12-slim
 
-# Keep the repo-relative layout (api-python/ at /app): several modules use
-# Path(__file__).parents[n] to locate the package root, which requires the
-# api-python directory to live under a parent directory in the container.
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    UV_NO_CACHE=1
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
-COPY . /app/api-python
-WORKDIR /app/api-python
 
-RUN pip install --no-cache-dir .
+COPY --from=uv /uv /usr/local/bin/uv
 
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-default-groups --no-install-project
+
+COPY main.py ./
+COPY src/voice ./src/voice
+
+RUN useradd --system --uid 10001 --create-home voxora
+USER voxora
+
+ENV PATH="/app/.venv/bin:$PATH"
 ENV PORT=8000
 EXPOSE 8000
 
-# Cloud Run injects the port via $PORT; local runs default to 8000.
 CMD ["sh", "-c", "exec uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}"]

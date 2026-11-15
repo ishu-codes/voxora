@@ -71,6 +71,7 @@ def _router_settings(**overrides) -> Settings:
         "require_browser_client": False,
         "sarvam_api_key": "",
         "llm_api_key": "",
+        "stt_provider": "sarvam",
     }
     values.update(overrides)
     return Settings(**values)

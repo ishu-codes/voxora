@@ -6,14 +6,13 @@ readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi[standard]>=0.141.0",
-    "faster-whisper>=1.2.0",
     "httpx>=0.28.0",
-    "jiwer>=3.1.0",
-    "pandas>=2.2.0",
+    "numpy>=1.26.0",
     "python-dotenv>=1.2.0",
-    "pyyaml>=6.0.0",
-    "requests>=2.34.2",
     "scipy>=1.14.0",
+    "soundfile>=0.13.0",
+    "torch>=2.3.0",
+    "transformers>=4.45.0",
     "websockets>=15.0",
 ]
 
@@ -22,8 +21,17 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.24",
     "sounddevice>=0.5.0",
-    "soundfile>=0.13.0",
 ]
+benchmark = [
+    "faster-whisper>=1.2.0",
+    "jiwer>=3.1.0",
+    "pandas>=2.2.0",
+    "pyyaml>=6.0.0",
+    "requests>=2.34.2",
+]
+
+[tool.uv]
+default-groups = ["dev", "benchmark"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -44,7 +44,9 @@ class QueueTransport:
             )
         else:
             logger.debug("-> %s", event_type)
-        droppable = event_type in {"audio.chunk", "audio.level"}
+        # Timing markers are advisory. Never let a saturated output queue make
+        # metrics instrumentation delay the token/audio path.
+        droppable = event_type in {"audio.chunk", "audio.level", "turn.timing"}
         if droppable:
             if self._queue.full():
                 self.dropped += 1

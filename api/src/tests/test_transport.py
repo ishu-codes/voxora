@@ -40,6 +40,26 @@ async def test_audio_events_are_dropped_when_queue_is_full():
     assert transport.closed
 
 
+async def test_timing_markers_never_block_on_a_full_queue():
+    websocket = BlockingWebSocket()
+    transport = QueueTransport(websocket, max_queue=1)
+
+    await transport.send({"type": "audio.chunk", "data": "x"})
+    await asyncio.wait_for(
+        transport.send(
+            {
+                "type": "turn.timing",
+                "turn_id": "turn-1",
+                "stage": "llm_first_token",
+            }
+        ),
+        timeout=0.1,
+    )
+
+    assert transport.dropped == 1
+    await asyncio.wait_for(transport.close(), timeout=5)
+
+
 async def test_writer_sends_events_in_order():
     websocket = BlockingWebSocket()
     websocket.gate.set()

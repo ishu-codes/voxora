@@ -1,8 +1,8 @@
 """Environment-driven configuration for the Voxora voice service.
 
-Speech recognition and synthesis are fixed to Sarvam's streaming models. The
-language model is still provider-agnostic because any OpenAI-compatible
-endpoint (DeepSeek, Groq, Ollama, vLLM) speaks the same protocol.
+Speech recognition defaults to local Whisper, with Sarvam's streaming model as
+an option. Synthesis remains on Sarvam. The language model is provider-agnostic
+because any OpenAI-compatible endpoint speaks the same protocol.
 """
 
 from __future__ import annotations
@@ -71,12 +71,14 @@ class Settings:
     sarvam_api_key: str = ""
     sarvam_ws_url: str = "wss://api.sarvam.ai"
 
-    # Speech to text (Sarvam Saaras, realtime WebSocket)
+    # Speech to text (local Whisper by default, Sarvam Saaras optional)
+    stt_provider: str = "whisper"
     stt_model: str = "saaras:v3-realtime"
     stt_language: str = "en-IN"
     stt_stream_type: str = "fast"
     stt_mode: str = "transcribe"
     stt_timeout_s: float = 30.0
+    whisper_language: str = "auto"
 
     # LLM (any OpenAI-compatible endpoint)
     llm_provider: str = "auto"
@@ -165,11 +167,13 @@ class Settings:
             allowed_unlimited=_env_csv("ALLOWED_UNLIMITED"),
             sarvam_api_key=_env("SARVAM_API_KEY"),
             sarvam_ws_url=_env("SARVAM_WS_URL", "wss://api.sarvam.ai").rstrip("/"),
+            stt_provider=_env("STT_PROVIDER", "whisper").lower(),
             stt_model=_env("STT_MODEL", "saaras:v3-realtime"),
             stt_language=_env("STT_LANGUAGE", "en-IN"),
             stt_stream_type=_env("STT_STREAM_TYPE", "fast").lower(),
             stt_mode=_env("STT_MODE", "transcribe").lower(),
             stt_timeout_s=_env_float("STT_TIMEOUT_S", 30.0),
+            whisper_language=_env("WHISPER_LANGUAGE", "auto"),
             llm_provider=_env("LLM_PROVIDER", "auto").lower(),
             llm_model=_env("LLM_MODEL", "gpt-4o-mini"),
             llm_base_url=_env("LLM_BASE_URL", "https://api.openai.com/v1").rstrip("/"),

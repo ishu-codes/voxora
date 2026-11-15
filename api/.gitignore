@@ -19,5 +19,11 @@ storage/
 src/data/models/
 src/data/wav_noisy/
 
-# Unnecessary files
+# Local recording prototype superseded by src/tools/record_utterances.py
+src/data/utterances.py
+
+# Dependency metadata is managed by pyproject.toml and uv.lock
+/requirements.txt
+
+# Local reports
 */results.md

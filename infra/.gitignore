@@ -1,6 +1,6 @@
-
-# Database volumes
-volumes/
-
 # Environment files
+.env
 *.env
+
+# Local container data
+volumes/

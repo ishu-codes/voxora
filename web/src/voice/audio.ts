@@ -553,18 +553,16 @@ export class AudioPlayer {
     this.sources.add(source);
     if (idle) {
       this.handlers.onSpeakingChange?.(true);
-      this.handlers.onFirstAudio?.();
     }
-    if (onPlaybackStart) {
+    if (onPlaybackStart || (idle && this.handlers.onFirstAudio)) {
       const outputLatency = Math.max(
         0,
         context.outputLatency ?? context.baseLatency ?? 0,
       );
-      this.schedulePlaybackStart(
-        context,
-        startAt + outputLatency,
-        onPlaybackStart,
-      );
+      this.schedulePlaybackStart(context, startAt + outputLatency, () => {
+        if (idle) this.handlers.onFirstAudio?.();
+        onPlaybackStart?.();
+      });
     }
 
     source.onended = () => {

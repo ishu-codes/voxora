@@ -210,6 +210,7 @@ export async function synthesizeWithSarvam(
   voice: string | null,
   signal: AbortSignal,
   model = "bulbul:v3",
+  onAudioReceived?: () => void,
 ): Promise<Int16Array> {
   const response = await fetch(`${SARVAM_API_URL}/text-to-speech`, {
     method: "POST",
@@ -233,6 +234,7 @@ export async function synthesizeWithSarvam(
   const payload = (await response.json()) as { audios?: string[] };
   const encoded = payload.audios?.[0];
   if (!encoded) throw new Error("Speech synthesis returned no audio.");
+  onAudioReceived?.();
   return decodeLinear16(encoded);
 }
 

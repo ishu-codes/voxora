@@ -2,6 +2,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { VoiceOption } from "@/components/ui/voice-picker";
 import { collectClientFingerprint } from "@/lib/device-fingerprint";
+import {
+  type TTFAStatus,
+  type TurnMetricRecord,
+  TurnTimer,
+} from "@/lib/metrics";
 import { API_URL } from "@/lib/voice-catalog";
 import {
   hasUnlimitedVoiceSettings,
@@ -142,6 +147,7 @@ export function useVoiceSession() {
   const [muted, setMuted] = useState(false);
   const [vadStatus, setVadStatus] = useState<LocalVadStatus>("off");
   const [diagnostics, setDiagnostics] = useState<TurnDiagnostics[]>([]);
+  const [ttfaRecords, setTtfaRecords] = useState<TurnMetricRecord[]>([]);
   const [captureStream, setCaptureStream] = useState<MediaStream | null>(null);
   const [browserVoices, setBrowserVoices] = useState<SpeechSynthesisVoice[]>(
     [],
@@ -161,9 +167,9 @@ export function useVoiceSession() {
   const directGenerationRef = useRef(0);
   const directUtteranceRef = useRef<Int16Array[]>([]);
   const directTurnInFlightRef = useRef(false);
-  const finishDirectTurnRef = useRef<(audio?: Float32Array) => void>(
-    () => undefined,
-  );
+  const finishDirectTurnRef = useRef<
+    (audio?: Float32Array, speechEndedAt?: number) => void
+  >(() => undefined);
   const intentionalCloseRef = useRef(false);
   const fatalConnectionRef = useRef(false);
   const readyRef = useRef<ReadyEvent | null>(null);
@@ -183,8 +189,12 @@ export function useVoiceSession() {
   const activeTurnRef = useRef<string | null>(null);
   const completedTurnsRef = useRef<Set<string>>(new Set());
   const speechEndAtRef = useRef<number | null>(null);
+  const lastUserAudioSentAtRef = useRef<number | null>(null);
   const voicedAtRef = useRef<number | null>(null);
   const turnDiagRef = useRef<Map<string, TurnDiagnostics>>(new Map());
+  const metricTimersRef = useRef<Map<string, TurnTimer>>(new Map());
+  const currentMetricTurnRef = useRef<string | null>(null);
+  const coldStartUsedRef = useRef(false);
   const turnWatchdogRef = useRef<number | null>(null);
 
   const localVadRef = useRef<LocalVad | null>(null);
@@ -315,6 +325,63 @@ export function useVoiceSession() {
     },
     [send],
   );
+
+  const beginMetricTurn = useCallback(
+    (input: {
+      turnId: string;
+      mode: "backend" | "byok";
+      sttProvider: string;
+      language: string | null;
+      startedAt?: number;
+    }): TurnTimer | null => {
+      if (metricTimersRef.current.has(input.turnId)) {
+        return metricTimersRef.current.get(input.turnId) ?? null;
+      }
+      const timer = new TurnTimer({
+        ...input,
+        coldStart: !coldStartUsedRef.current,
+      });
+      coldStartUsedRef.current = true;
+      metricTimersRef.current.set(input.turnId, timer);
+      currentMetricTurnRef.current = input.turnId;
+      return timer;
+    },
+    [],
+  );
+
+  const finishMetricTurn = useCallback((turnId: string, status: TTFAStatus) => {
+    const timer = metricTimersRef.current.get(turnId);
+    if (!timer) return;
+    const record = timer.finish(status);
+    metricTimersRef.current.delete(turnId);
+    if (currentMetricTurnRef.current === turnId) {
+      currentMetricTurnRef.current = null;
+    }
+    setTtfaRecords((previous) =>
+      previous.some((item) => item.turnId === turnId)
+        ? previous
+        : [...previous, record],
+    );
+  }, []);
+
+  const discardMetricTurn = useCallback((turnId: string) => {
+    const timer = metricTimersRef.current.get(turnId);
+    if (!timer) return;
+    metricTimersRef.current.delete(turnId);
+    if (currentMetricTurnRef.current === turnId) {
+      currentMetricTurnRef.current = null;
+    }
+    if (timer.coldStart && metricTimersRef.current.size === 0) {
+      coldStartUsedRef.current = false;
+    }
+  }, []);
+
+  const resetMetrics = useCallback(() => {
+    metricTimersRef.current.clear();
+    currentMetricTurnRef.current = null;
+    coldStartUsedRef.current = false;
+    setTtfaRecords([]);
+  }, []);
 
   const selectVoice = useCallback(
     (voiceId: string) => {
@@ -494,6 +561,7 @@ export function useVoiceSession() {
     if (!ws || ws.readyState !== WebSocket.OPEN) return false;
     // Copy because AudioWorklet buffers are transferred/detached.
     ws.send(new Int16Array(pcm).buffer as ArrayBuffer);
+    lastUserAudioSentAtRef.current = performance.now();
     return true;
   }, []);
 
@@ -537,6 +605,7 @@ export function useVoiceSession() {
       clearTurnWatchdog();
       turnWatchdogRef.current = window.setTimeout(() => {
         turnWatchdogRef.current = null;
+        finishMetricTurn(turnId, "failed");
         if (byokRef.current) {
           directGenerationRef.current += 1;
           directAbortRef.current?.abort();
@@ -553,7 +622,7 @@ export function useVoiceSession() {
         pushError("The assistant response timed out. You can speak again.");
       }, TURN_WATCHDOG_MS);
     },
-    [clearTurnWatchdog, pushError, stopPlayback],
+    [clearTurnWatchdog, finishMetricTurn, pushError, stopPlayback],
   );
 
   /**
@@ -569,12 +638,17 @@ export function useVoiceSession() {
       }
       const now = performance.now();
       const turnId =
-        activeTurnRef.current ?? currentAssistantTurnRef.current ?? null;
+        activeTurnRef.current ??
+        currentAssistantTurnRef.current ??
+        currentMetricTurnRef.current;
       const playing = Boolean(
         playerRef.current?.isSpeaking || speakerRef.current?.isSpeaking,
       );
       const cancelling = Boolean(
-        turnId && (playing || turnsRef.current.isActive(turnId)),
+        turnId &&
+          (playing ||
+            turnsRef.current.isActive(turnId) ||
+            metricTimersRef.current.has(turnId)),
       );
 
       if (!cancelling && !playing) {
@@ -587,6 +661,7 @@ export function useVoiceSession() {
       }
 
       if (turnId) {
+        finishMetricTurn(turnId, "interrupted");
         turnsRef.current.interrupt(turnId);
         if (activeTurnRef.current === turnId) activeTurnRef.current = null;
         settleAssistantMessage(turnId, { interrupted: true });
@@ -615,6 +690,7 @@ export function useVoiceSession() {
     },
     [
       ensureTurnDiagnostics,
+      finishMetricTurn,
       publishDiagnostics,
       send,
       sendTurnMetrics,
@@ -625,16 +701,23 @@ export function useVoiceSession() {
 
   const recordFirstPlayback = useCallback(
     (turnId: string) => {
+      const playbackAt = performance.now();
+      finishMetricTurn(turnId, "complete");
       const diag = ensureTurnDiagnostics(turnId);
       if (diag.firstPlayback != null) return;
       const speechEnd = speechEndAtRef.current;
       if (speechEnd == null) return;
-      const firstPlayback = Math.round(performance.now() - speechEnd);
+      const firstPlayback = Math.round(playbackAt - speechEnd);
       diag.firstPlayback = firstPlayback;
       publishDiagnostics();
       sendTurnMetrics(turnId, { first_playback_ms: firstPlayback });
     },
-    [ensureTurnDiagnostics, publishDiagnostics, sendTurnMetrics],
+    [
+      ensureTurnDiagnostics,
+      finishMetricTurn,
+      publishDiagnostics,
+      sendTurnMetrics,
+    ],
   );
 
   const startLocalVad = useCallback(
@@ -673,9 +756,12 @@ export function useVoiceSession() {
             vadSpeakingRef.current = false;
             vadConfirmedRef.current = false;
             vadStartedAtRef.current = null;
-            speechEndAtRef.current = performance.now();
+            const speechEndedAt = performance.now();
+            speechEndAtRef.current = speechEndedAt;
             scheduleSpeechGateClose();
-            if (byokRef.current) finishDirectTurnRef.current(audio);
+            if (byokRef.current) {
+              finishDirectTurnRef.current(audio, speechEndedAt);
+            }
             if (
               wasConfirmed &&
               !playerRef.current?.isSpeaking &&
@@ -793,7 +879,7 @@ export function useVoiceSession() {
   }, [recordFirstPlayback]);
 
   const runDirectTurn = useCallback(
-    async (vadAudio?: Float32Array) => {
+    async (vadAudio?: Float32Array, speechEndedAt?: number) => {
       const settings = byokSettingsRef.current;
       const collectedFrames = directUtteranceRef.current;
       directUtteranceRef.current = [];
@@ -814,7 +900,14 @@ export function useVoiceSession() {
       const generation = ++directGenerationRef.current;
       const controller = new AbortController();
       directAbortRef.current = controller;
-      let turnId: string | null = null;
+      const turnId = `local-${Date.now()}-${generation}`;
+      beginMetricTurn({
+        turnId,
+        mode: "byok",
+        sttProvider: "sarvam",
+        language: "en-IN",
+        startedAt: speechEndedAt ?? speechEndAtRef.current ?? performance.now(),
+      });
 
       try {
         setAgentState("thinking");
@@ -826,13 +919,15 @@ export function useVoiceSession() {
         if (!activeRef.current || generation !== directGenerationRef.current) {
           return;
         }
+        const timer = metricTimersRef.current.get(turnId);
+        timer?.markTranscriptFinal();
         if (!text) {
+          discardMetricTurn(turnId);
           setAgentState("listening");
           pushError("No speech detected. Try speaking a little longer.");
           return;
         }
 
-        turnId = `local-${Date.now()}-${generation}`;
         const activeTurnId = turnId;
         upsertUserMessage(text, true, activeTurnId);
         turnsRef.current.begin(activeTurnId);
@@ -858,6 +953,7 @@ export function useVoiceSession() {
         const player = ensurePlayer();
         const chunker = new DirectSentenceChunker();
         let ttsError: unknown = null;
+        let firstAudioReceived = false;
         let speechQueue = Promise.resolve();
         const enqueueSpeech = (sentence: string) => {
           speechQueue = speechQueue
@@ -875,6 +971,14 @@ export function useVoiceSession() {
                 voiceRef.current ?? null,
                 controller.signal,
                 catalogRef.current?.model ?? "bulbul:v3",
+                () => {
+                  if (!firstAudioReceived) {
+                    firstAudioReceived = true;
+                    metricTimersRef.current
+                      .get(activeTurnId)
+                      ?.markFirstAudioReceived();
+                  }
+                },
               );
               if (
                 generation !== directGenerationRef.current ||
@@ -902,6 +1006,7 @@ export function useVoiceSession() {
           messages,
           controller.signal,
           (token) => {
+            metricTimersRef.current.get(activeTurnId)?.markFirstLlmToken();
             for (const sentence of chunker.feed(token)) {
               enqueueSpeech(sentence);
             }
@@ -919,6 +1024,9 @@ export function useVoiceSession() {
           return;
         }
 
+        if (!player.isSpeaking && !speakerRef.current?.isSpeaking) {
+          finishMetricTurn(activeTurnId, "failed");
+        }
         completeAssistantMessage(
           activeTurnId,
           fullText,
@@ -930,16 +1038,18 @@ export function useVoiceSession() {
         clearTurnWatchdog();
         if (!player.isSpeaking) setAgentState("listening");
       } catch (cause) {
-        if (controller.signal.aborted) return;
+        if (controller.signal.aborted) {
+          finishMetricTurn(turnId, "interrupted");
+          return;
+        }
         const message =
           cause instanceof Error
             ? cause.message
             : "Direct voice request failed.";
         pushError(message);
-        if (turnId) {
-          settleAssistantMessage(turnId, { failed: true });
-          turnsRef.current.settle(turnId);
-        }
+        finishMetricTurn(turnId, "failed");
+        settleAssistantMessage(turnId, { failed: true });
+        turnsRef.current.settle(turnId);
         activeTurnRef.current = null;
         currentAssistantTurnRef.current = null;
         clearTurnWatchdog();
@@ -954,10 +1064,13 @@ export function useVoiceSession() {
     [
       appendAssistantMessage,
       armTurnWatchdog,
+      beginMetricTurn,
       clearTurnWatchdog,
       completeAssistantMessage,
+      discardMetricTurn,
       ensurePlayer,
       ensureTurnDiagnostics,
+      finishMetricTurn,
       publishDiagnostics,
       pushError,
       settleAssistantMessage,
@@ -966,8 +1079,8 @@ export function useVoiceSession() {
   );
 
   useEffect(() => {
-    finishDirectTurnRef.current = (audio) => {
-      void runDirectTurn(audio);
+    finishDirectTurnRef.current = (audio, speechEndedAt) => {
+      void runDirectTurn(audio, speechEndedAt);
     };
   }, [runDirectTurn]);
 
@@ -1045,17 +1158,43 @@ export function useVoiceSession() {
           // playback earlier, so this is a fallback for browsers where the
           // Silero model failed to load.
           if (turnsRef.current.isCancelled(event.turn_id)) break;
+          lastUserAudioSentAtRef.current = null;
           if (playerRef.current?.isSpeaking || speakerRef.current?.isSpeaking) {
             handleBargeIn("server");
           } else {
             setAgentState("capturing");
           }
           break;
+        case "turn.timing": {
+          if (byokRef.current) break;
+          if (event.stage === "speech_end") {
+            beginMetricTurn({
+              turnId: event.turn_id,
+              mode: "backend",
+              sttProvider: readyRef.current?.stt.name ?? "unknown",
+              language: readyRef.current?.stt.language ?? null,
+              startedAt: lastUserAudioSentAtRef.current ?? performance.now(),
+            });
+          } else {
+            metricTimersRef.current.get(event.turn_id)?.markFirstLlmToken();
+          }
+          break;
+        }
         case "transcript.partial":
           upsertUserMessage(event.text, false);
           if (!playerRef.current?.isSpeaking) setAgentState("capturing");
           break;
         case "transcript.final": {
+          if (!metricTimersRef.current.has(event.turn_id)) {
+            beginMetricTurn({
+              turnId: event.turn_id,
+              mode: "backend",
+              sttProvider: readyRef.current?.stt.name ?? "unknown",
+              language: readyRef.current?.stt.language ?? null,
+              startedAt: lastUserAudioSentAtRef.current ?? performance.now(),
+            });
+          }
+          metricTimersRef.current.get(event.turn_id)?.markTranscriptFinal();
           upsertUserMessage(event.text, true, event.turn_id);
           turnsRef.current.begin(event.turn_id);
           activeTurnRef.current = event.turn_id;
@@ -1067,6 +1206,7 @@ export function useVoiceSession() {
           break;
         }
         case "assistant.delta": {
+          metricTimersRef.current.get(event.turn_id)?.markFirstLlmToken();
           if (turnsRef.current.isCancelled(event.turn_id)) break;
           if (
             activeTurnRef.current !== null &&
@@ -1102,6 +1242,7 @@ export function useVoiceSession() {
           currentAssistantTurnRef.current = event.turn_id;
           const player = ensurePlayer();
           const spokenText = event.text;
+          metricTimersRef.current.get(event.turn_id)?.markFirstAudioReceived();
           player.enqueue(
             decodePcm16(event.data),
             event.sample_rate,
@@ -1131,6 +1272,12 @@ export function useVoiceSession() {
             });
             break;
           }
+          if (
+            !playerRef.current?.isSpeaking &&
+            !speakerRef.current?.isSpeaking
+          ) {
+            finishMetricTurn(event.turn_id, "failed");
+          }
           completeAssistantMessage(
             event.turn_id,
             event.text,
@@ -1157,6 +1304,7 @@ export function useVoiceSession() {
           ) {
             break;
           }
+          finishMetricTurn(event.turn_id, "failed");
           settleAssistantMessage(event.turn_id, { failed: true });
           turnsRef.current.settle(event.turn_id);
           if (activeTurnRef.current === event.turn_id) {
@@ -1167,6 +1315,7 @@ export function useVoiceSession() {
           break;
         }
         case "turn.cancelled": {
+          finishMetricTurn(event.turn_id, "interrupted");
           const wasCurrent = currentAssistantTurnRef.current === event.turn_id;
           turnsRef.current.interrupt(event.turn_id);
           activeTurnRef.current =
@@ -1203,6 +1352,7 @@ export function useVoiceSession() {
         }
         case "turn.empty":
           if (turnsRef.current.isCancelled(event.turn_id)) break;
+          discardMetricTurn(event.turn_id);
           currentUserMessageIdRef.current = null;
           if (activeTurnRef.current === event.turn_id) {
             activeTurnRef.current = null;
@@ -1256,6 +1406,9 @@ export function useVoiceSession() {
                 activeTurnRef.current !== event.turn_id))
           ) {
             break;
+          }
+          if (event.turn_id) {
+            finishMetricTurn(event.turn_id, "failed");
           }
           pushError(event.message);
           if (
@@ -1311,10 +1464,13 @@ export function useVoiceSession() {
     [
       appendAssistantMessage,
       armTurnWatchdog,
+      beginMetricTurn,
       clearTurnWatchdog,
       completeAssistantMessage,
+      discardMetricTurn,
       ensurePlayer,
       ensureTurnDiagnostics,
+      finishMetricTurn,
       handleBargeIn,
       publishDiagnostics,
       pushError,
@@ -1403,7 +1559,7 @@ export function useVoiceSession() {
           vad.silenceMs = 0;
           speechEndAtRef.current = now;
           scheduleSpeechGateClose();
-          if (byokRef.current) finishDirectTurnRef.current();
+          if (byokRef.current) finishDirectTurnRef.current(undefined, now);
           setAgentState((previous) =>
             previous === "speaking" ? previous : "thinking",
           );
@@ -1659,6 +1815,8 @@ export function useVoiceSession() {
       }
       // A dropped socket means the in-flight response can no longer be
       // trusted. Stop its audio and leave the UI in a usable state.
+      const turnId = currentMetricTurnRef.current;
+      if (turnId) finishMetricTurn(turnId, "failed");
       handleBargeIn("server");
       clearTurnWatchdog();
       setAgentState("listening");
@@ -1666,6 +1824,7 @@ export function useVoiceSession() {
     };
   }, [
     clearTurnWatchdog,
+    finishMetricTurn,
     handleBargeIn,
     handleServerEvent,
     pushError,
@@ -1694,6 +1853,7 @@ export function useVoiceSession() {
     reconnectAttemptsRef.current = 0;
     turnDiagRef.current.clear();
     setDiagnostics([]);
+    resetMetrics();
     clearTurnWatchdog();
     clearVadTailTimer();
     turnsRef.current.reset();
@@ -1713,6 +1873,7 @@ export function useVoiceSession() {
     vadGateOpenRef.current = false;
     preRollRef.current = [];
     speechEndAtRef.current = null;
+    lastUserAudioSentAtRef.current = null;
     lastFrameAtRef.current = performance.now();
     energyGateRunRef.current = 0;
     captureRecoveryRef.current = {
@@ -1829,9 +1990,15 @@ export function useVoiceSession() {
     startLocalVad,
     stopCaptureWatchdog,
     quotaExhausted,
+    resetMetrics,
   ]);
 
   const stop = useCallback(async () => {
+    const turnId =
+      activeTurnRef.current ??
+      currentAssistantTurnRef.current ??
+      currentMetricTurnRef.current;
+    if (turnId) finishMetricTurn(turnId, "interrupted");
     activeRef.current = false;
     byokRef.current = false;
     byokSettingsRef.current = null;
@@ -1890,7 +2057,13 @@ export function useVoiceSession() {
     mutedRef.current = false;
     currentAssistantTurnRef.current = null;
     currentUserMessageIdRef.current = null;
-  }, [clearTurnWatchdog, clearVadTailTimer, stopCaptureWatchdog, stopPlayback]);
+  }, [
+    clearTurnWatchdog,
+    clearVadTailTimer,
+    finishMetricTurn,
+    stopCaptureWatchdog,
+    stopPlayback,
+  ]);
 
   useEffect(() => {
     stopRef.current = stop;
@@ -1898,8 +2071,11 @@ export function useVoiceSession() {
 
   const interrupt = useCallback(() => {
     const turnId =
-      activeTurnRef.current ?? currentAssistantTurnRef.current ?? null;
+      activeTurnRef.current ??
+      currentAssistantTurnRef.current ??
+      currentMetricTurnRef.current;
     if (turnId) {
+      finishMetricTurn(turnId, "interrupted");
       turnsRef.current.interrupt(turnId);
       settleAssistantMessage(turnId, { interrupted: true });
     }
@@ -1912,7 +2088,13 @@ export function useVoiceSession() {
       ...(turnId ? { turn_id: turnId } : {}),
     });
     setAgentState("listening");
-  }, [clearTurnWatchdog, send, settleAssistantMessage, stopPlayback]);
+  }, [
+    clearTurnWatchdog,
+    finishMetricTurn,
+    send,
+    settleAssistantMessage,
+    stopPlayback,
+  ]);
 
   const toggleMute = useCallback(() => {
     setMuted((previous) => {
@@ -1964,7 +2146,8 @@ export function useVoiceSession() {
     completedTurnsRef.current.clear();
     turnDiagRef.current.clear();
     setDiagnostics([]);
-  }, [clearMessages]);
+    resetMetrics();
+  }, [clearMessages, resetMetrics]);
 
   const summary = useMemo(() => {
     const firstPlayback = diagnostics
@@ -1992,6 +2175,7 @@ export function useVoiceSession() {
     vadStatus,
     diagnostics,
     summary,
+    ttfaRecords,
     stream: captureStream,
     voices: options,
     voice,
@@ -2001,6 +2185,7 @@ export function useVoiceSession() {
     interrupt,
     toggleMute,
     clearConversation,
+    resetMetrics,
     dismissError: () => setError(null),
     quotaExhausted,
     quotaNoticeVisible: quotaExhausted !== null && !quotaNoticeDismissed,

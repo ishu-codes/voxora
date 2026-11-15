@@ -2,11 +2,13 @@ SHELL := /bin/bash
 
 API_DIR := api
 WEB_DIR := web
+INFRA_COMPOSE := docker compose --env-file infra/.env -f infra/docker/docker-compose.yml
 
 .PHONY: help install env api-install web-install dev api-dev api-serve web-dev \
 	web-build test test-api test-integration test-web typecheck lint build check \
 	health demo bench-stt bench-noise bench-latency bench-scenarios bench-heldout \
-	bench-report calibrate
+	bench-report calibrate infra-env infra-config infra-build infra-up infra-down \
+	infra-logs
 
 help:
 	@echo "Voxora"
@@ -20,6 +22,8 @@ help:
 	@echo "  make api-dev            Start the FastAPI backend with reload"
 	@echo "  make web-dev            Start the Next.js app"
 	@echo "  make demo               Start the voice benchmark demo"
+	@echo "  make infra-up           Build and start the local Docker stack"
+	@echo "  make infra-down         Stop the local Docker stack"
 	@echo ""
 	@echo "Verify:"
 	@echo "  make test               Run API and web tests"
@@ -124,3 +128,22 @@ bench-report:
 
 calibrate:
 	cd $(API_DIR) && PYTHONPATH=src uv run python -m tools.calibrate_judge --conversations 25 --stt 15
+
+infra-env:
+	@test -f infra/.env || cp infra/.env.example infra/.env
+	@echo "Docker environment is ready at infra/.env"
+
+infra-config:
+	docker compose --env-file infra/.env.example -f infra/docker/docker-compose.yml config
+
+infra-build: infra-env
+	$(INFRA_COMPOSE) build
+
+infra-up: infra-env
+	$(INFRA_COMPOSE) up --build -d
+
+infra-down:
+	$(INFRA_COMPOSE) down
+
+infra-logs:
+	$(INFRA_COMPOSE) logs --follow

@@ -1,189 +1,95 @@
+name: voxora
+
 services:
-  rag:
-    container_name: ragify-rag
+  api:
     build:
-      context: ../../rag
+      context: ../../api
       dockerfile: Dockerfile
-      args:
-        # Bake the embedding model the container will run with, so runtime
-        # offline mode (HF_HUB_OFFLINE, set in the entrypoint) still finds it.
-        # Keep these in sync with .env.
-        EMBED_MODEL: ${EMBED_MODEL:-BAAI/bge-small-en-v1.5}
-    env_file:
-      - ../../.env
-    ports:
-      - "${RAGIFY_GRPC_PORT:-50051}:${RAGIFY_GRPC_PORT:-50051}"
     environment:
-      # The entrypoint gives $PORT precedence over RAGIFY_GRPC_PORT so Cloud
-      # Run's injected port wins. The root .env sets PORT=1337 for the API,
-      # and env_file would leak that in here, making the gRPC server bind 1337
-      # while the published port and the API client expect 50051. Pin PORT to
-      # the gRPC port so local runs line up.
-      PORT: "${RAGIFY_GRPC_PORT:-50051}"
-      RAGIFY_GRPC_HOST: ${RAGIFY_GRPC_HOST:-0.0.0.0}
-      RAGIFY_GRPC_PORT: ${RAGIFY_GRPC_PORT:-50051}
-      RAGIFY_GRPC_ENDPOINT: ${RAGIFY_GRPC_ENDPOINT:-localhost:50051}
-      VECTORDB_URL: ${VECTORDB_URL:-http://vector_db:6333}
-      # The in-code default is localhost:8070, which inside this container is the
-      # rag container itself.
-      GROBID_URL: ${GROBID_URL:-http://grobid:8070}
+      APP_NAME: ${APP_NAME:-Voxora}
+      VERSION: ${VERSION:-0.1.0}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
 
-    networks:
-      - rag_network
-    depends_on:
-      - vector_db
+      SARVAM_API_KEY: ${SARVAM_API_KEY:-}
+      SARVAM_WS_URL: ${SARVAM_WS_URL:-wss://api.sarvam.ai}
+      STT_MODEL: ${STT_MODEL:-saaras:v3-realtime}
+      STT_LANGUAGE: ${STT_LANGUAGE:-en-IN}
+      STT_STREAM_TYPE: ${STT_STREAM_TYPE:-fast}
+      STT_MODE: ${STT_MODE:-transcribe}
 
-  # api:
-  #   container_name: ragify-api
-  #   build: ./api/Dockerfile
-  #   env_file:
-  #     - ../../.env
-  #   ports:
-  #     - "1337:${PORT}"
-  #   environment:
-  #     - DATABASE_URL: ${DATABASE_URL}
-  #   depends_on:
-  #     - database
-  #   restart: unless-stopped
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
+      LLM_MODEL: ${LLM_MODEL:-gpt-4o-mini}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.openai.com/v1}
+      LLM_API_KEY: ${LLM_API_KEY:-}
+      LLM_TEMPERATURE: ${LLM_TEMPERATURE:-0.7}
+      LLM_MAX_TOKENS: ${LLM_MAX_TOKENS:-320}
 
-  # web:
-  #   container_name: ragify-web
-  #   build: ./web/Dockerfile
-  #   ports:
-  #     - "5137:5137"
-  #   environment:
-  #     - VITE_API_URL=http://localhost:1337
-  #   restart: unless-stopped
+      TTS_MODEL: ${TTS_MODEL:-bulbul:v3}
+      TTS_VOICE: ${TTS_VOICE:-shubh}
+      TTS_LANGUAGE: ${TTS_LANGUAGE:-en-IN}
+      TTS_SAMPLE_RATE: ${TTS_SAMPLE_RATE:-22050}
+      TTS_SPEED: ${TTS_SPEED:-1.0}
+      TTS_TEMPERATURE: ${TTS_TEMPERATURE:-0.6}
 
-  # ===================== Databases ====================
-
-  db:
-    container_name: ragify-db
-    image: postgres:16.10-alpine
-    env_file:
-      - ../../.env
+      RATE_LIMIT_ENABLED: "true"
+      REQUIRE_BROWSER_CLIENT: "true"
+      RATE_LIMIT_SECRET: ${RATE_LIMIT_SECRET:-}
+      TRUST_PROXY_HEADERS: ${TRUST_PROXY_HEADERS:-false}
+      ALLOWED_UNLIMITED: ${ALLOWED_UNLIMITED:-}
+      RATE_LIMIT_MAX_SESSION_SECONDS: ${RATE_LIMIT_MAX_SESSION_SECONDS:-900}
+      PLATFORM_MAX_TURNS: ${PLATFORM_MAX_TURNS:-10}
+      RATE_LIMIT_PLATFORM_TURNS_HOUR: ${RATE_LIMIT_PLATFORM_TURNS_HOUR:-10}
+      RATE_LIMIT_PLATFORM_TURNS_DAY: ${RATE_LIMIT_PLATFORM_TURNS_DAY:-240}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-ragify}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ragify}
-      POSTGRES_DB: ${POSTGRES_DB:-ragify}
-
-    volumes:
-      - ../volumes/postgres:/var/lib/postgresql/data
-
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ragify} -d ${POSTGRES_DB:-ragify}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
-
-  vector_db:
-    container_name: ragify_qdrant
-    image: qdrant/qdrant:v1.17
-    env_file:
-      - ../../.env
-    ports:
-      - "${QDRANT_HTTP_PORT:-6333}:6333"
-      - "${QDRANT_GRPC_PORT:-6334}:6334"
-    volumes:
-      - ../volumes/qdrant:/qdrant/storage
-      - ../configs/qdrant.yaml:/qdrant/config/config.yaml
-
-    networks:
-      - rag_network
-
-    command: ["./qdrant", "--config-path", "/qdrant/config/config.yaml"]
-
-  # ===================== Other Services ====================
-
-  grobid:
-    container_name: ragify-grobid
-    image: grobid/grobid:0.9.0-crf
-    ports:
-      - "${GROBID_PORT:-8070}:8070"
-    ulimits:
-      core:
-        soft: 0
-        hard: 0
-    init: true
-    restart: unless-stopped
-    # rag reaches Grobid by service name, so they have to share a network.
-    networks:
-      - rag_network
-
-  pgbouncer:
-    container_name: ragify-pgbouncer
-    image: edoburu/pgbouncer:latest
-    ports:
-      - "6432:5432"
-    # env_file:
-    #   - ../../.env
-    depends_on:
-      - db
-    environment:
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: ragify
-      DB_PASSWORD: ragify
-      DB_NAME: ragify
-      # DB_USER: ${POSTGRES_USER:-ragify}
-      # DB_PASSWORD: ${POSTGRES_PASSWORD:-ragify}
-      # DB_NAME: ${POSTGRES_DB:-ragify}
-      # DB_HOST: db
-      POOL_MODE: transaction
-      MAX_CLIENT_CONN: 500
-      DEFAULT_POOL_SIZE: 50
-      AUTH_TYPE: scram-sha-256
-
-    volumes:
-      - ../configs/pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
-      - ../configs/pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
-
-  # ===================== Metrics & Observability ====================
-
-  prometheus:
-    container_name: ragify-prometheus
-    image: prom/prometheus:v3.5.0
-    ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
+      - "${API_PORT:-8000}:8000"
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    volumes:
-      - ../configs/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - prometheus_data:/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=2)"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    init: true
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
     restart: unless-stopped
 
-  grafana:
-    container_name: ragify-grafana
-    image: grafana/grafana:12.1.1
-    ports:
-      - "${GRAFANA_PORT:-3001}:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
+  web:
+    build:
+      context: ../../web
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
-    depends_on:
-      - prometheus
-    restart: unless-stopped
-
-  jaeger:
-    container_name: ragify-jaeger
-    image: jaegertracing/jaeger:2.20.0
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
     ports:
-      - "16686:16686"
-      - "4317:4317"
-      - "4318:4318"
-
-volumes:
-  prometheus_data:
-  grafana_data:
-
-networks:
-  rag_network:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 15s
+    init: true
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 30s
+    restart: unless-stopped
