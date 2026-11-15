@@ -6,6 +6,7 @@ import asyncio
 import base64
 import json
 import logging
+from dataclasses import replace
 from typing import AsyncIterator
 
 import websockets
@@ -106,6 +107,15 @@ class GnaniTTS:
                     await self._close_socket()
                     self._dirty = False
                 await self._connect_once(selected)
+
+    async def configure_language(self, language: str) -> None:
+        """Select a documented Timbre language code before synthesis."""
+        if language == self._settings.gnani_tts_language:
+            return
+        if language not in {"hi-IN", "hi-en", "en-IN"}:
+            return
+        self._settings = replace(self._settings, gnani_tts_language=language)
+        await self.close()
 
     def _request(self, text: str, voice: str) -> dict[str, object]:
         return {

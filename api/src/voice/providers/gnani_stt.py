@@ -85,6 +85,7 @@ class GnaniSTT:
         self._last_segment = 0
         self._audio_bytes = 0
         self._started_at = 0.0
+        self.detected_language: str | None = None
 
     @property
     def language(self) -> str:
@@ -284,6 +285,9 @@ class GnaniSTT:
             if segment <= self._last_segment:
                 continue
             self._last_segment = segment
+            detected = message.get("detected_language_code")
+            if isinstance(detected, str) and detected.strip():
+                self.detected_language = detected.strip()
             text = str(message.get("text") or "").strip()
             elapsed_ms = round((loop.time() - self._started_at) * 1000, 1)
             logger.info(

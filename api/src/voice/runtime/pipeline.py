@@ -409,6 +409,7 @@ class VoicePipeline:
                 self._label(generation),
                 _clip(text),
             )
+            await self._configure_bank_tts_language(text)
             await self.transport.send(
                 {
                     "type": "transcript.final",
@@ -680,10 +681,59 @@ class VoicePipeline:
         )
         await self._set_state("listening", generation)
 
+    async def _configure_bank_tts_language(self, user_text: str) -> None:
+        if self.scenario_id != "demo-bank":
+            return
+        configure = getattr(self.tts, "configure_language", None)
+        if configure is None:
+            return
+        detected = getattr(self.stt, "detected_language", None)
+        await configure(self._spoken_language(user_text, detected))
+
+    def _spoken_language(
+        self,
+        user_text: str,
+        detected: object = None,
+    ) -> str:
+        code = str(detected or "").strip()
+        has_devanagari = bool(re.search(r"[\u0900-\u097F]", user_text))
+        has_latin = bool(re.search(r"[A-Za-z]", user_text))
+        if has_devanagari and has_latin:
+            return "hi-en"
+        if code.startswith("hi") or has_devanagari:
+            return "hi-IN"
+        if code.startswith("en"):
+            return "en-IN"
+        hinglish_words = {
+            "aap",
+            "aapka",
+            "hai",
+            "hain",
+            "kya",
+            "kaise",
+            "kar",
+            "karna",
+            "mujhe",
+            "mera",
+            "kitna",
+        }
+        if any(word in user_text.lower().split() for word in hinglish_words):
+            return "hi-en"
+        return "en-IN"
+
     async def _run_bank_assistant(
         self, generation: int, user_text: str, ts_end: float
     ) -> None:
         turn = self._turns[generation]
+        privacy_reply = self._bank_privacy_reply(user_text)
+        if privacy_reply:
+            await self._speak_bank_direct_answer(
+                generation,
+                privacy_reply,
+                ts_end,
+                turn,
+            )
+            return
         llm_started = self.clock()
         first_token_at: float | None = None
         messages = self.session.messages_for_llm(self.settings.system_prompt)
@@ -855,6 +905,113 @@ class VoicePipeline:
                 "type": "bank.status",
                 "turn_id": self._label(generation),
                 "status": "idle",
+            }
+        )
+        await self._set_state("listening", generation)
+
+    def _bank_privacy_reply(self, user_text: str) -> str | None:
+        lower = user_text.lower()
+        sensitive = re.search(
+            r"\b(otp|pin|cvv|password|card\s+number|aadhaar)\b",
+            lower,
+        )
+        secret_value = re.search(
+            r"(\d{3,12}|zero|one|two|three|four|five|six|seven|eight|nine)",
+            lower,
+        )
+        if not sensitive or not secret_value:
+            return None
+        language = self._spoken_language(user_text)
+        if language == "hi-IN":
+            return (
+                "कृपया वह नंबर साझा न करें। Demo Bank किसी कॉल पर OTP, "
+                "PIN, CVV या पासवर्ड कभी नहीं मांगता। अगर आपने यह जानकारी "
+                "साझा कर दी है, तो Demo Bank के किसी आधिकारिक चैनल से संपर्क करें।"
+            )
+        if language == "hi-en":
+            return (
+                "Please woh number share na karein. Demo Bank kisi call par "
+                "OTP, PIN, CVV ya password kabhi nahi maangta. Agar aapne "
+                "share kar diya hai, to Demo Bank ke official channel se contact karein."
+            )
+        return (
+            "Please do not share that number. Demo Bank never asks for an OTP, "
+            "PIN, CVV or password on a call. If you already shared it, contact "
+            "Demo Bank through an official channel."
+        )
+
+    async def _speak_bank_direct_answer(
+        self,
+        generation: int,
+        text: str,
+        ts_end: float,
+        turn: dict[str, Any],
+    ) -> None:
+        await self.transport.send(
+            {
+                "type": "bank.status",
+                "turn_id": self._label(generation),
+                "status": "idle",
+            }
+        )
+        await self._consume_usage("tts", chars=len(text))
+        tts_started = self.clock()
+        first_audio_at: float | None = None
+        text_sent = False
+        async for chunk in self.tts.synthesize(text, voice=self._voice):
+            if generation != self._generation:
+                return
+            if first_audio_at is None:
+                first_audio_at = self.clock()
+                turn["tts_first_audio_ms"] = _ms(tts_started, first_audio_at)
+                turn["bank_answer_first_audio_ms"] = _ms(ts_end, first_audio_at)
+                turn["e2e_first_audio_ms"] = turn["bank_answer_first_audio_ms"]
+                await self.transport.send(
+                    {
+                        "type": "turn.timing",
+                        "turn_id": self._label(generation),
+                        "stage": "bank_answer_first_audio",
+                    }
+                )
+                await self._set_state("speaking", generation)
+            event: dict[str, Any] = {
+                "type": "audio.chunk",
+                "turn_id": self._label(generation),
+                "data": base64.b64encode(chunk).decode("ascii"),
+                "sample_rate": self.tts.sample_rate,
+                "format": "pcm16",
+                "phase": "bank_answer",
+            }
+            if not text_sent:
+                event["text"] = text
+                text_sent = True
+            await self.transport.send(event)
+        if generation != self._generation:
+            return
+        self.session.add("assistant", text)
+        turn["total_ms"] = _ms(ts_end, self.clock())
+        self.metrics.record(turn)
+        await self.transport.send(
+            {
+                "type": "assistant.done",
+                "turn_id": self._label(generation),
+                "text": text,
+            }
+        )
+        await self.transport.send(
+            {
+                "type": "turn.metrics",
+                "turn_id": self._label(generation),
+                "metrics": {
+                    key: turn.get(key)
+                    for key in (
+                        "speech_duration_ms",
+                        "stt_ms",
+                        "bank_answer_first_audio_ms",
+                        "e2e_first_audio_ms",
+                        "total_ms",
+                    )
+                },
             }
         )
         await self._set_state("listening", generation)

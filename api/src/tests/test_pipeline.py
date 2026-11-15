@@ -610,3 +610,30 @@ async def test_demo_bank_agent_runs_document_tool_before_streamed_answer():
     )
     assert llm.calls == 3
     await pipeline.close()
+
+
+def test_demo_bank_language_selection_uses_documented_codes():
+    pipeline, _transport = _pipeline(
+        FakeSTT(),
+        FakeLLM(["unused"]),
+        FakeAudioTTS(1),
+    )
+
+    assert pipeline._spoken_language("मेरा बैलेंस कितना है?") == "hi-IN"
+    assert pipeline._spoken_language("Mera balance kitna hai?") == "hi-en"
+    assert pipeline._spoken_language("How do I activate my card?") == "en-IN"
+    assert pipeline._spoken_language("question", "hi-IN") == "hi-IN"
+
+
+def test_demo_bank_otp_sharing_gets_deterministic_privacy_reply():
+    pipeline, _transport = _pipeline(
+        FakeSTT(),
+        FakeLLM(["unused"]),
+        FakeAudioTTS(1),
+    )
+
+    reply = pipeline._bank_privacy_reply("My OTP is 4821")
+
+    assert reply is not None
+    assert "never asks" in reply
+    assert pipeline._bank_privacy_reply("What is an OTP?") is None
