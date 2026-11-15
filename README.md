@@ -2,6 +2,42 @@
 
 ![Voxora voice agent benchmark](docs/banner.png)
 
+## Solution pitch
+
+People in small towns and villages often know what they need from a bank but
+cannot easily find a clear answer. Banking knowledge is spread across forms,
+apps, websites and branch conversations. Text available only in English and unfamiliar terms
+such as KYC, IFSC and loan eligibility can turn a simple question into repeated
+trips or dependence on an intermediary.
+
+Voxora makes that information available through a normal spoken conversation.
+The Demo Bank Helper accepts Hindi, Hinglish and English, says when it is
+checking an approved document, and answers from that document in the caller's
+language. It can explain savings account documents, ATM card activation, UPI
+transfers, loan requirements and fraud safety. It also offers one step at a
+time and asks whether the caller wants to continue.
+
+The caller does not need to navigate a form or understand banking terminology
+before asking a question. They can say what they are trying to do and hear the
+next relevant step. The same browser session can run at home or at an assisted
+access point, with provider choice and conversation history preserved for the
+tab.
+
+Safety limits are visible in the product. The agent cannot access balances or
+transactions, cannot perform banking actions, and never asks for an OTP, PIN,
+CVV, password or full card number. The interface shows which documents grounded
+the answer. Demo Bank is a fictional prototype, and all bank specific values
+are illustrative rather than real offers.
+
+The implementation uses Gnani Prisma v2.5 for speech recognition and Timbre
+v2.5 for synthesis, with a streamed FastAPI pipeline and document tools limited
+to five approved files. In the saved benchmark, Prisma returned clean final
+transcripts in about 190 to 203 milliseconds across the three language groups.
+The multilingual Demo Bank evaluation passed 12 of 12 cases.
+
+Open the voice experience at `/app`, the measured results at `/benchmark`, and
+the presentation version of this pitch at `/pitch`.
+
 **From speech to intelligence and back, in real time.**
 
 Voxora is a low-latency, real-time voice AI agent. You speak through your

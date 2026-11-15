@@ -13,6 +13,7 @@ const NAV_LINKS = [
   { label: "Latency", href: "/#latency" },
   { label: "FAQ", href: "/#faq" },
   { label: "Deployment", href: "/#deployment" },
+  { label: "Pitch", href: "/pitch" },
 ];
 
 export function Navbar() {

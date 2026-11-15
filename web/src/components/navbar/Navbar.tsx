@@ -1,6 +1,6 @@
 "use client";
 
-import { BarChart3Icon, SettingsIcon } from "lucide-react";
+import { BarChart3Icon, FileTextIcon, SettingsIcon } from "lucide-react";
 import Link from "next/link";
 import { Wordmark } from "@/components/marketing/Wordmark";
 import { ThemeToggle } from "@/components/navbar/ThemeToggle";
@@ -16,6 +16,17 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <Button
+            variant="ghost"
+            size="icon"
+            render={<Link href="/pitch" />}
+            nativeButton={false}
+            aria-label="Solution pitch"
+            title="Solution pitch"
+            className="rounded-full text-muted-foreground hover:text-foreground"
+          >
+            <FileTextIcon className="size-[1.2rem]" />
+          </Button>
           <Button
             variant="ghost"
             size="icon"
