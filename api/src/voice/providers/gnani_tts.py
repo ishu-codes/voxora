@@ -183,7 +183,11 @@ class GnaniTTS:
                             total_bytes += len(chunk)
                             yield chunk
                 elif kind == "complete":
-                    self._dirty = False
+                    # Timbre v2.5 can leave late frames queued when one
+                    # socket is reused, which can play a previous sentence.
+                    # Treat every completed synthesis as dirty so the socket
+                    # is closed after the complete event.
+                    self._dirty = True
                     logger.info(
                         "%s tts done chunks=%d bytes=%d ms=%.1f",
                         self._tag,

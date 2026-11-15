@@ -249,6 +249,32 @@ async def test_gnani_tts_prewarm_does_not_close_active_synthesis(monkeypatch):
     await tts.close()
 
 
+async def test_gnani_tts_uses_a_fresh_socket_for_each_synthesis(monkeypatch):
+    sockets: list[FakeGnaniTTSSocket] = []
+
+    async def connect(*_args, **_kwargs):
+        socket = FakeGnaniTTSSocket()
+        sockets.append(socket)
+        return socket
+
+    monkeypatch.setattr("websockets.connect", connect)
+    tts = GnaniTTS(
+        Settings(
+            tts_provider="gnani",
+            gnani_api_key="test-key",
+            provider_retry_attempts=1,
+        )
+    )
+
+    first = await _collect_chunks(tts.synthesize("First.", "Kaveri"))
+    second = await _collect_chunks(tts.synthesize("Second.", "Kaveri"))
+
+    assert first and second
+    assert len(sockets) == 2
+    assert sockets[0].close_code == 1000
+    await tts.close()
+
+
 async def test_gnani_adapters_require_server_side_keys():
     stt = GnaniSTT(Settings(gnani_api_key=""))
     tts = GnaniTTS(Settings(gnani_api_key=""))
