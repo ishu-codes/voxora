@@ -37,7 +37,7 @@ export function ProviderSelector({
             value={choice.id}
             disabled={!choice.available}
           >
-            {choice.name}
+            {choice.name} · {choice.model}
             {!choice.available ? " (key missing)" : ""}
           </option>
         ))}

@@ -39,6 +39,10 @@ import {
   type ServerEvent,
 } from "./protocol";
 import {
+  readSessionSelection,
+  saveSessionSelection,
+} from "./session-selection";
+import {
   BrowserSpeaker,
   createRecognition,
   listBrowserVoices,
@@ -101,6 +105,14 @@ function fallbackVoice(voiceId: string | undefined): VoiceOption | null {
   };
 }
 
+function _providerModel(
+  choices: ProviderChoice[],
+  provider: string,
+  fallback: string,
+): string {
+  return choices.find((choice) => choice.id === provider)?.model ?? fallback;
+}
+
 function voiceWsUrl(): string {
   if (WS_URL_OVERRIDE) return WS_URL_OVERRIDE;
   const url = new URL(API_URL);
@@ -139,7 +151,9 @@ function percentile(values: number[], p: number): number | null {
 
 export function useVoiceSession() {
   const [sttProvider, setSttProviderState] = useState("gnani");
+  const [sttModel, setSttModelState] = useState("prisma-v2.5");
   const [ttsProvider, setTtsProviderState] = useState("gnani");
+  const [ttsModel, setTtsModelState] = useState("timbre-v2.5");
   const [providerConfig, setProviderConfig] = useState<ProviderConfig | null>(
     null,
   );
@@ -166,6 +180,7 @@ export function useVoiceSession() {
     [],
   );
   const [voice, setVoiceState] = useState<string | undefined>(undefined);
+  const sessionSelectionHydratedRef = useRef(false);
   const providerTouchedRef = useRef(false);
   const scenarioSelectedByUserRef = useRef(false);
   const selectedScenarioRef = useRef<string>("emi-reminder");
@@ -255,6 +270,24 @@ export function useVoiceSession() {
   }, []);
 
   useEffect(() => {
+    const saved = readSessionSelection();
+    if (saved) {
+      providerTouchedRef.current = true;
+      sttProviderRef.current = saved.sttProvider;
+      ttsProviderRef.current = saved.ttsProvider;
+      setSttProviderState(saved.sttProvider);
+      setTtsProviderState(saved.ttsProvider);
+      if (saved.sttModel) setSttModelState(saved.sttModel);
+      if (saved.ttsModel) setTtsModelState(saved.ttsModel);
+      if (saved.voice) {
+        voiceRef.current = saved.voice;
+        setVoiceState(saved.voice);
+      }
+    }
+    sessionSelectionHydratedRef.current = true;
+  }, []);
+
+  useEffect(() => {
     let active = true;
     void getProviderConfig().then((config) => {
       if (!active || !config) return;
@@ -265,11 +298,28 @@ export function useVoiceSession() {
         setSttProviderState(config.sttProvider);
         setTtsProviderState(config.ttsProvider);
       }
+      setSttModelState(
+        _providerModel(config.stt, sttProviderRef.current, "prisma-v2.5"),
+      );
+      setTtsModelState(
+        _providerModel(config.tts, ttsProviderRef.current, "timbre-v2.5"),
+      );
     });
     return () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!sessionSelectionHydratedRef.current) return;
+    saveSessionSelection({
+      sttProvider,
+      sttModel,
+      ttsProvider,
+      ttsModel,
+      voice: voice ?? null,
+    });
+  }, [sttModel, sttProvider, ttsModel, ttsProvider, voice]);
 
   useEffect(() => {
     let active = true;
@@ -462,22 +512,42 @@ export function useVoiceSession() {
     [send],
   );
 
-  const selectSttProvider = useCallback((provider: string) => {
-    if (activeRef.current) return;
-    providerTouchedRef.current = true;
-    sttProviderRef.current = provider;
-    setSttProviderState(provider);
-  }, []);
+  const selectSttProvider = useCallback(
+    (provider: string) => {
+      if (activeRef.current) return;
+      providerTouchedRef.current = true;
+      sttProviderRef.current = provider;
+      setSttProviderState(provider);
+      setSttModelState(
+        _providerModel(
+          providerConfig?.stt ?? [],
+          provider,
+          sttModel || "prisma-v2.5",
+        ),
+      );
+    },
+    [providerConfig?.stt, sttModel],
+  );
 
-  const selectTtsProvider = useCallback((provider: string) => {
-    if (activeRef.current) return;
-    providerTouchedRef.current = true;
-    ttsProviderRef.current = provider;
-    setTtsProviderState(provider);
-    scenarioSelectedByUserRef.current = false;
-    voiceRef.current = undefined;
-    setVoiceState(undefined);
-  }, []);
+  const selectTtsProvider = useCallback(
+    (provider: string) => {
+      if (activeRef.current) return;
+      providerTouchedRef.current = true;
+      ttsProviderRef.current = provider;
+      setTtsProviderState(provider);
+      setTtsModelState(
+        _providerModel(
+          providerConfig?.tts ?? [],
+          provider,
+          ttsModel || "timbre-v2.5",
+        ),
+      );
+      scenarioSelectedByUserRef.current = false;
+      voiceRef.current = undefined;
+      setVoiceState(undefined);
+    },
+    [providerConfig?.tts, ttsModel],
+  );
 
   const selectScenario = useCallback(
     (scenarioId: string) => {
@@ -500,7 +570,14 @@ export function useVoiceSession() {
   );
 
   useEffect(() => {
-    if (catalog?.kind !== "audio" || !catalog.voices.length) return;
+    if (
+      !sessionSelectionHydratedRef.current ||
+      catalog?.provider !== ttsProvider ||
+      catalog.kind !== "audio" ||
+      !catalog.voices.length
+    ) {
+      return;
+    }
     const current = voiceRef.current;
     const valid =
       current &&
@@ -513,13 +590,14 @@ export function useVoiceSession() {
     if (readyRef.current?.tts.kind === "audio") {
       send({ type: "voice", voice: next });
     }
-  }, [catalog, send]);
+  }, [catalog, send, ttsProvider]);
 
   useEffect(() => {
     if (
       activeRef.current ||
       !scenarioSelectedByUserRef.current ||
       !selectedScenario ||
+      catalog?.provider !== ttsProvider ||
       catalog?.kind !== "audio" ||
       !catalog.voices.length
     ) {
@@ -533,7 +611,7 @@ export function useVoiceSession() {
     if (!next || voiceRef.current === next) return;
     voiceRef.current = next;
     setVoiceState(next);
-  }, [catalog, selectedScenario]);
+  }, [catalog, selectedScenario, ttsProvider]);
 
   const upsertUserMessage = useCallback(
     (text: string, final: boolean, turnId?: string) => {
@@ -2374,7 +2452,9 @@ export function useVoiceSession() {
     voices: options,
     voice,
     sttProvider,
+    sttModel,
     ttsProvider,
+    ttsModel,
     scenarios,
     selectedScenario,
     selectedScenarioId,
